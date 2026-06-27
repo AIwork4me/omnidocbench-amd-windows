@@ -1,0 +1,10 @@
+__pycache__/
+*.pyc
+.venv*/
+models/
+outputs/
+predictions/
+OmniDocBench_data/
+result/
+*.egg-info/
+mirrors.env
