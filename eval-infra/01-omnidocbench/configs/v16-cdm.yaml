@@ -1,0 +1,27 @@
+# OmniDocBench v1.6 full-set eval config WITH CDM enabled.
+#
+# Identical to v16.yaml but adds CDM (Contrastive Document Matching) to
+# display_formula. CDM requires the extra CDM environment (Node, ImageMagick,
+# TeX Live + tlgs; set up in eval-infra/02-cdm-environment, Task 3).
+#
+# Uses a cdm-named predictions directory so save_name
+# (paddleocrvl_rocm_cdm_quick_match) does NOT clobber the Edit_dist-only run.
+#
+# Runtime environment (set before invoking pdf_validation.py):
+#   PATH  = TeX Live bin + tlgs bin + ImageMagick (prepended)
+#   GS_LIB = tlgs resource directories
+#   PYTHONUTF8 = 1
+#
+# This is a TEMPLATE: <REPO_ROOT> is replaced with the absolute repo root at runtime.
+end2end_eval:
+  metrics:
+    text_block:      { metric: [Edit_dist] }
+    display_formula: { metric: [Edit_dist, CDM], cdm_workers: 8 }
+    table:           { metric: [TEDS, Edit_dist], teds_workers: 16 }
+    reading_order:   { metric: [Edit_dist] }
+  dataset:
+    dataset_name: end2end_dataset
+    ground_truth: { data_path: <REPO_ROOT>/eval-infra/01-omnidocbench/data/OmniDocBench.json }
+    prediction:   { data_path: <REPO_ROOT>/predictions/paddleocrvl_rocm_cdm }
+    match_method: quick_match
+    match_workers: 24

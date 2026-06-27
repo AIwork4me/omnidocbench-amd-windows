@@ -1,0 +1,25 @@
+# OmniDocBench v1.6 HARD-subset (296 pages) eval config (Edit_dist + TEDS).
+#
+# Hard subset = pages whose subset field is in {equation_hard, layout_hard, table_hard}.
+# This config uses a pre-filtered GT manifest (OmniDocBench_hard296.json) plus a
+# hard-named predictions directory so the result save_name
+# (paddleocrvl_rocm_hard_quick_match) does NOT clobber the full-set run.
+#
+# NOTE: OmniDocBench_hard296.json is a DERIVATIVE file, not part of the
+# modelscope/HF dataset download. Task 5 (scoring) filters it out of the full
+# OmniDocBench.json. If it is absent, verify.ps1 emits a WARNING; run the filter
+# step (Task 5) before scoring with this config.
+#
+# This is a TEMPLATE: <REPO_ROOT> is replaced with the absolute repo root at runtime.
+end2end_eval:
+  metrics:
+    text_block:      { metric: [Edit_dist] }
+    display_formula: { metric: [Edit_dist] }
+    table:           { metric: [TEDS, Edit_dist], teds_workers: 16 }
+    reading_order:   { metric: [Edit_dist] }
+  dataset:
+    dataset_name: end2end_dataset
+    ground_truth: { data_path: <REPO_ROOT>/eval-infra/01-omnidocbench/data/OmniDocBench_hard296.json }
+    prediction:   { data_path: <REPO_ROOT>/predictions/paddleocrvl_rocm_hard }
+    match_method: quick_match
+    match_workers: 24

@@ -1,0 +1,26 @@
+# OmniDocBench v1.6 full-set eval config (Edit_dist + TEDS; CDM disabled).
+#
+# This is a TEMPLATE: <REPO_ROOT> is replaced with the absolute repo root at
+# runtime (Task 5 scoring resolves it). Edit_dist + TEDS work with a plain
+# OmniDocBench checkout; CDM (display_formula) needs the extra CDM environment
+# (Task 3) and is intentionally omitted here so a minimal environment can score.
+#
+# Run (from the OmniDocBench checkout with its py3.11 venv):
+#   python pdf_validation.py --config <this file>
+#
+# Source layout produced by setup.ps1:
+#   <REPO_ROOT>/eval-infra/01-omnidocbench/data/OmniDocBench.json   (GT manifest, 1651 pages)
+#   <REPO_ROOT>/eval-infra/01-omnidocbench/data/images/             (1651 page PNGs)
+#   <REPO_ROOT>/predictions/<adapter>/                              (adapter Markdown output)
+end2end_eval:
+  metrics:
+    text_block:      { metric: [Edit_dist] }                                # CDM dropped (needs Node/ImageMagick/TeX)
+    display_formula: { metric: [Edit_dist] }
+    table:           { metric: [TEDS, Edit_dist], teds_workers: 16 }
+    reading_order:   { metric: [Edit_dist] }
+  dataset:
+    dataset_name: end2end_dataset
+    ground_truth: { data_path: <REPO_ROOT>/eval-infra/01-omnidocbench/data/OmniDocBench.json }
+    prediction:   { data_path: <REPO_ROOT>/predictions/paddleocrvl_rocm }
+    match_method: quick_match
+    match_workers: 24
