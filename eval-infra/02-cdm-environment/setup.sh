@@ -10,7 +10,13 @@ set -euo pipefail
 # safe and fast once the environment is provisioned. See README.md for what each
 # step does, why it is needed, and what breaks if you skip it.
 
-REPO_ROOT="/mnt/c/Users/rocm/Desktop/omnidocbench-amd-windows"
+# Resolve the repo root from this script's own location (this file is at
+# <root>/eval-infra/02-cdm-environment/setup.sh) instead of hardcoding a machine
+# path, so a clone anywhere under /mnt/c works. $BASH_SOURCE reaches into WSL as
+# a /mnt/c/... absolute path because the script is invoked via
+#   wsl -d Ubuntu2204 bash /mnt/c/<clone>/eval-infra/02-cdm-environment/setup.sh
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 ODB_CODE="$REPO_ROOT/eval-infra/01-omnidocbench/OmniDocBench"
 
 # Parse mirrors.env (CTAN_MIRROR, GITHUB_PROXY, PYPI_INDEX, ...).

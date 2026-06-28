@@ -81,7 +81,8 @@ if (Test-Path $manifest) {
     $imgCount = 0
     $imgDir = Join-Path $dataDir "images"
     if (Test-Path $imgDir) {
-        $imgCount = (Get-ChildItem $imgDir -File -ErrorAction SilentlyContinue).Count
+        # @() for PS 5.1: a single-file dir unwraps to a scalar (empty .Count).
+        $imgCount = @(Get-ChildItem $imgDir -File -ErrorAction SilentlyContinue).Count
     }
     Write-Host "Dataset already present: $manifest ($imgCount images in images/)." -ForegroundColor Green
     Write-Host "OmniDocBench setup complete." -ForegroundColor Green

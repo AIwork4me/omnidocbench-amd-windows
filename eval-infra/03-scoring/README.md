@@ -45,7 +45,7 @@ powershell -ExecutionPolicy Bypass -File eval-infra\03-scoring\score.ps1 -Config
 
 ```powershell
 # First provision the CDM environment (one-time, ~30 min):
-wsl -d Ubuntu2204 bash /mnt/c/Users/rocm/Desktop/omnidocbench-amd-windows/eval-infra/02-cdm-environment\setup.sh
+wsl -d Ubuntu2204 bash /mnt/c/Users/rocm/Desktop/omnidocbench-amd-windows/eval-infra/02-cdm-environment/setup.sh
 
 # Then score with CDM (uses v16-cdm.yaml; ~40 min on the full set):
 wsl -d Ubuntu2204 bash /mnt/c/Users/rocm/Desktop/omnidocbench-amd-windows/eval-infra/03-scoring/score-cdm.sh

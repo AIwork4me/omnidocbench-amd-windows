@@ -59,8 +59,14 @@ if (-not (Test-Path $pdfValidation)) {
 # the GT manifest, predictions dir, and image paths all resolve. We write the
 # rendered config into the OmniDocBench checkout (next to pdf_validation.py) so
 # relative ./result/ outputs land there too. Gitignored.
+#
+# NB: -replace's REPLACEMENT string is .NET-regex semantics, where backslash is
+# literal (no escaping needed) and '$' is special. So we must NOT double the
+# backslashes in $rootDir -- doing so writes C:\\Users\\... into the YAML. We
+# pass the path through as-is. (If $rootDir ever contained a '$', we would need
+# to escape it as $$, but Windows paths do not.)
 $template = Get-Content -Raw -LiteralPath $cfgTemplate
-$rendered = $template -replace [regex]::Escape("<REPO_ROOT>"), ($rootDir -replace '\\', '\\')
+$rendered = $template -replace [regex]::Escape("<REPO_ROOT>"), $rootDir
 $runCfg = Join-Path $odbDir "run_$([System.IO.Path]::GetFileNameWithoutExtension($Config)).yaml"
 Set-Content -LiteralPath $runCfg -Value $rendered -Encoding UTF8
 Write-Host "Rendered run config: $runCfg" -ForegroundColor DarkGray

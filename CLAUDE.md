@@ -116,10 +116,13 @@ powershell -ExecutionPolicy Bypass -File adapters\paddleocr-vl-1.6\02-layout-mod
 
 # 3c. Install the pipeline package (from a PaddleOCR-VL-ROCm checkout), then run.
 pip install -e <path-to-PaddleOCR-VL-ROCm>
+# NOTE: --out-dir must match the prediction path the scoring configs read
+# (eval-infra\01-omnidocbench\configs\v16*.yaml -> predictions/paddleocrvl_rocm).
+# A different name here means score.ps1 finds no predictions and every metric is 0.
 python adapters\paddleocr-vl-1.6\run_adapter.py `
     --img-dir  eval-infra\01-omnidocbench\data\images `
-    --out-dir  predictions\paddleocr-vl-1.6
-#   → produces predictions\paddleocr-vl-1.6\<stem>.md per page
+    --out-dir  predictions\paddleocrvl_rocm
+#   → produces predictions\paddleocrvl_rocm\<stem>.md per page
 ```
 
 Use `-Variant cpu` instead of `-Variant hip` on non-AMD-Radeon hardware.
@@ -181,7 +184,7 @@ The system is fully operational when **all** hold:
 2. `eval-infra/01-omnidocbench/verify.ps1` exits 0 (code + 1651 images present).
 3. `eval-infra/02-cdm-environment/verify.sh` prints `VERIFY OK` (incl. `CDM F1 for identical formulas` > 0.5).
 4. `adapters/paddleocr-vl-1.6/01-vlm-server/verify.ps1` exits 0 (`curl /v1/models` 200).
-5. `predictions/paddleocr-vl-1.6/` contains one `.md` per dataset page (~1651).
+5. `predictions/paddleocrvl_rocm/` contains one `.md` per dataset page (~1651).
 6. `eval-infra/03-scoring/verify.ps1` exits 0 with all four metrics non-zero.
 
 Reference targets (our validated PaddleOCR-VL-1.6 results on OmniDocBench v1.6):
