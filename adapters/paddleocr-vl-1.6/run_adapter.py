@@ -12,19 +12,19 @@ the run (a missing page scores zero in the harness).
 
 Prerequisites
 -------------
-This adapter is *just* the inference driver. It assumes the two provisioning
+This adapter is *just* the inference driver. It assumes the three provisioning
 steps in this directory have already run:
 
+  0. ``00-install-deps/setup.ps1`` -- clones PaddleOCR-VL-ROCm and runs
+     ``pip install -e`` so the ``paddleocr_vl_rocm`` package is importable.
   1. ``01-vlm-server/setup.ps1``  -- downloads llama.cpp + the
      PaddleOCR-VL-1.6-GGUF weights, starts ``llama-server`` (OpenAI-compatible
      API), and writes their paths to ``.env.local``.
   2. ``02-layout-model/setup.ps1`` -- downloads the PP-DocLayoutV3 ONNX layout
      model and writes its path to ``.env.local``.
 
-It also assumes the ``paddleocr-vl-rocm`` Python package is importable -- see
-``../README.md`` for the one-line install. ``run_adapter`` reads the same
-``.env.local`` for defaults so that, after provisioning, you can run it with
-no flags.
+``run_adapter`` reads the same ``.env.local`` for defaults so that, after
+provisioning, you can run it with no flags.
 """
 from __future__ import annotations
 
@@ -36,7 +36,11 @@ from pathlib import Path
 # NOTE: paddleocr_vl_rocm is the proven pipeline package from the
 # PaddleOCR-VL-ROCm project. Install it once (see README.md); this adapter
 # only drives it over a directory of images.
-from paddleocr_vl_rocm import PaddleOCRVLROCm
+#
+# The import is deferred (see process_folder) so the module stays importable
+# -- and so `--help` works -- on a machine that has NOT yet installed
+# paddleocr_vl_rocm. Importing it at module top level made every `python
+# run_adapter.py --help` crash with ModuleNotFoundError before argparse ran.
 
 IMAGE_EXTENSIONS = (".jpg", ".jpeg", ".png", ".bmp", ".tiff", ".gif")
 
@@ -91,6 +95,12 @@ def process_folder(
     """
     if not img_dir.is_dir():
         raise SystemExit(f"Image directory not found: {img_dir}")
+    # Lazy import: paddleocr_vl_rocm is a heavyweight optional dependency
+    # (the PaddleOCR-VL-ROCm pipeline). Importing it here -- rather than at
+    # module top level -- keeps the module importable and `--help` working on
+    # machines that have not installed it yet.
+    from paddleocr_vl_rocm import PaddleOCRVLROCm
+
     pipeline = PaddleOCRVLROCm(
         layout_model_dir=layout_model,
         vlm_server_url=server_url,
@@ -124,13 +134,39 @@ def process_folder(
     }
 
 
-def main() -> None:
+def run_adapter(img_dir, out_dir, server_url: str = "") -> dict:
+    """Adapter interface contract: images -> one ``<stem>.md`` per page.
+
+    This is the documented entry point every adapter in this repo exposes
+    (see ``adapters/README.md`` -> "The adapter interface contract"). It wraps
+    :func:`process_folder`, resolving the remaining pipeline defaults
+    (layout model, API model name) from ``.env.local`` / ``ADAPTER_*`` env
+    vars the same way the CLI does, so a caller only needs the three documented
+    arguments.
+
+    Parameters
+    ----------
+    img_dir : str | Path
+        Flat directory of dataset page images.
+    out_dir : str | Path
+        Output directory; one ``<image_stem>.md`` is written per page.
+    server_url : str
+        OpenAI-compatible ``/v1`` URL of the VLM server (e.g.
+        ``http://127.0.0.1:8111/v1``). Empty string = resolve from
+        ``ADAPTER_SERVER_URL`` env var or ``.env.local``.
+
+    Returns
+    -------
+    dict
+        Summary with ``count``, ``ok``, and per-image ``stats`` (same shape as
+        :func:`process_folder`). The eval-infra ignores this; it only consumes
+        the written ``.md`` files.
+    """
     # repo root = three levels up from adapters/paddleocr-vl-1.6/run_adapter.py
     repo_root = Path(__file__).resolve().parents[2]
     env = _read_env_local(repo_root)
 
-    # Defaults: CLI flag > ADAPTER_* env var > .env.local > hard-coded fallback.
-    # The .env.local values are written by 01-vlm-server/ and 02-layout-model/.
+    # Defaults: ADAPTER_* env var > .env.local > hard-coded fallback.
     default_layout = (
         os.environ.get("ADAPTER_LAYOUT_MODEL")
         or env.get("PP_DOCLAYOUTV3_ONNX_DIR")
@@ -138,8 +174,9 @@ def main() -> None:
     )
     llama_host = env.get("LLAMA_HOST") or "127.0.0.1"
     llama_port = env.get("LLAMA_PORT") or "8111"
-    default_server = (
-        os.environ.get("ADAPTER_SERVER_URL")
+    resolved_server = (
+        server_url
+        or os.environ.get("ADAPTER_SERVER_URL")
         or f"http://{llama_host}:{llama_port}/v1"
     )
     # VL_REC_API_MODEL_NAME is the model id llama-server reports at /v1/models;
@@ -150,6 +187,16 @@ def main() -> None:
         or "PaddleOCR-VL-1.6-GGUF.gguf"
     )
 
+    return process_folder(
+        Path(img_dir),
+        Path(out_dir),
+        layout_model=default_layout,
+        server_url=resolved_server,
+        api_model_name=default_api_model,
+    )
+
+
+def main() -> None:
     parser = argparse.ArgumentParser(
         description="PaddleOCR-VL-1.6 adapter for OmniDocBench: write per-page .md"
     )
@@ -157,24 +204,53 @@ def main() -> None:
     parser.add_argument(
         "--out-dir", required=True, help="Output flat dir of <basename>.md predictions."
     )
-    parser.add_argument("--layout-model", default=default_layout, help="PP-DocLayoutV3 ONNX dir.")
-    parser.add_argument("--server-url", default=default_server, help="llama-server OpenAI API URL.")
+    parser.add_argument("--layout-model", default=None, help="PP-DocLayoutV3 ONNX dir (default: .env.local).")
+    parser.add_argument("--server-url", default="", help="llama-server OpenAI API URL (default: .env.local).")
     parser.add_argument(
         "--api-model-name",
-        default=default_api_model,
+        default=None,
         help="Model id to request at the server's /v1/models (must match what llama-server loads).",
     )
     parser.add_argument("--vlm-backend", default="vllm-server")
     args = parser.parse_args()
-    summary = process_folder(
-        Path(args.img_dir),
-        Path(args.out_dir),
-        layout_model=args.layout_model,
-        server_url=args.server_url,
-        api_model_name=args.api_model_name,
-        vlm_backend=args.vlm_backend,
-    )
+
+    # Route through the documented contract (run_adapter) when no advanced
+    # overrides are given, so the CLI exercises the same path callers of
+    # run_adapter() do. When layout-model / api-model-name / vlm-backend are
+    # explicitly overridden, fall through to process_folder() to honor them.
+    advanced_override = args.layout_model or args.api_model_name or args.vlm_backend != "vllm-server"
+    if not advanced_override:
+        summary = run_adapter(Path(args.img_dir), Path(args.out_dir), args.server_url)
+    else:
+        summary = process_folder(
+            Path(args.img_dir),
+            Path(args.out_dir),
+            layout_model=args.layout_model or _layout_default(),
+            server_url=args.server_url,
+            api_model_name=args.api_model_name or _api_model_default(),
+            vlm_backend=args.vlm_backend,
+        )
     print(summary)
+
+
+def _layout_default() -> str:
+    repo_root = Path(__file__).resolve().parents[2]
+    env = _read_env_local(repo_root)
+    return (
+        os.environ.get("ADAPTER_LAYOUT_MODEL")
+        or env.get("PP_DOCLAYOUTV3_ONNX_DIR")
+        or str(repo_root / "adapters" / "paddleocr-vl-1.6" / "models" / "PP-DocLayoutV3-onnx")
+    )
+
+
+def _api_model_default() -> str:
+    repo_root = Path(__file__).resolve().parents[2]
+    env = _read_env_local(repo_root)
+    return (
+        os.environ.get("ADAPTER_API_MODEL_NAME")
+        or env.get("VL_REC_API_MODEL_NAME")
+        or "PaddleOCR-VL-1.6-GGUF.gguf"
+    )
 
 
 if __name__ == "__main__":

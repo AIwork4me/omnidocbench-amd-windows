@@ -87,10 +87,11 @@ powershell -ExecutionPolicy Bypass -File eval-infra\01-omnidocbench\verify.ps1
 ### Step 2 — CDM environment  (WSL, `eval-infra/02-cdm-environment/`) — the hardest step
 
 ```powershell
-# Run the 9-step idempotent installer inside WSL.
-wsl -d Ubuntu2204 bash /mnt/c/Users/rocm/Desktop/omnidocbench-amd-windows/eval-infra/02-cdm-environment/setup.sh
+# In WSL, this repo is reachable at /mnt/c/<your-clone-path>/omnidocbench-amd-windows.
+# Replace the path below with your actual clone location:
+wsl -d Ubuntu2204 bash /mnt/c/<path-to-repo>/eval-infra/02-cdm-environment/setup.sh
 # End-to-end verify: CJK formula → PDF → color PNG → CDM F1 > 0.
-wsl -d Ubuntu2204 bash /mnt/c/Users/rocm/Desktop/omnidocbench-amd-windows/eval-infra/02-cdm-environment/verify.sh
+wsl -d Ubuntu2204 bash /mnt/c/<path-to-repo>/eval-infra/02-cdm-environment/verify.sh
 #   verify exit 1 at "IM7 not active"      → pitfalls.md#grayscale
 #   verify exit 1 at "PDF→PNG"              → pitfalls.md#im7-libs or #im7-gs
 #   verify exit 1 at "PNG is grayscale"     → pitfalls.md#mathcolor
@@ -114,8 +115,8 @@ powershell -ExecutionPolicy Bypass -File adapters\paddleocr-vl-1.6\01-vlm-server
 powershell -ExecutionPolicy Bypass -File adapters\paddleocr-vl-1.6\02-layout-model\setup.ps1
 #   model not found → pitfalls.md#layout
 
-# 3c. Install the pipeline package (from a PaddleOCR-VL-ROCm checkout), then run.
-pip install -e <path-to-PaddleOCR-VL-ROCm>
+# 3c. Install the pipeline package (clones PaddleOCR-VL-ROCm + pip install -e), then run.
+powershell -ExecutionPolicy Bypass -File adapters\paddleocr-vl-1.6\00-install-deps\setup.ps1
 # NOTE: --out-dir must match the prediction path the scoring configs read
 # (eval-infra\01-omnidocbench\configs\v16*.yaml -> predictions/paddleocrvl_rocm).
 # A different name here means score.ps1 finds no predictions and every metric is 0.
@@ -133,7 +134,8 @@ Use `-Variant cpu` instead of `-Variant hip` on non-AMD-Radeon hardware.
 # 4a. Edit_dist + TEDS pass (Windows-native, pure Python).
 powershell -ExecutionPolicy Bypass -File eval-infra\03-scoring\score.ps1
 # 4b. CDM pass (WSL; needs Step 2's environment).
-wsl -d Ubuntu2204 bash /mnt/c/Users/rocm/Desktop/omnidocbench-amd-windows/eval-infra/03-scoring/score-cdm.sh
+# Replace /mnt/c/<path-to-repo> with your clone location:
+wsl -d Ubuntu2204 bash /mnt/c/<path-to-repo>/eval-infra/03-scoring/score-cdm.sh
 # 4c. Verify all four metrics are present and non-zero.
 powershell -ExecutionPolicy Bypass -File eval-infra\03-scoring\verify.ps1
 #   Any "zero/non-positive" → silent run failure → see row in table below

@@ -17,7 +17,7 @@ Order mirrors CLAUDE.md's dependency chain:
   2. WSL Ubuntu2204 reachable       (wsl-ensure)
   3. OmniDocBench code + dataset    (01-omnidocbench)
   4. CDM environment functional     (02-cdm-environment, in WSL)
-  5. VLM server up                  (paddleocr-vl-1.6/01-vlm-server)
+  5. VLM server + layout model      (paddleocr-vl-1.6/01-vlm-server + 02-layout-model)
   6. Predictions present            (adapter output)
   7. Scores present + non-zero      (03-scoring)
 
@@ -101,14 +101,21 @@ Write-Host "[2/7] WSL Ubuntu2204" -ForegroundColor Cyan
 if ($SkipWsl) {
     Add-Result "WSL Ubuntu2204" "SKIP" "-SkipWsl"
 } else {
+    # Canonical distro name is Ubuntu2204 (every script here uses it). Be
+    # defensive: if only the un-normalized "Ubuntu-22.04" exists (the name
+    # `wsl --install` produces), flag it so the user runs wsl-ensure.ps1 to
+    # rename it, rather than reporting a bare "not installed".
     $distros = (wsl --list --quiet 2>$null) | ForEach-Object { ($_ -replace "`0","").Trim() } | Where-Object { $_ }
-    if (($distros -join "`n") -match "Ubuntu2204") {
+    $distroText = ($distros -join "`n")
+    if ($distroText -match "Ubuntu2204") {
         $probe = wsl -d Ubuntu2204 -- echo "WSL_OK" 2>$null
         if ($probe -match "WSL_OK") {
             Add-Result "WSL Ubuntu2204" "PASS" "reachable"
         } else {
             Add-Result "WSL Ubuntu2204" "FAIL" "imported but not startable - reboot Windows? (pitfalls.md#wsl)"
         }
+    } elseif ($distroText -match "Ubuntu-22\.04") {
+        Add-Result "WSL Ubuntu2204" "FAIL" "only 'Ubuntu-22.04' exists - run scripts/wsl-ensure.ps1 to normalize the name to Ubuntu2204"
     } else {
         Add-Result "WSL Ubuntu2204" "FAIL" "not installed - run scripts/wsl-ensure.ps1"
     }
@@ -129,22 +136,39 @@ if ($SkipWsl) {
     $cdmVerify = Join-Path $rootDir "eval-infra\02-cdm-environment\verify.sh"
     # Translate a Windows path C:\...\verify.sh to its WSL form /mnt/c/.../verify.sh.
     $wslPath = "/mnt/" + $cdmVerify.Substring(0,1).ToLower() + (($cdmVerify.Substring(2)) -replace '\\', '/')
-    $out = wsl -d Ubuntu2204 bash $wslPath 2>&1
-    if ($LASTEXITCODE -eq 0) {
-        Add-Result "02-cdm-environment/verify" "PASS" "CDM pipeline functional"
+    # Capture stdout+stderr together. Relying on $LASTEXITCODE alone is NOT
+    # enough: WSL interop can report a 0 exit even when the CDM pipeline is
+    # subtly broken (e.g. a stage failed but the script's `set -e` didn't
+    # propagate, or stderr noise masked the real status). verify.sh prints the
+    # literal sentinel "VERIFY OK" only on genuine success, so we require BOTH
+    # a clean exit AND the sentinel in the output.
+    $output = wsl -d Ubuntu2204 bash $wslPath 2>&1
+    $wslExit = $LASTEXITCODE
+    # Normalize the captured stream to a single string for -match. @() + -join
+    # keeps PS 5.1 happy when $output is a scalar or an array of lines.
+    $outputText = (@($output) -join "`n")
+    if ($wslExit -ne 0) {
+        Add-Result "02-cdm-environment/verify" "FAIL" "WSL verify exited $wslExit - see pitfalls.md#cdm-zero (decision tree)"
+    } elseif ($outputText -notmatch "VERIFY OK") {
+        Add-Result "02-cdm-environment/verify" "FAIL" "exited 0 but no 'VERIFY OK' sentinel - CDM not actually functional (pitfalls.md#cdm-zero)"
     } else {
-        Add-Result "02-cdm-environment/verify" "FAIL" "see pitfalls.md#cdm-zero (decision tree)"
+        Add-Result "02-cdm-environment/verify" "PASS" "CDM pipeline functional (VERIFY OK)"
     }
 }
 
-# --- 5. VLM server -----------------------------------------------------------
+# --- 5. VLM server + layout model (reference adapter) ------------------------
 Write-Host ""
-Write-Host "[5/7] VLM server (reference adapter)" -ForegroundColor Cyan
+Write-Host "[5/7] VLM server + layout model (reference adapter)" -ForegroundColor Cyan
 if ($SkipVlm) {
     Add-Result "01-vlm-server/verify" "SKIP" "-SkipVlm"
+    Add-Result "02-layout-model/verify" "SKIP" "-SkipVlm"
 } else {
     $vlmVerify = Join-Path $rootDir "adapters\paddleocr-vl-1.6\01-vlm-server\verify.ps1"
     [void](Invoke-Verify "01-vlm-server/verify" $vlmVerify)
+    # The reference adapter has a second provisioning half (PP-DocLayoutV3 ONNX);
+    # verify it too so a missing layout model is caught here, not mid-run.
+    $layoutVerify = Join-Path $rootDir "adapters\paddleocr-vl-1.6\02-layout-model\verify.ps1"
+    [void](Invoke-Verify "02-layout-model/verify" $layoutVerify)
 }
 
 # --- 6. Predictions present --------------------------------------------------

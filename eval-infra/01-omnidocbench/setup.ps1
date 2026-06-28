@@ -15,6 +15,10 @@ Steps:
   3. Download the v1.6 dataset into data/ -- skipped if OmniDocBench.json present.
      - modelscope: `modelscope download --dataset OpenDataLab/OmniDocBench --local_dir data`
      - huggingface: `huggingface-cli download opendatalab/OmniDocBench --repo-type dataset --local-dir data`
+  4. Create a repo-root .venv (Python 3.10/3.11 -- OmniDocBench is NOT 3.12+
+     compatible) and pip install the OmniDocBench runtime deps into it. The
+     venv is what eval-infra/03-scoring/score.ps1 runs pdf_validation.py with.
+     Skipped if .venv is already importable.
 
 The dataset download (~1651 PNGs, ~18 min on a slow link) is idempotent: re-running
 setup.ps1 after a partial/interrupted download resumes via the HF/MS CLI's own cache.
@@ -50,6 +54,9 @@ if (Test-Path $envFile) {
 }
 $githubBase = if ($cfg["GITHUB_BASE"]) { $cfg["GITHUB_BASE"] } else { "https://github.com" }
 $hfOrMs    = if ($cfg["HF_OR_MS"])    { $cfg["HF_OR_MS"] }    else { "modelscope" }
+# PyPI index (from detect-mirrors.ps1). Fall back to Tsinghua (China-friendly)
+# then pypi.org. Used by the venv install in step 4.
+$pypiIndex = if ($cfg["PYPI_INDEX"]) { $cfg["PYPI_INDEX"] } else { "https://pypi.tuna.tsinghua.edu.cn/simple" }
 
 # --- 1. Clone OmniDocBench eval code ---
 $odbDir = Join-Path $PSScriptRoot "OmniDocBench"
@@ -66,6 +73,75 @@ if (-not (Test-Path $probe)) {
     Write-Host "OmniDocBench code cloned to $odbDir" -ForegroundColor Green
 } else {
     Write-Host "OmniDocBench code already present: $probe" -ForegroundColor Green
+}
+
+# --- 1b. Create repo-root .venv + install OmniDocBench deps ---
+# OmniDocBench is NOT Python 3.12+ compatible (uses inspect.getargspec /
+# distutils removed in 3.12). Prefer 3.11, then 3.10; fall back to the default
+# `python` only if neither launcher exists (and warn).
+#
+# The venv lives at <repo>/.venv so eval-infra/03-scoring/score.ps1 can target
+# .venv\Scripts\python.exe directly instead of relying on a bare `python` that
+# may be 3.13. Idempotent: skipped if .venv\Scripts\python.exe already exists
+# and the deps are importable there.
+$venvDir = Join-Path $rootDir ".venv"
+$venvPython = Join-Path $venvDir "Scripts\python.exe"
+$venvReady = $false
+if (Test-Path $venvPython) {
+    # Probe: can the venv import the core OmniDocBench deps?
+    $probePy = "import importlib; [importlib.import_module(m) for m in ('pylatexenc','PIL','numpy','pandas','yaml','Levenshtein','apted')]"
+    & $venvPython -c $probePy *> $null
+    if ($LASTEXITCODE -eq 0) { $venvReady = $true }
+}
+
+if ($venvReady) {
+    Write-Host ".venv already provisioned with OmniDocBench deps: $venvPython" -ForegroundColor Green
+} else {
+    # Pick a Python 3.10/3.11 interpreter via the `py` launcher (Windows-only,
+    # ships with python.org installers). -p selects the highest installed that
+    # matches the version spec.
+    $basePy = $null
+    foreach ($ver in @("-3.11", "-3.10")) {
+        $test = & py $ver --version 2>$null
+        if ($LASTEXITCODE -eq 0 -and $test -match "Python 3\.(10|11)\.") {
+            $basePy = "py $ver"
+            Write-Host "Using Python $ver for venv: $test" -ForegroundColor DarkGray
+            break
+        }
+    }
+    if (-not $basePy) {
+        $sysVer = & python --version 2>$null
+        if ($LASTEXITCODE -eq 0 -and $sysVer -match "Python 3\.(10|11)\.") {
+            $basePy = "python"
+        } else {
+            Write-Host "WARN: no Python 3.10/3.11 found via 'py'/'python' (got: '$sysVer')." -ForegroundColor Yellow
+            Write-Host "      OmniDocBench needs Python < 3.12 (see docs/pitfalls.md#python-version)." -ForegroundColor Yellow
+            Write-Host "      Creating venv from the default python anyway -- scoring may fail with import errors." -ForegroundColor Yellow
+            $basePy = "python"
+        }
+    }
+
+    Write-Host "Creating .venv at $venvDir ..." -ForegroundColor Cyan
+    Invoke-Expression "$basePy -m venv `"$venvDir`""
+    if ($LASTEXITCODE -ne 0) { throw "venv creation failed (interpreter: $basePy)" }
+
+    # Upgrade pip first (some old bundled pip chokes on newer wheels).
+    & $venvPython -m pip install --upgrade pip -i $pypiIndex *> $null
+    if ($LASTEXITCODE -ne 0) {
+        Write-Host "WARN: pip self-upgrade failed; continuing with the bundled pip." -ForegroundColor Yellow
+    }
+
+    # OmniDocBench runtime deps (mirrors the list used by the WSL CDM venv in
+    # eval-infra/02-cdm-environment/setup.sh step 9). Unpinned so a fresh
+    # install gets currently-working versions.
+    $deps = "apted beautifulsoup4 evaluate func-timeout Levenshtein loguru lxml numpy pandas Pillow pylatexenc PyYAML scipy tabulate tqdm nltk matplotlib"
+    Write-Host "Installing OmniDocBench deps into .venv (index: $pypiIndex) ..." -ForegroundColor Cyan
+    $depsArgs = $deps -split ' '
+    & $venvPython -m pip install -i $pypiIndex $depsArgs
+    if ($LASTEXITCODE -ne 0) {
+        throw "pip install of OmniDocBench deps failed (index: $pypiIndex). Re-run setup.ps1; if it persists see docs/pitfalls.md#network."
+    }
+    Write-Host "OmniDocBench deps installed into .venv" -ForegroundColor Green
 }
 
 if ($SkipDataset) {

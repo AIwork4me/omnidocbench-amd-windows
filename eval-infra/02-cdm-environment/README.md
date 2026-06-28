@@ -42,11 +42,12 @@ Python and just works. Isolating CDM setup behind its own module means:
 ## Usage
 
 ```powershell
-# Provision the CDM environment (idempotent; ~30 min on first run, seconds after).
-wsl -d Ubuntu2204 bash /mnt/c/Users/rocm/Desktop/omnidocbench-amd-windows/eval-infra/02-cdm-environment/setup.sh
+# In WSL, this repo is at /mnt/c/<your-clone-path>/omnidocbench-amd-windows.
+# Replace the path below with your actual clone location:
+wsl -d Ubuntu2204 bash /mnt/c/<path-to-repo>/eval-infra/02-cdm-environment/setup.sh
 
 # Verify it works (should print "VERIFY OK: CDM environment fully functional.").
-wsl -d Ubuntu2204 bash /mnt/c/Users/rocm/Desktop/omnidocbench-amd-windows/eval-infra/02-cdm-environment/verify.sh
+wsl -d Ubuntu2204 bash /mnt/c/<path-to-repo>/eval-infra/02-cdm-environment/verify.sh
 ```
 
 `setup.sh` reads `../../mirrors.env` (produced by `scripts/detect-mirrors.ps1`)

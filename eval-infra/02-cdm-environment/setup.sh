@@ -3,8 +3,9 @@ set -euo pipefail
 # CDM Environment Setup — run inside WSL Ubuntu 22.04
 # Consolidates 20+ debugging sessions into one idempotent script.
 #
-# Run from PowerShell:
-#     wsl -d Ubuntu2204 bash /mnt/c/Users/rocm/Desktop/omnidocbench-amd-windows/eval-infra/02-cdm-environment/setup.sh
+# Run from PowerShell (replace /mnt/c/<path-to-repo> with your clone location;
+# the script itself resolves paths dynamically via $BASH_SOURCE):
+#     wsl -d Ubuntu2204 bash /mnt/c/<path-to-repo>/eval-infra/02-cdm-environment/setup.sh
 #
 # Each of the 9 steps self-checks before proceeding, so re-running the script is
 # safe and fast once the environment is provisioned. See README.md for what each
@@ -162,10 +163,14 @@ sed -i 's/magick -density 200 -quality 100 -colorspace sRGB/magick -density 200 
 step 9 "Python venv + OmniDocBench dependencies"
 if [ ! -d /root/odb-venv ]; then
     python3 -m venv /root/odb-venv
-    /root/odb-venv/bin/pip install -q -i https://pypi.tuna.tsinghua.edu.cn/simple \
+    # PyPI index: honour PYPI_INDEX from mirrors.env (written by
+    # detect-mirrors.ps1) so a China-network machine uses Tsinghua and an
+    # open-egress machine uses pypi.org. Fall back to Tsinghua if unset.
+    PYPI_MIRROR="${PYPI_INDEX:-https://pypi.tuna.tsinghua.edu.cn/simple}"
+    /root/odb-venv/bin/pip install -q -i "$PYPI_MIRROR" \
         apted beautifulsoup4 evaluate func-timeout Levenshtein loguru lxml numpy pandas \
         Pillow pylatexenc PyYAML scipy tabulate tqdm nltk matplotlib
-    ok "venv + deps installed"
+    ok "venv + deps installed (index: $PYPI_MIRROR)"
 else
     ok "venv already exists"
 fi

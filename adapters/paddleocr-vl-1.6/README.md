@@ -1,9 +1,10 @@
 # paddleocr-vl-1.6/ — reference adapter
 
 The **proven reference adapter** for this benchmark. It wraps the
-[PaddleOCR-VL-ROCm](https://github.com/) pipeline (ONNX layout detection +
-llama.cpp-served GGUF VLM) and writes one `<image_stem>.md` per page, which
-the model-agnostic eval-infra then scores against OmniDocBench v1.6.
+[PaddleOCR-VL-ROCm](https://github.com/AIwork4me/PaddleOCR-VL-ROCm) pipeline
+(ONNX layout detection + llama.cpp-served GGUF VLM) and writes one
+`<image_stem>.md` per page, which the model-agnostic eval-infra then scores
+against OmniDocBench v1.6.
 
 It exists so that:
 
@@ -41,12 +42,16 @@ and you may swap one without the other.
 ## Provisioning
 
 ```powershell
+# 0. Install the pipeline package (clones PaddleOCR-VL-ROCm, pip install -e).
+powershell -ExecutionPolicy Bypass -File 00-install-deps\setup.ps1
+
 # 1. VLM server (downloads llama.cpp + ~1.7 GB GGUF, starts llama-server).
 powershell -ExecutionPolicy Bypass -File 01-vlm-server\setup.ps1 -Variant hip
 powershell -ExecutionPolicy Bypass -File 01-vlm-server\verify.ps1
 
 # 2. Layout model (downloads ~16 MB ONNX).
 powershell -ExecutionPolicy Bypass -File 02-layout-model\setup.ps1
+powershell -ExecutionPolicy Bypass -File 02-layout-model\verify.ps1
 ```
 
 Use `-Variant cpu` instead of `-Variant hip` on non-AMD-Radeon hardware
@@ -55,18 +60,24 @@ Use `-Variant cpu` instead of `-Variant hip` on non-AMD-Radeon hardware
 ## Prerequisite: install the pipeline package
 
 `run_adapter.py` imports `paddleocr_vl_rocm`, the proven pipeline package from
-the PaddleOCR-VL-ROCm project. Install it once into the Python you will run the
-adapter with:
+the [PaddleOCR-VL-ROCm](https://github.com/AIwork4me/PaddleOCR-VL-ROCm) project.
+`00-install-deps/setup.ps1` provisions it for you — it clones the repo and runs
+`pip install -e` into the target Python:
 
 ```powershell
-# From a checkout of PaddleOCR-VL-ROCm:
-pip install -e <path-to-PaddleOCR-VL-ROCm>
+powershell -ExecutionPolicy Bypass -File 00-install-deps\setup.ps1
+```
+
+To do it manually instead (from a checkout of PaddleOCR-VL-ROCm):
+
+```powershell
+git clone https://github.com/AIwork4me/PaddleOCR-VL-ROCm ../PaddleOCR-VL-ROCm
+pip install -e ../PaddleOCR-VL-ROCm
 # (brings onnxruntime, opencv, pillow, requests, ... as dependencies)
 ```
 
-If you do not have that checkout handy, see the upstream project. This repo
-does not vendor the package — it is the source of truth for the pipeline and
-gets its own tests there.
+This repo does not vendor the package — it is the source of truth for the
+pipeline and gets its own tests there.
 
 ## Running the adapter
 

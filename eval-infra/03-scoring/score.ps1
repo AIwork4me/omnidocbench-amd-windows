@@ -24,7 +24,8 @@ Config template to use (under eval-infra/01-omnidocbench/configs/). Defaults to
 .PARAMETER Python
 Python executable to run pdf_validation.py with. Must be the OmniDocBench
 venv (Python 3.10/3.11 — OmniDocBench is not 3.12-compatible). Defaults to
-"python" on PATH; override with the venv's python.exe if needed.
+the repo-root .venv created by eval-infra/01-omnidocbench/setup.ps1; falls
+back to "python" on PATH only if that venv is absent.
 
 .EXAMPLE
   powershell -ExecutionPolicy Bypass -File score.ps1
@@ -34,13 +35,28 @@ venv (Python 3.10/3.11 — OmniDocBench is not 3.12-compatible). Defaults to
 [CmdletBinding()]
 param(
     [string] $Config = "v16.yaml",
-    [string] $Python = "python"
+    [string] $Python = ""
 )
 $ErrorActionPreference = "Stop"
 
 # Resolve repo root (this script is at <root>/eval-infra/03-scoring/score.ps1).
 # Nested Join-Path so this works on Windows PowerShell 5.1 as well as PS 7+.
 $rootDir = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
+
+# Default to the repo-root .venv (created by 01-omnidocbench/setup.ps1) so a
+# bare `python` that happens to be 3.13 doesn't crash OmniDocBench mid-score.
+# Fall back to "python" only if the venv wasn't provisioned.
+if ([string]::IsNullOrWhiteSpace($Python)) {
+    $venvPython = Join-Path $rootDir ".venv\Scripts\python.exe"
+    if (Test-Path $venvPython) {
+        $Python = $venvPython
+    } else {
+        $Python = "python"
+        Write-Host "WARN: repo-root .venv not found; using bare 'python'." -ForegroundColor Yellow
+        Write-Host "      Run eval-infra\01-omnidocbench\setup.ps1 to create it (OmniDocBench needs Python < 3.12)." -ForegroundColor Yellow
+        Write-Host "      See docs/pitfalls.md#python-version." -ForegroundColor Yellow
+    }
+}
 
 # --- 1. Locate inputs -------------------------------------------------------
 $cfgTemplate = Join-Path $rootDir "eval-infra\01-omnidocbench\configs\$Config"
