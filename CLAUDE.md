@@ -124,6 +124,17 @@ python adapters\paddleocr-vl-1.6\run_adapter.py `
     --img-dir  eval-infra\01-omnidocbench\data\images `
     --out-dir  predictions\paddleocrvl_rocm
 #   → produces predictions\paddleocrvl_rocm\<stem>.md per page
+# Verify Step 3c succeeded:
+#   - predictions\paddleocrvl_rocm\ should contain ~1650 .md files (one per
+#     dataset page; expect ~1651 on the full set). Check with:
+#         (Get-ChildItem predictions\paddleocrvl_rocm\*.md).Count
+#   - Per-page failures are caught and logged to
+#     predictions\paddleocrvl_rocm\_errors.log (a few are fine; the run
+#     continues). If >50% of pages fail, run_adapter.py exits 2.
+#   - Expected runtime: ~seconds per page × 1651 pages (potentially hours on
+#     CPU; faster on hip). The VLM server must stay up the whole time.
+#   - run_adapter.py exits non-zero / few predictions → docs/pitfalls.md#vlm
+#     (server down) or docs/pitfalls.md#layout (model missing).
 ```
 
 Use `-Variant cpu` instead of `-Variant hip` on non-AMD-Radeon hardware.
@@ -156,6 +167,7 @@ verify that failed. Do not improvise a fix.
 |---|---|
 | `git clone` / `huggingface-cli` / download hangs or times out | `docs/pitfalls.md#network` |
 | `wsl --install` hangs, or distro won't start after import | `docs/pitfalls.md#wsl` (reboot first) |
+| `wsl -d Ubuntu2204` fails ("not found") but `wsl -l` shows a distro with a different name | `docs/pitfalls.md#distro-name` (name mismatch) |
 | `AttributeError: ... getargspec` / `distutils` on Python 3.12 | `docs/pitfalls.md#python-version` (use 3.10/3.11) |
 | CDM run exits 0 but `display_formula.CDM.all == 0.0` | `docs/pitfalls.md#cdm-zero` (decision tree) |
 | CDM formula PDF compiles but colors are black | `docs/pitfalls.md#mathcolor` |
@@ -170,6 +182,7 @@ verify that failed. Do not improvise a fix.
 | `UnicodeDecodeError` mid-scoring, or mojibake in JSON/LaTeX | `docs/pitfalls.md#pythonutf8` (`PYTHONUTF8=1`) |
 | `onnxruntime ... model file not found`, no predictions | `docs/pitfalls.md#layout` |
 | VLM server 500 / connection refused / OOM | `docs/pitfalls.md#vlm` |
+| All 4 metrics 0 (incl. Edit_dist, not just CDM) | predictions dir empty/missing/misnamed — check `config.prediction.data_path` matches your `--out-dir` (see Step 3c NOTE). `verify.ps1` "(zero/non-positive - silent run failure)" with Edit_dist=0 is this, not `#cdm-zero`. |
 
 The single most-deceptive failure is **CDM F1 = 0 with no error printed** —
 *everything succeeds* (LaTeX compiles, PDF rasterizes, Python imports) yet the

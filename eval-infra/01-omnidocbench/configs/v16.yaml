@@ -14,7 +14,7 @@
 #   <REPO_ROOT>/predictions/<adapter>/                              (adapter Markdown output)
 end2end_eval:
   metrics:
-    text_block:      { metric: [Edit_dist] }                                # CDM dropped (needs Node/ImageMagick/TeX)
+    text_block:      { metric: [Edit_dist] }                                # CDM dropped (needs ImageMagick 7/TeX Live/Ghostscript)
     display_formula: { metric: [Edit_dist] }
     table:           { metric: [TEDS, Edit_dist], teds_workers: 16 }
     reading_order:   { metric: [Edit_dist] }

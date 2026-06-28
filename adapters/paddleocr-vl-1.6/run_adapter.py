@@ -29,8 +29,10 @@ provisioning, you can run it with no flags.
 from __future__ import annotations
 
 import argparse
+import json
 import os
 import time
+import traceback
 from pathlib import Path
 
 # NOTE: paddleocr_vl_rocm is the proven pipeline package from the
@@ -120,16 +122,58 @@ def process_folder(
                 {"image": img.name, "status": "ok", "seconds": round(time.time() - start, 2)}
             )
         except Exception as exc:  # noqa: BLE001 - record failure, continue (page scored as empty otherwise)
+            # Capture the full traceback so a later post-mortem can distinguish
+            # a 500 from the VLM server (message is enough) from an onnxruntime
+            # shape error or an internal pipeline failure (needs the traceback).
+            tb = traceback.format_exc()
             stats.append(
                 {
                     "image": img.name,
                     "status": f"failed: {exc}",
                     "seconds": round(time.time() - start, 2),
+                    "traceback": tb,
                 }
             )
+            # Append each failure to <out_dir>/_errors.log as it happens so the
+            # causes survive a killed run or a scrolled terminal. Without this
+            # the per-page failures were only held in memory and printed once at
+            # the end via print(summary).
+            try:
+                with open(out_dir / "_errors.log", "a", encoding="utf-8") as fh:
+                    fh.write(f"[{time.strftime('%Y-%m-%dT%H:%M:%S')}] {img.name}: {exc}\n{tb}\n")
+            except OSError:
+                pass  # never let error-logging itself abort the run
+
+    # Persist the full per-page summary to disk (JSON) so it survives a killed
+    # run and is machine-parseable for post-run sanity checks.
+    try:
+        with open(out_dir / "_run_stats.json", "w", encoding="utf-8") as fh:
+            summary = {
+                "count": len(images),
+                "ok": sum(1 for s in stats if s["status"] == "ok"),
+                "stats": stats,
+            }
+            json.dump(summary, fh, ensure_ascii=False, indent=2)
+    except OSError:
+        pass
+
+    ok_count = sum(1 for s in stats if s["status"] == "ok")
+    # Post-loop sanity check: if the majority of pages failed (e.g. the VLM
+    # server is down), surface it loudly rather than letting score.ps1 score
+    # 1650 empty .md files as zero hours later. exit code 2 is distinguishable
+    # from a hard crash (1) so callers/agents can route it to pitfalls.md#vlm.
+    if len(images) > 0 and ok_count < 0.5 * len(images):
+        import sys as _sys
+        print(
+            f"WARNING: {ok_count}/{len(images)} pages succeeded (< 50%). The VLM "
+            f"server is likely down or unreachable -- see docs/pitfalls.md#vlm. "
+            f"Per-page failures logged to {out_dir / '_errors.log'}.",
+            file=_sys.stderr,
+        )
+        _sys.exit(2)
     return {
         "count": len(images),
-        "ok": sum(1 for s in stats if s["status"] == "ok"),
+        "ok": ok_count,
         "stats": stats,
     }
 

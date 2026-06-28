@@ -35,10 +35,13 @@ def run_adapter(img_dir: Path, out_dir: Path, server_url: str = "") -> dict:
 3. Edit `setup.ps1` (or replace it with numbered sub-directories) to provision
    whatever your model needs. Write machine-local paths to a gitignored
    `.env.local`, never into committed code.
-4. Run it against the dataset:
+4. Run it against the dataset **from the repo root** (the same CWD
+   `score.ps1` / `full-verify.ps1` assume):
    ```powershell
-   powershell -ExecutionPolicy Bypass -File setup.ps1
-   python run_adapter.py --img-dir <dataset-images> --out-dir ..\..\predictions\<your-model>
+   powershell -ExecutionPolicy Bypass -File adapters\<your-model>\setup.ps1
+   python adapters\<your-model>\run_adapter.py `
+       --img-dir  eval-infra\01-omnidocbench\data\images `
+       --out-dir  predictions\<your-model>
    ```
 5. Point the scoring module at `predictions/<your-model>/` and run the scorer.
 

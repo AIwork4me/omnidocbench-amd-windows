@@ -18,6 +18,7 @@ relevant entry first.
 
 - [Network](#network) — GitHub / HuggingFace / CTAN / Microsoft Store blocked
 - [WSL install](#wsl) — `wsl --install` hangs or fails
+- [WSL distro wrong name](#distro-name) — `wsl -d Ubuntu2204` fails, but a distro exists under a different name
 - [Python version](#python-version) — OmniDocBench needs Python < 3.12
 - [CDM F1 = 0 (the master decision tree)](#cdm-zero)
 - [\mathcolor renders black](#mathcolor)
@@ -104,6 +105,54 @@ If you write your own WSL detection, do the same.
 **If you skip it.** Nothing in `eval-infra/02-cdm-environment` (the CDM
 environment) or `score-cdm.sh` can run — they all assume a working WSL
 Ubuntu 22.04.
+
+---
+
+<a id="distro-name"></a>
+## #distro-name — `wsl -d Ubuntu2204` fails ("not found"), but a distro exists
+
+**Symptom.** Every `wsl -d Ubuntu2204 ...` command in this repo fails with an
+error like "The Windows Subsystem for Linux instance has not been started" or
+"There is no distribution with the supplied name", yet `wsl --list` shows an
+Ubuntu distro under a **different name** (commonly `Ubuntu`, `Ubuntu-22.04`,
+or `Ubuntu-20.04`).
+
+**Root cause.** Every script, README, and `\\wsl$\` UNC path in this repo
+addresses the WSL distro by the canonical name **`Ubuntu2204`** (no dot, no
+dash). `wsl --install -d Ubuntu-22.04` (the standard install command) creates a
+distro named **`Ubuntu-22.04`** (with a dot and dash) instead — a name that
+does not match. The same happens if you already had an `Ubuntu` distro from an
+earlier `wsl --install` with no `-d` flag. The distro works fine; the name just
+doesn't line up with what the scripts expect.
+
+**Fix.** Pick one:
+
+1. **Rename your existing distro to `Ubuntu2204`** (recommended — keeps your
+   data). Export it to a tarball, unregister the old name, then import under the
+   canonical name:
+
+   ```powershell
+   $old = "Ubuntu-22.04"   # or whatever `wsl --list` shows
+   wsl --export $old "$env:TEMP\ubuntu-rename.tar.gz"
+   wsl --unregister $old
+   New-Item -ItemType Directory -Force -Path C:\WSL\Ubuntu2204 | Out-Null
+   wsl --import Ubuntu2204 C:\WSL\Ubuntu2204 "$env:TEMP\ubuntu-rename.tar.gz" --version 2
+   ```
+
+   `scripts/wsl-ensure.ps1` already does this rename automatically when it
+   detects an `Ubuntu-22.04` without a matching `Ubuntu2204`, so re-running it
+   may be the quickest fix.
+
+2. **Run `scripts/wsl-ensure.ps1` again** — it normalizes the distro name via
+   the export/unregister/import dance above (see the `Rename-WslDistro` function
+   in the script).
+
+**Verify.** `wsl -d Ubuntu2204 -- echo OK` prints `OK`. `wsl --list` shows
+`Ubuntu2204`.
+
+**If you skip it.** Every WSL step (Step 2 CDM environment, Step 4b CDM scoring,
+`full-verify.ps1`'s WSL checks) fails with "distro not found", and the error
+doesn't point at the name mismatch — it looks like WSL itself is broken.
 
 ---
 

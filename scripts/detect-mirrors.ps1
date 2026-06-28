@@ -55,14 +55,28 @@ if ($gh) {
     }
 }
 
-# CTAN (TeX Live)
-$tug = Test-Url "https://tug.org/texlive/"
-if ($tug) {
-    $lines += "CTAN_MIRROR=https://mirror.ctan.org/systems/texlive/tlnet"
+# CTAN (TeX Live) — probe the ACTUAL mirror URLs, not tug.org's homepage.
+# tug.org reachability does NOT imply mirror.ctan.org (the global redirector)
+# is reachable; for the China audience the USTC/TUNA mirrors are typically the
+# fast path, so try them FIRST and only fall back to the global redirector.
+$ctanMirror = $null
+foreach ($mirror in @(
+    "https://mirrors.ustc.edu.cn/CTAN/systems/texlive/tlnet",
+    "https://mirrors.tuna.tsinghua.edu.cn/CTAN/systems/texlive/tlnet",
+    "https://mirror.ctan.org/systems/texlive/tlnet"
+)) {
+    if (Test-Url $mirror) { $ctanMirror = $mirror; break }
+}
+if ($ctanMirror) {
+    $lines += "CTAN_MIRROR=$ctanMirror"
 } else {
-    foreach ($mirror in @("https://mirrors.ustc.edu.cn/CTAN/systems/texlive/tlnet", "https://mirrors.tuna.tsinghua.edu.cn/CTAN/systems/texlive/tlnet")) {
-        if (Test-Url $mirror) { $lines += "CTAN_MIRROR=$mirror"; break }
-    }
+    # All CTAN mirrors unreachable. Mark it explicitly so downstream scripts can
+    # distinguish "never probed" from "probed but unreachable" (a plain missing
+    # key would make setup.sh silently fall back to its hardcoded default, which
+    # is exactly the mirror that just failed — compounding the outage).
+    $lines += "CTAN_MIRROR=# UNREACHABLE (all CTAN mirrors down)"
+    Write-Host "WARN: all CTAN mirrors unreachable; TeX Live install (setup.sh step 2) will fail until a mirror comes back." -ForegroundColor Yellow
+    Write-Host "      Tried: USTC, TUNA, mirror.ctan.org." -ForegroundColor Yellow
 }
 
 # PyPI
@@ -70,7 +84,14 @@ $pypi = Test-Url "https://pypi.org/simple/"
 if ($pypi) {
     $lines += "PYPI_INDEX=https://pypi.org/simple"
 } else {
-    $lines += "PYPI_INDEX=https://pypi.tuna.tsinghua.edu.cn/simple"
+    # Probe Tsinghua; only use it if actually reachable, else mark unreachable.
+    $tsinghua = "https://pypi.tuna.tsinghua.edu.cn/simple"
+    if (Test-Url $tsinghua) {
+        $lines += "PYPI_INDEX=$tsinghua"
+    } else {
+        $lines += "PYPI_INDEX=# UNREACHABLE (pypi.org and Tsinghua both down)"
+        Write-Host "WARN: PyPI unreachable (pypi.org and Tsinghua mirror both down); pip installs will fail." -ForegroundColor Yellow
+    }
 }
 
 # WSL rootfs (Ubuntu base)

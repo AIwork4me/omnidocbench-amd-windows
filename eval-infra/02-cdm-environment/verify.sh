@@ -10,6 +10,15 @@ set -euo pipefail
 export PATH=/usr/local/texlive/2026/bin/x86_64-linux:/usr/local/bin:$PATH
 export MAGICK_CONFIGURE_PATH=/usr/local/etc/ImageMagick-7
 
+# Resolve the OmniDocBench checkout + venv relative to $HOME (not a hardcoded
+# /root/... path) so this works for non-root WSL users too. setup.sh installs
+# into $HOME/OmniDocBench and $HOME/odb-venv; the wsl --import path makes the
+# default user root, but a `wsl --install`-created distro (or a manually-set
+# non-root default user) lands elsewhere under $HOME.
+ODB_HOME="${HOME}"
+ODB_LOCAL="${ODB_HOME}/OmniDocBench"
+ODB_VENV="${ODB_HOME}/odb-venv"
+
 echo "=== Checking tools ==="
 which pdflatex >/dev/null 2>&1 || { echo "FAIL: pdflatex not found"; exit 1; }
 magick --version 2>/dev/null | grep -q "ImageMagick 7" || { echo "FAIL: IM7 not active"; exit 1; }
@@ -31,13 +40,13 @@ TEX
 pdflatex -interaction=nonstopmode -halt-on-error cdm_verify.tex >/dev/null 2>&1 || { echo "FAIL: pdflatex compile"; exit 1; }
 magick -density 100 cdm_verify.pdf cdm_verify.png 2>/dev/null
 [ -f cdm_verify.png ] || { echo "FAIL: magick PDF→PNG"; exit 1; }
-source /root/odb-venv/bin/activate
+source "$ODB_VENV/bin/activate"
 COLORS=$(python3 -c "from PIL import Image; c=Image.open('/tmp/cdm_verify.png').convert('RGB').getcolors(10**6); print(len(c) if c else 0)")
 [ "$COLORS" -gt 2 ] || { echo "FAIL: PNG is grayscale ($COLORS colors) — \\mathcolor fix not working"; exit 1; }
 echo "  PDF→PNG color OK ($COLORS colors)"
 
 echo "=== CDM F1 test ==="
-cd /root/OmniDocBench
+cd "$ODB_LOCAL"
 python3 -c "
 import sys; sys.path.insert(0,'.')
 from src.metrics.cdm_metric import CDM

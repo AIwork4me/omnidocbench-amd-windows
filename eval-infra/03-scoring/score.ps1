@@ -93,6 +93,12 @@ Write-Host "Rendered run config: $runCfg" -ForegroundColor DarkGray
 # both. Forward slashes in the path are safe on Windows and avoid PS quoting
 # headaches.
 $env:PYTHONUTF8 = "1"
+# Hint for the hand-debugging path: if a user runs pdf_validation.py directly
+# (bypassing this script, common during debugging), or from an IDE that doesn't
+# inherit this env var, they'll hit UnicodeDecodeError/'gbk' codec errors with
+# no mention of PYTHONUTF8. Surface the requirement up front.
+Write-Host "PYTHONUTF8=1 set for this run. If you call pdf_validation.py directly," -ForegroundColor DarkGray
+Write-Host "set PYTHONUTF8=1 yourself, or see docs/pitfalls.md#pythonutf8." -ForegroundColor DarkGray
 Push-Location $odbDir
 try {
     Write-Host "Scoring (Edit_dist + TEDS) with $Config ..." -ForegroundColor Cyan
