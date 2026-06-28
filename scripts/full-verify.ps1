@@ -1,3 +1,190 @@
-# full-verify.ps1 — filled in Task 7
-Write-Host "TODO: implement in Task 7"
-exit 1
+<#
+.SYNOPSIS
+Full-chain verification of the OmniDocBench AMD Windows evaluation system.
+
+.DESCRIPTION
+Runs every per-module verify script in dependency order and aggregates the
+results into one pass/fail report. It is the single command an agent (or human)
+runs after the Step 0-4 provisioning in CLAUDE.md to confirm the whole system
+is wired up and producing real scores.
+
+This is a VERIFICATION harness, not an installer. It assumes you have already
+run the setup steps it checks. Each verify it invokes is itself idempotent and
+side-effect-free, so re-running full-verify is always safe.
+
+Order mirrors CLAUDE.md's dependency chain:
+  1. mirrors.env written            (detect-mirrors)
+  2. WSL Ubuntu2204 reachable       (wsl-ensure)
+  3. OmniDocBench code + dataset    (01-omnidocbench)
+  4. CDM environment functional     (02-cdm-environment, in WSL)
+  5. VLM server up                  (paddleocr-vl-1.6/01-vlm-server)
+  6. Predictions present            (adapter output)
+  7. Scores present + non-zero      (03-scoring)
+
+Steps that depend on optional setup (e.g. predictions exist only after the
+adapter ran; CDM scores only after score-cdm.sh) are reported as SKIP rather
+than FAIL when their inputs are absent, so the core infra check still exits 0.
+
+.PARAMETER SkipWsl
+Skip the WSL/CDM checks (use on a machine where only the Windows-native
+Edit_dist + TEDS path is provisioned).
+
+.PARAMETER SkipVlm
+Skip the VLM-server and prediction checks (use when verifying infra without a
+model adapter provisioned yet).
+
+.EXAMPLE
+  powershell -ExecutionPolicy Bypass -File scripts\full-verify.ps1
+  powershell -ExecutionPolicy Bypass -File scripts\full-verify.ps1 -SkipWsl
+
+Exit code 0 = all mandatory checks passed (optional ones either passed or were
+legitimately skipped); 1 = at least one mandatory check failed.
+#>
+[CmdletBinding()]
+param(
+    [switch] $SkipWsl,
+    [switch] $SkipVlm
+)
+$ErrorActionPreference = "Stop"
+
+# Repo root (this script is at <root>/scripts/full-verify.ps1). Nested Split-Path
+# so this runs on Windows PowerShell 5.1 as well as PS 7+.
+$rootDir = Split-Path -Parent $PSScriptRoot
+
+# A check is one row of the report. Status: PASS / FAIL / SKIP.
+$results = New-Object System.Collections.Generic.List[object]
+
+function Add-Result($name, $status, $detail) {
+    $results.Add([pscustomobject]@{ Check = $name; Status = $status; Detail = $detail })
+    $color = @{ PASS = "Green"; FAIL = "Red"; SKIP = "Yellow" }[$status]
+    Write-Host ("  [{0,-4}] {1,-42} {2}" -f $status, $name, $detail) -ForegroundColor $color
+}
+
+function Invoke-Verify($label, $file) {
+    if (-not (Test-Path $file)) {
+        Add-Result $label "SKIP" "verify script missing: $file"
+        return "SKIP"
+    }
+    & powershell -ExecutionPolicy Bypass -File $file *> $null
+    if ($LASTEXITCODE -eq 0) {
+        Add-Result $label "PASS" ""
+        return "PASS"
+    } else {
+        Add-Result $label "FAIL" "exit $LASTEXITCODE — re-run: powershell -File $file"
+        return "FAIL"
+    }
+}
+
+Write-Host "=== full-verify: OmniDocBench AMD Windows system check ===" -ForegroundColor Cyan
+Write-Host ""
+
+# --- 1. mirrors.env ----------------------------------------------------------
+Write-Host "[1/7] network/mirrors" -ForegroundColor Cyan
+$envFile = Join-Path $rootDir "mirrors.env"
+if (Test-Path $envFile) {
+    $keys = (Get-Content $envFile | Where-Object { $_ -match "^[A-Z_]+=" }).Count
+    if ($keys -ge 5) {
+        Add-Result "mirrors.env" "PASS" "$keys sources recorded"
+    } else {
+        Add-Result "mirrors.env" "FAIL" "only $keys sources — re-run scripts/detect-mirrors.ps1"
+    }
+} else {
+    Add-Result "mirrors.env" "FAIL" "missing — run scripts/detect-mirrors.ps1 (pitfalls.md#network)"
+}
+
+# --- 2. WSL ------------------------------------------------------------------
+Write-Host ""
+Write-Host "[2/7] WSL Ubuntu2204" -ForegroundColor Cyan
+if ($SkipWsl) {
+    Add-Result "WSL Ubuntu2204" "SKIP" "-SkipWsl"
+} else {
+    $distros = (wsl --list --quiet 2>$null) | ForEach-Object { ($_ -replace "`0","").Trim() } | Where-Object { $_ }
+    if (($distros -join "`n") -match "Ubuntu2204") {
+        $probe = wsl -d Ubuntu2204 -- echo "WSL_OK" 2>$null
+        if ($probe -match "WSL_OK") {
+            Add-Result "WSL Ubuntu2204" "PASS" "reachable"
+        } else {
+            Add-Result "WSL Ubuntu2204" "FAIL" "imported but not startable — reboot Windows? (pitfalls.md#wsl)"
+        }
+    } else {
+        Add-Result "WSL Ubuntu2204" "FAIL" "not installed — run scripts/wsl-ensure.ps1"
+    }
+}
+
+# --- 3. OmniDocBench code + dataset -----------------------------------------
+Write-Host ""
+Write-Host "[3/7] OmniDocBench code + dataset" -ForegroundColor Cyan
+$odbVerify = Join-Path $rootDir "eval-infra\01-omnidocbench\verify.ps1"
+[void](Invoke-Verify "01-omnidocbench/verify" $odbVerify)
+
+# --- 4. CDM environment (WSL) ------------------------------------------------
+Write-Host ""
+Write-Host "[4/7] CDM environment (WSL)" -ForegroundColor Cyan
+if ($SkipWsl) {
+    Add-Result "02-cdm-environment/verify" "SKIP" "-SkipWsl"
+} else {
+    $cdmVerify = Join-Path $rootDir "eval-infra\02-cdm-environment\verify.sh"
+    # Translate a Windows path C:\...\verify.sh to its WSL form /mnt/c/.../verify.sh.
+    $wslPath = "/mnt/" + $cdmVerify.Substring(0,1).ToLower() + (($cdmVerify.Substring(2)) -replace '\\', '/')
+    $out = wsl -d Ubuntu2204 bash $wslPath 2>&1
+    if ($LASTEXITCODE -eq 0) {
+        Add-Result "02-cdm-environment/verify" "PASS" "CDM pipeline functional"
+    } else {
+        Add-Result "02-cdm-environment/verify" "FAIL" "see pitfalls.md#cdm-zero (decision tree)"
+    }
+}
+
+# --- 5. VLM server -----------------------------------------------------------
+Write-Host ""
+Write-Host "[5/7] VLM server (reference adapter)" -ForegroundColor Cyan
+if ($SkipVlm) {
+    Add-Result "01-vlm-server/verify" "SKIP" "-SkipVlm"
+} else {
+    $vlmVerify = Join-Path $rootDir "adapters\paddleocr-vl-1.6\01-vlm-server\verify.ps1"
+    [void](Invoke-Verify "01-vlm-server/verify" $vlmVerify)
+}
+
+# --- 6. Predictions present --------------------------------------------------
+Write-Host ""
+Write-Host "[6/7] adapter predictions" -ForegroundColor Cyan
+if ($SkipVlm) {
+    Add-Result "predictions/paddleocr-vl-1.6" "SKIP" "-SkipVlm"
+} else {
+    $predDir = Join-Path $rootDir "predictions\paddleocr-vl-1.6"
+    $count = 0
+    if (Test-Path $predDir) {
+        $count = (Get-ChildItem $predDir -Filter *.md -File -ErrorAction SilentlyContinue).Count
+    }
+    if ($count -ge 1000) {
+        Add-Result "predictions/paddleocr-vl-1.6" "PASS" "$count .md files"
+    } elseif ($count -gt 0) {
+        Add-Result "predictions/paddleocr-vl-1.6" "FAIL" "only $count .md (expected ~1651) — re-run run_adapter.py"
+    } else {
+        Add-Result "predictions/paddleocr-vl-1.6" "FAIL" "none — run the adapter (adapters/paddleocr-vl-1.6/run_adapter.py)"
+    }
+}
+
+# --- 7. Scores present + non-zero -------------------------------------------
+Write-Host ""
+Write-Host "[7/7] scoring results" -ForegroundColor Cyan
+$scoreVerify = Join-Path $rootDir "eval-infra\03-scoring\verify.ps1"
+[void](Invoke-Verify "03-scoring/verify" $scoreVerify)
+
+# --- Summary -----------------------------------------------------------------
+Write-Host ""
+Write-Host "=== Summary ===" -ForegroundColor Cyan
+$results | Format-Table -AutoSize | Out-Host
+
+$failed = ($results | Where-Object { $_.Status -eq "FAIL" }).Count
+$passed = ($results | Where-Object { $_.Status -eq "PASS" }).Count
+$skipped = ($results | Where-Object { $_.Status -eq "SKIP" }).Count
+Write-Host ("{0} passed, {1} failed, {2} skipped" -f $passed, $failed, $skipped)
+
+if ($failed -gt 0) {
+    Write-Host ""
+    Write-Host "FAILED checks — fix per the Detail column / docs/pitfalls.md, then re-run full-verify.ps1." -ForegroundColor Red
+    exit 1
+}
+Write-Host ""
+Write-Host "ALL CHECKS PASSED (skips were optional). The evaluation system is operational." -ForegroundColor Green
+exit 0
