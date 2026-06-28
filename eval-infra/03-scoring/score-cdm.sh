@@ -9,8 +9,8 @@ set -euo pipefail
 # That environment is provisioned by eval-infra/02-cdm-environment (Task 3) and
 # lives in WSL. So we run the CDM config here.
 #
-# Run from PowerShell:
-#   wsl -d Ubuntu2204 bash /mnt/c/Users/rocm/Desktop/omnidocbench-amd-windows/eval-infra/03-scoring/score-cdm.sh
+# Run from PowerShell (replace /mnt/c/<path-to-repo> with your clone location):
+#   wsl -d Ubuntu2204 bash /mnt/c/<path-to-repo>/eval-infra/03-scoring/score-cdm.sh
 #
 # Produces (in /root/OmniDocBench/result/):
 #   <save_name>_metric_result.json     — now display_formula has a CDM score too
@@ -56,7 +56,7 @@ echo "Rendered run config: $RUN_CFG"
 
 # --- Clean Linux PATH (no Windows interop leakage) -------------------------
 # This exact PATH combo is the one that produced our verified CDM scores
-# (see /mnt/c/Users/rocm/Desktop/cdm_run_full.sh). Order matters:
+# (see the cdm_run_full.sh debug script in the project history). Order matters:
 #   TeX Live 2026 bin first  — \mathcolor + complete CJK
 #   /usr/local/bin           — magick (IM7, installed system-wide in step 5)
 #   standard Linux paths     — gs, coreutils

@@ -2,8 +2,8 @@
 set -euo pipefail
 # End-to-end CDM verification: compile CJK formula → PDF → color PNG → CDM F1 > 0
 #
-# Run from PowerShell:
-#     wsl -d Ubuntu2204 bash /mnt/c/Users/rocm/Desktop/omnidocbench-amd-windows/eval-infra/02-cdm-environment/verify.sh
+# Run from PowerShell (replace /mnt/c/<path-to-repo> with your clone location):
+#     wsl -d Ubuntu2204 bash /mnt/c/<path-to-repo>/eval-infra/02-cdm-environment/verify.sh
 #
 # Exits 0 only if the full CDM pipeline is functional. Any failure prints FAIL
 # with the offending stage so you know which step of setup.sh to re-run.
