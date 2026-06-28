@@ -1,12 +1,35 @@
 # OmniDocBench AMD Windows
 
-**From-zero setup of the [OmniDocBench](https://github.com/opendatalab/OmniDocBench) v1.6 full evaluation system on Windows + AMD Radeon GPUs.** PaddleOCR-VL-1.6 ships as the validated reference adapter; once the infrastructure is up, evaluating *any* document-parsing model is one adapter away.
+[![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
+[![Platform: AMD ROCm](https://img.shields.io/badge/Platform-AMD_ROCm_HIP-red.svg)](https://github.com/issues?q=omnidocbench+amd)
+[![OmniDocBench v1.6](https://img.shields.io/badge/OmniDocBench-v1.6-00C853.svg)](https://github.com/opendatalab/OmniDocBench)
+[![Python 3.10+](https://img.shields.io/badge/Python-3.10+-3776AB.svg)](https://www.python.org/downloads/)
+[![GitHub stars](https://img.shields.io/github/stars/AIwork4me/omnidocbench-amd-windows)](https://github.com/AIwork4me/omnidocbench-amd-windows)
 
-- Target audience: **AMD Radeon / Windows** users (ROCm / HIP via llama.cpp).
-- Also runs on NVIDIA / Intel / CPU (use `-Variant cpu`); only the VLM-serving half changes.
-- Builds the **full 1651-page** benchmark with all four standard metrics: text Edit-distance, reading-order Edit-distance, table TEDS, formula CDM.
+> **Setting up OmniDocBench CDM took us 20+ debugging sessions. This repo distills them into one command.**
 
-[中文文档](README.zh-CN.md) · [Architecture](docs/architecture.md) · [Pitfalls knowledge base](docs/pitfalls.md)
+One-command setup of [OmniDocBench](https://github.com/opendatalab/OmniDocBench) v1.6 full evaluation
+(1651 pages) on **Windows + AMD Radeon GPUs** (ROCm/HIP). All four standard metrics: text Edit-distance,
+reading-order Edit-distance, table TEDS, **formula CDM**. Model-agnostic — swap any document parsing
+model via [adapters](adapters/). PaddleOCR-VL-1.6 ships as the validated reference.
+
+| Metric | PaddleOCR-VL-1.6 (ours) | Official | Gap |
+|---|---:|---:|---:|
+| Text Edit-dist ↓ | **0.035** (96.5%) | 0.033 | 0.17pt |
+| Reading-order ↓ | **0.129** (87.1%) | 0.127 | 0.19pt |
+| Table TEDS ↑ | **0.940** | 0.948 | 0.76pt |
+| Formula CDM ↑ | **0.944** | 0.975 | 3.1pt |
+
+### Quick Start
+
+```bash
+git clone https://github.com/AIwork4me/omnidocbench-amd-windows
+cd omnidocbench-amd-windows
+# Point Claude Code or OpenCode at this repo → say "按 CLAUDE.md 搭建"
+# Or follow the manual steps in the sections below.
+```
+
+[中文文档](README.zh-CN.md) · [Architecture](docs/architecture.md) · [Pitfalls KB](docs/pitfalls.md) · [CLAUDE.md](CLAUDE.md)
 
 ---
 
