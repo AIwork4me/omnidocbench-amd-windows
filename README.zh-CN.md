@@ -1,10 +1,31 @@
-# OmniDocBench AMD Windows（中文）
+# OmniDocBench AMD Windows
 
-**在 Windows + AMD Radeon GPU 上从零搭建 [OmniDocBench](https://github.com/opendatalab/OmniDocBench) v1.6 全量评测系统。** 以 PaddleOCR-VL-1.6 作为已验证的参考适配器；基础设施搭好后，评测任何文档解析模型只需写一个适配器。
+[![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
+[![Platform: AMD ROCm](https://img.shields.io/badge/Platform-AMD_ROCm_HIP-red.svg)](https://github.com/issues?q=omnidocbench+amd)
+[![OmniDocBench v1.6](https://img.shields.io/badge/OmniDocBench-v1.6-00C853.svg)](https://github.com/opendatalab/OmniDocBench)
+[![GitHub stars](https://img.shields.io/github/stars/AIwork4me/omnidocbench-amd-windows)](https://github.com/AIwork4me/omnidocbench-amd-windows)
 
-- 目标用户：**AMD Radeon / Windows** 用户（通过 llama.cpp 使用 ROCm / HIP）。
-- 同样支持 NVIDIA / Intel / CPU（用 `-Variant cpu`）；只有 VLM 服务那一半会变。
-- 构建**全量 1651 页**基准，覆盖四项标准指标：文本编辑距离、阅读顺序编辑距离、表格 TEDS、公式 CDM。
+> **我们踩了 20+ 个坑才跑通 OmniDocBench CDM。这个 repo 把它们压缩成一条命令。**
+
+在 **Windows + AMD Radeon GPU** 上从零搭建 [OmniDocBench](https://github.com/opendatalab/OmniDocBench) v1.6 全量评测系统
+（1651 页，四项标准指标：文本 / 阅读顺序 / 表格 TEDS / **公式 CDM**）。模型无关——换任何文档解析模型只需写一个
+[适配器](adapters/)。以 PaddleOCR-VL-1.6 为已验证参考。
+
+| 指标 | PaddleOCR-VL-1.6（我们） | 官方 | 差距 |
+|---|---:|---:|---:|
+| 文本 Edit-dist ↓ | **0.035**（96.5%） | 0.033 | 0.17pt |
+| 阅读顺序 ↓ | **0.129**（87.1%） | 0.127 | 0.19pt |
+| 表格 TEDS ↑ | **0.940** | 0.948 | 0.76pt |
+| 公式 CDM ↑ | **0.944** | 0.975 | 3.1pt |
+
+### 快速开始
+
+```bash
+git clone https://github.com/AIwork4me/omnidocbench-amd-windows
+cd omnidocbench-amd-windows
+# 用 Claude Code 或 OpenCode 打开本 repo → 说"按 CLAUDE.md 搭建"
+# 或按下方步骤手动执行
+```
 
 [English](README.md) · [架构图](docs/architecture.md) · [踩坑知识库](docs/pitfalls.md)
 
