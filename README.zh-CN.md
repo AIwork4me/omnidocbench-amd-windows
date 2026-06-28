@@ -127,7 +127,7 @@ def run_adapter(img_dir: Path, out_dir: Path, server_url: str = ""):
 | 表格 TEDS | ↑ | **0.940** | 0.948 | 0.76 pt |
 | 公式 CDM | ↑ | **0.944** | 0.975 | 3.1 pt |
 
-CDM 的差距（3.1 pt）是 GGUF 量化 + 在 AMD Windows 上让颜色 bbox 匹配器能工作所必须的 `\mathcolor` 渲染覆写带来的已知代价；见 [`docs/pitfalls.md#mathcolor`](docs/pitfalls.md#mathcolor)。
+CDM 的差距（3.1 pt）来自轻量 ONNX+llama.cpp 管线 vs 官方 Paddle 原生管线的差异（模型本身是 BF16 未量化），加上 `\mathcolor` 渲染覆写；见 [`docs/pitfalls.md#mathcolor`](docs/pitfalls.md#mathcolor)。
 
 一次全新运行要达到"复现我们的结果"，需要满足的门槛：文本编辑距离 < 0.10 · 阅读顺序 < 0.20 · TEDS > 0.85 · CDM > 0.85。
 

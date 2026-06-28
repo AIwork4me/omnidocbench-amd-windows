@@ -145,9 +145,10 @@ these numbers are reproducible across runs and machines.
 | Table TEDS | ↑ | **0.940** | 0.948 | 0.76 pt |
 | Formula CDM | ↑ | **0.944** | 0.975 | 3.1 pt |
 
-The CDM gap (3.1 pt) is the known cost of the GGUF quantization + the
-`\mathcolor` rendering override required for the color-bbox matcher to work at
-all on AMD Windows; see [`docs/pitfalls.md#mathcolor`](docs/pitfalls.md#mathcolor).
+The CDM gap (3.1 pt) reflects the cost of the lightweight ONNX+llama.cpp
+pipeline vs the official Paddle-native path (the model itself is BF16
+unquantized) plus the `\mathcolor` rendering override; see
+[`docs/pitfalls.md#mathcolor`](docs/pitfalls.md#mathcolor).
 
 These are the success thresholds a fresh run must clear to count as
 reproducing our results: Text Edit-dist < 0.10 · Reading-order < 0.20 ·
