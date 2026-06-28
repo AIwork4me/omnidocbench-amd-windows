@@ -6,7 +6,7 @@ labels: bug
 ---
 
 ## Which phase failed?
-- [ ] 00-prereqs (WSL/Python)
+- [ ] Step 0 (scripts/detect-mirrors.ps1 + scripts/wsl-ensure.ps1)
 - [ ] 01-omnidocbench (code/dataset)
 - [ ] 02-cdm-environment
 - [ ] 03-scoring

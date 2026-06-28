@@ -70,19 +70,55 @@ if (-not (Test-Path $pdfValidation)) {
     throw "OmniDocBench code missing ($pdfValidation).`nRun eval-infra\01-omnidocbench\setup.ps1 first."
 }
 
+# --- 1b. Auto-derive the hard-subset manifest when a hard config is selected --
+# OmniDocBench_hard296.json is a derivative of OmniDocBench.json (filter for
+# subset in {equation_hard, layout_hard, table_hard}). It is NOT in the dataset
+# download. Rather than leave it as a manual TODO, we materialize it here on
+# first use so `score.ps1 -Config v16-hard.yaml` is self-contained. Idempotent:
+# skipped if the file already exists.
+$dataDir   = Join-Path $rootDir "eval-infra\01-omnidocbench\data"
+$fullMan   = Join-Path $dataDir "OmniDocBench.json"
+$hardMan   = Join-Path $dataDir "OmniDocBench_hard296.json"
+if ($Config -match "hard" -and (Test-Path $fullMan) -and -not (Test-Path $hardMan)) {
+    Write-Host "Deriving hard-subset manifest from OmniDocBench.json ..." -ForegroundColor DarkGray
+    try {
+        $manifest = Get-Content -Raw -LiteralPath $fullMan | ConvertFrom-Json
+        # OmniDocBench.json is a list of page objects each with a "subset" field.
+        # Keep only the hard-subset pages.
+        $hardSets = @("equation_hard", "layout_hard", "table_hard")
+        $hardPages = @($manifest | Where-Object { $hardSets -contains $_.subset })
+        if ($hardPages.Count -eq 0) {
+            Write-Host "WARN: 0 hard pages found in manifest (expected ~296)." -ForegroundColor Yellow
+            Write-Host "      The upstream manifest schema may have changed; check the 'subset' field." -ForegroundColor Yellow
+        } else {
+            $hardPages | ConvertTo-Json -Depth 10 | Set-Content -LiteralPath $hardMan -Encoding UTF8
+            Write-Host "Wrote $hardMan ($($hardPages.Count) hard pages)." -ForegroundColor Green
+        }
+    } catch {
+        Write-Host "WARN: could not auto-derive $hardMan : $($_.Exception.Message)" -ForegroundColor Yellow
+        Write-Host "      Create it manually by filtering OmniDocBench.json for subset in {equation_hard, layout_hard, table_hard}." -ForegroundColor Yellow
+    }
+}
+
 # --- 2. Materialize a run config from the template --------------------------
-# Replace the literal placeholder <REPO_ROOT> with the absolute Windows path so
-# the GT manifest, predictions dir, and image paths all resolve. We write the
-# rendered config into the OmniDocBench checkout (next to pdf_validation.py) so
-# relative ./result/ outputs land there too. Gitignored.
+# Replace the literal placeholder <REPO_ROOT> with the absolute path so the GT
+# manifest, predictions dir, and image paths all resolve. We write the rendered
+# config into the OmniDocBench checkout (next to pdf_validation.py) so relative
+# ./result/ outputs land there too. Gitignored.
+#
+# We normalize the path to FORWARD SLASHES. Both YAML and Python accept '/' on
+# Windows (os.path / pathlib handle it), and this matches the form score-cdm.sh
+# already produces (it expands <REPO_ROOT> to a /mnt/c/... path). Keeping the
+# two scorers' rendered YAML path-style identical means a future cross-boundary
+# config consumer won't break on a backslash/forward-slash mismatch.
 #
 # NB: -replace's REPLACEMENT string is .NET-regex semantics, where backslash is
-# literal (no escaping needed) and '$' is special. So we must NOT double the
-# backslashes in $rootDir -- doing so writes C:\\Users\\... into the YAML. We
-# pass the path through as-is. (If $rootDir ever contained a '$', we would need
-# to escape it as $$, but Windows paths do not.)
+# literal (no escaping needed) and '$' is special. We convert $rootDir to
+# forward-slash form BEFORE the replace so the YAML contains C:/Users/... .
+# (If $rootDir ever contained a '$', we would need to escape it as $$.)
+$rootPosix = $rootDir -replace '\\', '/'
 $template = Get-Content -Raw -LiteralPath $cfgTemplate
-$rendered = $template -replace [regex]::Escape("<REPO_ROOT>"), $rootDir
+$rendered = $template -replace [regex]::Escape("<REPO_ROOT>"), $rootPosix
 $runCfg = Join-Path $odbDir "run_$([System.IO.Path]::GetFileNameWithoutExtension($Config)).yaml"
 Set-Content -LiteralPath $runCfg -Value $rendered -Encoding UTF8
 Write-Host "Rendered run config: $runCfg" -ForegroundColor DarkGray

@@ -78,6 +78,13 @@ export PYTHONUTF8=1
 # --- Run pdf_validation.py with the OmniDocBench venv ----------------------
 cd "$ODB_LOCAL"
 echo "Scoring (Edit_dist + TEDS + CDM) with $CONFIG ..."
+# CDM is the long pole: it compiles each formula's LaTeX before matching, so
+# the full 1651-page set takes ~20-30 min (fewer pages = proportionally less).
+# Surface the ETA + core count up front so an agent/human watching the terminal
+# doesn't read the pre-progress-bar silence as a hang.
+NPROC=$(nproc 2>/dev/null || echo "?")
+echo "CDM evaluation running on ${NPROC} cores. This takes ~20-30 min for the full"
+echo "1651-page set (less for the hard subset); per-formula progress follows."
 "$ODB_VENV/bin/python" pdf_validation.py --config "$RUN_CFG" 2>&1
 
 echo ""

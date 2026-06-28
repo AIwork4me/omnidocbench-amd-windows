@@ -63,7 +63,7 @@ absent it falls back to GitHub + ModelScope with a warning.
 | Eval code | `OmniDocBench/pdf_validation.py` | present |
 | GT manifest | `data/OmniDocBench.json` | present |
 | Page images | `data/images/*.png` | ~1651 files |
-| Hard manifest | `data/OmniDocBench_hard296.json` | **derivative** (Task 5); absence is a WARNING, not a failure |
+| Hard manifest | `data/OmniDocBench_hard296.json` | **derivative** (auto-derived by `score.ps1 -Config v16-hard.yaml`); absence is a WARNING, not a failure |
 
 `verify.ps1` exits 0 when code + GT manifest + ≥1000 images are present.
 
@@ -76,9 +76,10 @@ absent it falls back to GitHub + ModelScope with a warning.
 | `v16-cdm.yaml` | Edit_dist + TEDS **+ CDM** | full (1651) | `paddleocrvl_rocm_cdm` | needs CDM env (Task 3) |
 
 The hard-subset manifest (`OmniDocBench_hard296.json`) is **not** part of the
-dataset download; Task 5 filters it from the full manifest. The `prediction`
-paths point under `<REPO_ROOT>/predictions/<adapter>/`, which each adapter
-(Task 4) populates before scoring.
+dataset download; `score.ps1 -Config v16-hard.yaml` auto-derives it from the
+full manifest (filtering for `subset in {equation_hard, layout_hard, table_hard}`)
+on first use. The `prediction` paths point under
+`<REPO_ROOT>/predictions/<adapter>/`, which each adapter populates before scoring.
 
 ## Notes
 

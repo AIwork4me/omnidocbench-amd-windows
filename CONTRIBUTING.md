@@ -28,7 +28,7 @@ The only contract: **input** is a directory of page images (jpg/png), **output**
 ### Bug Reports
 
 Include:
-- Which phase failed (00-prereqs through 03-scoring)
+- Which phase failed (Step 0 = scripts/detect-mirrors.ps1 + scripts/wsl-ensure.ps1, then 01-omnidocbench through 03-scoring)
 - The exact error message
 - Output of `scripts/detect-mirrors.ps1` (network environment)
 - WSL or Windows? (CDM runs in WSL)

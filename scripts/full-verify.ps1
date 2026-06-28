@@ -187,10 +187,29 @@ if ($SkipVlm) {
         # .Count is correct.
         $count = @(Get-ChildItem $predDir -Filter *.md -File -ErrorAction SilentlyContinue).Count
     }
-    if ($count -ge 1000) {
-        Add-Result "predictions/paddleocrvl_rocm" "PASS" "$count .md files"
+    # Derive the expected count from the actual dataset: count page images in
+    # eval-infra\01-omnidocbench\data\images\ and require the prediction count
+    # to be >= 95% of that (tolerance for a few failed pages). This replaces a
+    # hardcoded >= 1000 magic number that gave a false FAIL on the 296-page
+    # hard subset and a false PASS on a 1001/1651 partial full-set run.
+    $imgDir = Join-Path $rootDir "eval-infra\01-omnidocbench\data\images"
+    $expected = 0
+    if (Test-Path $imgDir) {
+        $expected = @(Get-ChildItem $imgDir -Include *.png,*.jpg,*.jpeg,*.bmp,*.tif,*.tiff -File -Recurse -ErrorAction SilentlyContinue).Count
+    }
+    if ($expected -eq 0) {
+        # Dataset images not present (e.g. running infra-only verification).
+        # Fall back to a loose non-zero check so we don't spuriously FAIL when
+        # there is simply no dataset to count against.
+        $expected = $count
+    }
+    # Tolerance: require >= 95% of the image count (allows a handful of failed
+    # pages without flagging a complete-enough run). At least 1 required.
+    $threshold = [int][Math]::Max(1, [Math]::Floor(0.95 * $expected))
+    if ($count -ge $threshold) {
+        Add-Result "predictions/paddleocrvl_rocm" "PASS" "$count .md files (expected ~$expected)"
     } elseif ($count -gt 0) {
-        Add-Result "predictions/paddleocrvl_rocm" "FAIL" "only $count .md (expected ~1651) - re-run run_adapter.py"
+        Add-Result "predictions/paddleocrvl_rocm" "FAIL" "only $count .md (expected ~$expected, threshold $threshold) - re-run run_adapter.py"
     } else {
         Add-Result "predictions/paddleocrvl_rocm" "FAIL" "none - run the adapter (adapters/paddleocr-vl-1.6/run_adapter.py)"
     }

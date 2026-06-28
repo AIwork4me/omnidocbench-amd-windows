@@ -6,9 +6,12 @@
 # (paddleocrvl_rocm_hard_quick_match) does NOT clobber the full-set run.
 #
 # NOTE: OmniDocBench_hard296.json is a DERIVATIVE file, not part of the
-# modelscope/HF dataset download. Task 5 (scoring) filters it out of the full
-# OmniDocBench.json. If it is absent, verify.ps1 emits a WARNING; run the filter
-# step (Task 5) before scoring with this config.
+# modelscope/HF dataset download. Generate it by filtering the full
+# OmniDocBench.json for subset in {equation_hard, layout_hard, table_hard}.
+# eval-infra/03-scoring/score.ps1 handles this automatically when this config is
+# selected (it auto-derives the hard manifest from OmniDocBench.json on first
+# use). If it is still absent, verify.ps1 emits a WARNING; re-run score.ps1
+# -Config v16-hard.yaml to materialize it.
 #
 # This is a TEMPLATE: <REPO_ROOT> is replaced with the absolute repo root at runtime.
 end2end_eval:

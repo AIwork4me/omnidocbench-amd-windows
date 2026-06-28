@@ -155,6 +155,12 @@ if [ ! -f "$ODB_LOCAL/pdf_validation.py" ]; then
     rm -rf "$ODB_LOCAL/.git"
 fi
 # Apply the \mathcolor fix (root cause: \mathcolor renders black in TL2026 → CDM F1=0)
+# NOTE: this sed patches OmniDocBench's latex2bbox_color.py. It keys on the
+# literal string `\usepackage{xcolor}`; if upstream changes the template format
+# (e.g. `\usepackage[svgnames]{xcolor}`, adds a comment, or moves to a different
+# package), the `sed` silently no-ops and the `grep -q DeclareDocumentCommand`
+# guard below then fails loudly. If that happens, inspect $FIXFILE around the
+# `\usepackage{xcolor}` line and adjust the match. See docs/pitfalls.md#mathcolor.
 FIXFILE="$ODB_LOCAL/src/metrics/cdm/modules/latex2bbox_color.py"
 if ! grep -q "DeclareDocumentCommand" "$FIXFILE" 2>/dev/null; then
     sed -i 's/\\usepackage{xcolor}/\\usepackage{xcolor}\n\\DeclareDocumentCommand{\\mathcolor}{O{} m m}{\\begingroup\\color[#1]{#2}#3\\endgroup}/g' "$FIXFILE"

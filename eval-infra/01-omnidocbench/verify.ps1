@@ -62,7 +62,8 @@ if ($imgCount -lt 1000) {
 $hardManifest = Join-Path $dataDir "OmniDocBench_hard296.json"
 if (-not (Test-Path $hardManifest)) {
     Write-Host "WARN: hard-subset manifest missing ($hardManifest)." -ForegroundColor Yellow
-    Write-Host "      Not required for the full run; v16-hard.yaml needs it (Task 5 filters it)." -ForegroundColor DarkGray
+    Write-Host "      Not required for the full run; v16-hard.yaml needs it." -ForegroundColor DarkGray
+    Write-Host "      It is auto-derived by score.ps1 -Config v16-hard.yaml on first use." -ForegroundColor DarkGray
 } else {
     Write-Host "OK: hard-subset manifest present ($hardManifest)" -ForegroundColor Green
 }

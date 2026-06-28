@@ -20,6 +20,25 @@ model via [adapters](adapters/). PaddleOCR-VL-1.6 ships as the validated referen
 | Table TEDS ↑ | **0.940** | 0.948 | 0.76pt |
 | Formula CDM ↑ | **0.944** | 0.975 | 3.1pt |
 
+## System Requirements
+
+| Component | Minimum | Recommended |
+|---|---|---|
+| OS | Windows 11 (WSL2) | Same |
+| GPU | AMD Radeon with ROCm/HIP support | Radeon 8060S / RX 7900 XT+ |
+| GPU VRAM | 2 GB (layout ONNX) + VLM model size (~1.7 GB GGUF + ctx/mmproj) | 8 GB+ |
+| RAM | 16 GB | 32 GB+ |
+| Disk | ~50 GB (dataset ~3 GB + GGUF 1.7 GB + TeX Live ~5 GB + IM7 + WSL rootfs) | 100 GB SSD |
+| CPU cores | 4 (TEDS/CDM workers scale with cores) | 8+ |
+| WSL | Ubuntu 22.04 (rootfs import or Store) | Same |
+| Python | 3.10 or 3.11 (**not** 3.12/3.13 — OmniDocBench breaks) | 3.11 |
+| PowerShell | Windows PowerShell 5.1 (built in) or PowerShell 7+ | Same |
+
+Wall-clock estimates for the full 1651-page run: Step 1 (dataset download) ~15-20 min
+on China networks; Step 2 (CDM environment) ~30 min (TeX Live is the bulk);
+Step 3 (adapter inference) depends on GPU (CPU ~hours, Radeon HIP ~tens of minutes);
+Step 4 (scoring) ~5 min (Edit_dist+TEDS) + ~20-30 min (CDM, per-formula LaTeX).
+
 ### Quick Start
 
 Clone, then run the four setup phases. Each `setup.*` is idempotent; run the

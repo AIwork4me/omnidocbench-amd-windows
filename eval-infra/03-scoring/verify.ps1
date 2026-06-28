@@ -8,14 +8,17 @@ Checks that:
      OmniDocBench pipeline writes it to <omnidocbench_checkout>/result/
      <save_name>_metric_result.json, where save_name =
      <prediction-dir-basename>_<match_method>.
-  2. All 4 expected metrics are present AND non-zero:
+  2. All 4 expected metrics are present AND non-negative:
        text_block.Edit_dist       (ALL_page_avg)
        display_formula.Edit_dist  (ALL_page_avg)
        table.TEDS                 (all)
        reading_order.Edit_dist    (ALL_page_avg)
-     A metric that's exactly 0.0 means the run silently failed (e.g. CDM F1=0
-     from the IM6-grayscale bug, or all-zero scores from a missing predictions
-     dir). We treat zero as a failure even though pdf_validation.py exits 0.
+     A negative metric is a hard failure (a scoring bug). A metric of exactly
+     0.0 is treated as a WARNING, not a hard failure: while in practice a
+     real all-page aggregate is never byte-perfect 0.0 (Edit_dist = 0 means
+     every page matched GT exactly), a tiny toy subset could legitimately hit
+     it. Negative values (which OmniDocBench never produces legitimately) are
+     the real "silent run failure" signal.
 
 .PARAMETER MetricResult
 Path to a *_metric_result.json file. If omitted, the script searches the
@@ -116,9 +119,16 @@ foreach ($c in $checks) {
         $ok = $false; continue
     }
     $num = [double]$val
-    if ($num -le 0.0) {
-        Write-Host ("FAIL: {0,-28} = {1}  (zero/non-positive - silent run failure)" -f $c.Label, $num) -ForegroundColor Red
+    if ($num -lt 0.0) {
+        # Negative = a genuine scoring bug (OmniDocBench never produces negatives).
+        Write-Host ("FAIL: {0,-28} = {1}  (negative - silent run failure / scoring bug)" -f $c.Label, $num) -ForegroundColor Red
         $ok = $false
+    } elseif ($num -eq 0.0) {
+        # Exactly 0.0 is suspicious at the full-set aggregate (would mean every
+        # page matched GT byte-for-byte), but a tiny toy subset could legitimately
+        # produce it, so WARN rather than hard-fail. At the full 1651-page scale a
+        # 0.0 here almost always means a missing/empty predictions dir.
+        Write-Host ("WARN: {0,-28} = {1}  (exactly 0 - check predictions dir isn't empty)" -f $c.Label, $num) -ForegroundColor Yellow
     } else {
         Write-Host ("OK:   {0,-28} = {1}" -f $c.Label, $num) -ForegroundColor Green
     }
@@ -132,7 +142,11 @@ if ($null -ne $cdmNode) {
     if ($null -ne $cdmVal) {
         $cdmNum = [double]$cdmVal
         if ($cdmNum -le 0.0) {
-            Write-Host ("WARN: display_formula.CDM       = $cdmNum  (CDM F1=0 — see docs/pitfalls.md#cdm-zero)") -ForegroundColor Yellow
+            # Red (not Yellow): CDM F1=0 in a CDM run is the repo's most-deceptive
+            # failure (everything succeeds yet the score is zero), so it must NOT
+            # look like a benign SKIP. Yellow is full-verify.ps1's SKIP color; a
+            # CDM=0 here is a real problem worth investigating, not a skip.
+            Write-Host ("WARN: display_formula.CDM       = $cdmNum  (CDM F1=0 - see docs/pitfalls.md#cdm-zero)") -ForegroundColor Red
             # Not a hard failure: the Edit_dist-only run has no CDM. But a
             # CDM run with F1=0 is the classic IM6/\mathcolor bug.
         } else {

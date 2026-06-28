@@ -19,6 +19,22 @@
 | 表格 TEDS ↑ | **0.940** | 0.948 | 0.76pt |
 | 公式 CDM ↑ | **0.944** | 0.975 | 3.1pt |
 
+## 系统需求
+
+| 组件 | 最低 | 推荐 |
+|---|---|---|
+| 操作系统 | Windows 11（WSL2） | 同左 |
+| GPU | 支持 ROCm/HIP 的 AMD Radeon | Radeon 8060S / RX 7900 XT+ |
+| GPU 显存 | 2 GB（版面 ONNX）+ VLM 模型体积（~1.7 GB GGUF + ctx/mmproj） | 8 GB+ |
+| 内存 | 16 GB | 32 GB+ |
+| 磁盘 | ~50 GB（数据集 ~3 GB + GGUF 1.7 GB + TeX Live ~5 GB + IM7 + WSL rootfs） | 100 GB SSD |
+| CPU 核数 | 4（TEDS/CDM 的 worker 数随核数扩展） | 8+ |
+| WSL | Ubuntu 22.04（rootfs 导入或商店安装） | 同左 |
+| Python | 3.10 或 3.11（**不可** 3.12/3.13——OmniDocBench 会报错） | 3.11 |
+| PowerShell | Windows PowerShell 5.1（自带）或 PowerShell 7+ | 同左 |
+
+全量 1651 页运行的时间估算：步骤 1（数据集下载）国内网络约 15-20 分钟；步骤 2（CDM 环境）约 30 分钟（TeX Live 是大头）；步骤 3（适配器推理）取决于 GPU（CPU 数小时，Radeon HIP 数十分钟）；步骤 4（评分）约 5 分钟（Edit_dist+TEDS）+ 20-30 分钟（CDM，每条公式都要跑 LaTeX）。
+
 ### 快速开始
 
 克隆，然后跑四个搭建阶段。每个 `setup.*` 都是幂等的；之后跑对应的 `verify.*`。**所有命令都假定在 repo 根目录执行。**
