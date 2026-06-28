@@ -44,7 +44,9 @@ $imgDir   = Join-Path $dataDir "images"
 $imgCount = 0
 if (Test-Path $imgDir) {
     # Count any image file (dataset is PNG, but accept jpg/jpeg too for robustness).
-    $imgCount = (Get-ChildItem $imgDir -File -ErrorAction SilentlyContinue | Where-Object {
+    # @() forces array context: on PS 5.1 a single-match Get-ChildItem pipeline
+    # unwraps to a scalar whose .Count is empty (reads as 0). @() fixes that.
+    $imgCount = @(Get-ChildItem $imgDir -File -ErrorAction SilentlyContinue | Where-Object {
         $_.Extension -in @(".png", ".jpg", ".jpeg")
     }).Count
 }

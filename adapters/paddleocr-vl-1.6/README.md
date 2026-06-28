@@ -31,7 +31,7 @@ It exists so that:
                           |  Markdown per region
                           v
                    run_adapter.py stitches
-                   per-page <stem>.md  -->  predictions/paddleocr-vl-1.6/
+                   per-page <stem>.md  -->  predictions/paddleocrvl_rocm/
 ```
 
 The two halves are provisioned independently because they have different
@@ -73,9 +73,12 @@ gets its own tests there.
 After provisioning + installing the package:
 
 ```powershell
+# --out-dir must match the path the scoring configs read
+# (eval-infra\01-omnidocbench\configs\v16*.yaml). Use paddleocrvl_rocm, not the
+# adapter's own dir name, or score.ps1 finds no predictions and scores are all 0.
 python run_adapter.py `
     --img-dir  ..\..\eval-infra\01-omnidocbench\data\images `
-    --out-dir  ..\..\predictions\paddleocr-vl-1.6
+    --out-dir  ..\..\predictions\paddleocrvl_rocm
 ```
 
 `run_adapter.py` reads `adapters/paddleocr-vl-1.6/.env.local` (written by the
@@ -104,7 +107,7 @@ across machines.
 
 ## Scoring
 
-Once `predictions/paddleocr-vl-1.6/` is populated, point the scoring module
+Once `predictions/paddleocrvl_rocm/` is populated, point the scoring module
 (Task 5) at it with the relevant config template (`v16.yaml` for Edit_dist +
 TEDS, `v16-cdm.yaml` to add CDM). The adapter name is just a path segment to
 the scorer.

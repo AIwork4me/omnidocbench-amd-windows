@@ -70,7 +70,7 @@ function Invoke-Verify($label, $file) {
         Add-Result $label "PASS" ""
         return "PASS"
     } else {
-        Add-Result $label "FAIL" "exit $LASTEXITCODE — re-run: powershell -File $file"
+        Add-Result $label "FAIL" "exit $LASTEXITCODE - re-run: powershell -File $file"
         return "FAIL"
     }
 }
@@ -82,14 +82,17 @@ Write-Host ""
 Write-Host "[1/7] network/mirrors" -ForegroundColor Cyan
 $envFile = Join-Path $rootDir "mirrors.env"
 if (Test-Path $envFile) {
-    $keys = (Get-Content $envFile | Where-Object { $_ -match "^[A-Z_]+=" }).Count
+    # @() forces array context so .Count is correct on PS 5.1 even when the
+    # filter matches exactly one line (PS 5.1 unwraps a single-element pipeline
+    # to a scalar, whose .Count is empty -- which would read as "0 sources").
+    $keys = @(Get-Content $envFile | Where-Object { $_ -match "^[A-Z_]+=" }).Count
     if ($keys -ge 5) {
         Add-Result "mirrors.env" "PASS" "$keys sources recorded"
     } else {
-        Add-Result "mirrors.env" "FAIL" "only $keys sources — re-run scripts/detect-mirrors.ps1"
+        Add-Result "mirrors.env" "FAIL" "only $keys sources - re-run scripts/detect-mirrors.ps1"
     }
 } else {
-    Add-Result "mirrors.env" "FAIL" "missing — run scripts/detect-mirrors.ps1 (pitfalls.md#network)"
+    Add-Result "mirrors.env" "FAIL" "missing - run scripts/detect-mirrors.ps1 (pitfalls.md#network)"
 }
 
 # --- 2. WSL ------------------------------------------------------------------
@@ -104,10 +107,10 @@ if ($SkipWsl) {
         if ($probe -match "WSL_OK") {
             Add-Result "WSL Ubuntu2204" "PASS" "reachable"
         } else {
-            Add-Result "WSL Ubuntu2204" "FAIL" "imported but not startable — reboot Windows? (pitfalls.md#wsl)"
+            Add-Result "WSL Ubuntu2204" "FAIL" "imported but not startable - reboot Windows? (pitfalls.md#wsl)"
         }
     } else {
-        Add-Result "WSL Ubuntu2204" "FAIL" "not installed — run scripts/wsl-ensure.ps1"
+        Add-Result "WSL Ubuntu2204" "FAIL" "not installed - run scripts/wsl-ensure.ps1"
     }
 }
 
@@ -148,19 +151,24 @@ if ($SkipVlm) {
 Write-Host ""
 Write-Host "[6/7] adapter predictions" -ForegroundColor Cyan
 if ($SkipVlm) {
-    Add-Result "predictions/paddleocr-vl-1.6" "SKIP" "-SkipVlm"
+    Add-Result "predictions/paddleocrvl_rocm" "SKIP" "-SkipVlm"
 } else {
-    $predDir = Join-Path $rootDir "predictions\paddleocr-vl-1.6"
+    # predictions/paddleocrvl_rocm is the dir the committed configs (v16*.yaml)
+    # read from -- keep this in sync with eval-infra/01-omnidocbench/configs/.
+    $predDir = Join-Path $rootDir "predictions\paddleocrvl_rocm"
     $count = 0
     if (Test-Path $predDir) {
-        $count = (Get-ChildItem $predDir -Filter *.md -File -ErrorAction SilentlyContinue).Count
+        # @(): Get-ChildItem returns a scalar (not array) for one match on PS
+        # 5.1, and $null for a missing dir; @() normalizes both to an array so
+        # .Count is correct.
+        $count = @(Get-ChildItem $predDir -Filter *.md -File -ErrorAction SilentlyContinue).Count
     }
     if ($count -ge 1000) {
-        Add-Result "predictions/paddleocr-vl-1.6" "PASS" "$count .md files"
+        Add-Result "predictions/paddleocrvl_rocm" "PASS" "$count .md files"
     } elseif ($count -gt 0) {
-        Add-Result "predictions/paddleocr-vl-1.6" "FAIL" "only $count .md (expected ~1651) — re-run run_adapter.py"
+        Add-Result "predictions/paddleocrvl_rocm" "FAIL" "only $count .md (expected ~1651) - re-run run_adapter.py"
     } else {
-        Add-Result "predictions/paddleocr-vl-1.6" "FAIL" "none — run the adapter (adapters/paddleocr-vl-1.6/run_adapter.py)"
+        Add-Result "predictions/paddleocrvl_rocm" "FAIL" "none - run the adapter (adapters/paddleocr-vl-1.6/run_adapter.py)"
     }
 }
 
@@ -175,14 +183,18 @@ Write-Host ""
 Write-Host "=== Summary ===" -ForegroundColor Cyan
 $results | Format-Table -AutoSize | Out-Host
 
-$failed = ($results | Where-Object { $_.Status -eq "FAIL" }).Count
-$passed = ($results | Where-Object { $_.Status -eq "PASS" }).Count
-$skipped = ($results | Where-Object { $_.Status -eq "SKIP" }).Count
+# CRITICAL: wrap in @() so .Count is correct on Windows PowerShell 5.1.
+# PS 5.1 unwraps a single-element pipeline result to a scalar object, whose
+# .Count is empty (not 1). Without @() the harness reports "0 failed" and
+# exits 0 even when exactly one check failed -- the most common case.
+$failed  = @($results | Where-Object { $_.Status -eq "FAIL" }).Count
+$passed  = @($results | Where-Object { $_.Status -eq "PASS" }).Count
+$skipped = @($results | Where-Object { $_.Status -eq "SKIP" }).Count
 Write-Host ("{0} passed, {1} failed, {2} skipped" -f $passed, $failed, $skipped)
 
 if ($failed -gt 0) {
     Write-Host ""
-    Write-Host "FAILED checks — fix per the Detail column / docs/pitfalls.md, then re-run full-verify.ps1." -ForegroundColor Red
+    Write-Host "FAILED checks - fix per the Detail column / docs/pitfalls.md, then re-run full-verify.ps1." -ForegroundColor Red
     exit 1
 }
 Write-Host ""

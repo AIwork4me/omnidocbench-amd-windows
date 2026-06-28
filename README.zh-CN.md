@@ -65,7 +65,7 @@ powershell -ExecutionPolicy Bypass -File adapters\paddleocr-vl-1.6\01-vlm-server
 powershell -ExecutionPolicy Bypass -File adapters\paddleocr-vl-1.6\02-layout-model\setup.ps1
 python adapters\paddleocr-vl-1.6\run_adapter.py `
     --img-dir eval-infra\01-omnidocbench\data\images `
-    --out-dir predictions\paddleocr-vl-1.6
+    --out-dir predictions\paddleocrvl_rocm
 
 # 步骤 4：评分 + 最终验证
 powershell -ExecutionPolicy Bypass -File eval-infra\03-scoring\score.ps1
