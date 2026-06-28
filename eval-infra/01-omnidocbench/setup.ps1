@@ -61,13 +61,27 @@ $pypiIndex = if ($cfg["PYPI_INDEX"]) { $cfg["PYPI_INDEX"] } else { "https://pypi
 # --- 1. Clone OmniDocBench eval code ---
 $odbDir = Join-Path $PSScriptRoot "OmniDocBench"
 $probe  = Join-Path $odbDir "pdf_validation.py"
+$gitHead = Join-Path $odbDir ".git\HEAD"
 if (-not (Test-Path $probe)) {
     $repoUrl = "$githubBase/opendatalab/OmniDocBench.git"
-    Write-Host "Cloning OmniDocBench from $repoUrl ..." -ForegroundColor Cyan
-    # --depth 1 keeps it small (no full history needed for eval).
-    # If a stale/partial clone exists, remove it first so the clone is clean.
-    if (Test-Path $odbDir) { Remove-Item -Recurse -Force $odbDir }
-    git clone --depth 1 $repoUrl $odbDir
+    # Resumable clone: if a .git exists (partial/interrupted clone), resume via
+    # fetch+reset instead of nuking the dir and re-downloading from scratch. A
+    # bare Remove-Item on re-run would discard everything already fetched.
+    if (Test-Path $gitHead) {
+        Write-Host "Incomplete clone detected (no pdf_validation.py); resuming via git fetch ..." -ForegroundColor Cyan
+        git -C $odbDir fetch --depth 1 origin
+        if ($LASTEXITCODE -eq 0) {
+            git -C $odbDir reset --hard origin/HEAD
+        } else {
+            Write-Host "git fetch failed; removing partial clone and retrying fresh." -ForegroundColor Yellow
+            Remove-Item -Recurse -Force $odbDir
+            git clone --depth 1 $repoUrl $odbDir
+        }
+    } else {
+        Write-Host "Cloning OmniDocBench from $repoUrl ..." -ForegroundColor Cyan
+        # --depth 1 keeps it small (no full history needed for eval).
+        git clone --depth 1 $repoUrl $odbDir
+    }
     if ($LASTEXITCODE -ne 0) { throw "git clone failed for OmniDocBench (URL: $repoUrl)" }
     if (-not (Test-Path $probe)) { throw "Clone succeeded but pdf_validation.py missing in $odbDir" }
     Write-Host "OmniDocBench code cloned to $odbDir" -ForegroundColor Green

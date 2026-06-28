@@ -70,7 +70,10 @@ function Rename-WslDistro {
 $distros = Get-WslDistros
 if ($distros -match $DistroName) {
     Write-Host "WSL $DistroName already installed." -ForegroundColor Green
-    wsl -d $DistroName -- echo "WSL OK: $(whoami)@$(hostname)"
+    # Escape the $ so WSL (bash) evaluates whoami/hostname, not PowerShell.
+    # Without the backtick-escaping PowerShell would interpolate the WINDOWS
+    # user/host here, printing a misleading "OK" host string.
+    wsl -d $DistroName -- bash -c 'echo "WSL OK: $(whoami)@$(hostname)"'
     exit 0
 }
 
@@ -99,10 +102,40 @@ if ($installOk) {
         if ($cfg) { $rootfsUrl = ($cfg -split "=", 2)[1] }
     }
 
-    # Download rootfs
+    # Download rootfs. Try the configured mirror first, then a second independent
+    # source (Tsinghua's ubuntu-cdimage mirror) before giving up. If USTC is
+    # specifically down (a narrow but real failure mode), the second source
+    # often still works.
     $tarball = "$env:TEMP\ubuntu-22.04.tar.gz"
-    Write-Host "Downloading Ubuntu rootfs from $rootfsUrl ..." -ForegroundColor Cyan
-    Invoke-WebRequest -Uri $rootfsUrl -OutFile $tarball -TimeoutSec 300
+    $rootfsSources = @(
+        $rootfsUrl,
+        "https://mirrors.tuna.tsinghua.edu.cn/ubuntu-cdimage/ubuntu-base/releases/22.04/release/ubuntu-base-22.04.5-base-amd64.tar.gz"
+    )
+    $downloaded = $false
+    foreach ($src in $rootfsSources) {
+        Write-Host "Downloading Ubuntu rootfs from $src ..." -ForegroundColor Cyan
+        try {
+            Invoke-WebRequest -Uri $src -OutFile $tarball -TimeoutSec 300 -ErrorAction Stop
+            $downloaded = $true
+            break
+        } catch {
+            Write-Host "  download from $src failed: $($_.Exception.Message)" -ForegroundColor Yellow
+        }
+    }
+
+    if (-not $downloaded) {
+        # Both sources failed. Give actionable recovery instead of a raw
+        # WebException so a blocked user has a path forward.
+        Write-Host "FAILED: could not download the Ubuntu rootfs from any mirror." -ForegroundColor Red
+        Write-Host "  Tried: $($rootfsSources -join ', ')" -ForegroundColor Yellow
+        Write-Host "  Things to try:" -ForegroundColor Yellow
+        Write-Host "    1) Check your network / VPN (corporate firewalls often block these hosts)." -ForegroundColor Yellow
+        Write-Host "    2) Download the rootfs manually from https://cloud-images.ubuntu.com/releases/22.04/release/" -ForegroundColor Yellow
+        Write-Host "       and place it at $tarball, then re-run this script." -ForegroundColor Yellow
+        Write-Host "    3) If you already have an Ubuntu distro under a different name," -ForegroundColor Yellow
+        Write-Host "       rename it to 'Ubuntu2204' (see docs/pitfalls.md#distro-name)." -ForegroundColor Yellow
+        throw "Ubuntu rootfs download failed from all mirrors; see messages above."
+    }
 
     # Import directly under the canonical name.
     $installDir = "C:\WSL\$DistroName"
@@ -117,7 +150,8 @@ if ($installOk) {
 if (-not ((Get-WslDistros) -match $DistroName)) {
     throw "WSL provisioning finished but distro '$DistroName' is still not registered. Inspect 'wsl --list'."
 }
-wsl -d $DistroName -- echo "WSL OK: $(cat /etc/os-release | grep VERSION=)"
+# Escape $ so WSL evaluates the command substitution (not PowerShell).
+wsl -d $DistroName -- bash -c 'echo "WSL OK: $(whoami)@$(hostname) | $(grep VERSION= /etc/os-release)"'
 Write-Host "WSL $DistroName ready." -ForegroundColor Green
 Write-Host "NOTE: If this is a fresh WSL install, a system REBOOT may be required before WSL works." -ForegroundColor Yellow
 exit 0

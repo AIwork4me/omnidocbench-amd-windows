@@ -275,17 +275,26 @@ if (-not $alreadyUp) {
     Write-Host "      Launched wrapper PID $($proc.Id); waiting for /v1/models..." -ForegroundColor DarkGray
 
     $ready = $false
+    # Heartbeat: print a dot every ~30s (every 6th iteration of the 5s loop) so
+    # an agent/user watching stdout can tell the script is alive and loading the
+    # ~1.7 GB GGUF (normal, slow) rather than hung. Without this the loop prints
+    # nothing for the first 30s, which is indistinguishable from a hang.
+    Write-Host "      Waiting for llama-server (up to 5 min; loading the GGUF can take a while)..." -ForegroundColor DarkGray -NoNewline
     for ($i = 1; $i -le 60; $i++) {
         Start-Sleep -Seconds 5
         try {
             $null = Invoke-RestMethod -Uri "$baseUrl/v1/models" -Method Get -TimeoutSec 3
             $ready = $true
+            Write-Host ""  # finish the dot/heartbeat line
             Write-Host "      Server ready after $($i)x5s" -ForegroundColor Green
             break
         } catch {
-            if ($i % 6 -eq 0) { Write-Host "      still waiting (${i}x5s)..." -ForegroundColor Yellow }
+            if ($i % 6 -eq 0) {
+                Write-Host "." -ForegroundColor DarkGray -NoNewline
+            }
         }
     }
+    Write-Host ""  # ensure the heartbeat line ends with a newline
     if (-not $ready) {
         Write-Host "FAILED: llama-server not ready after 5 minutes." -ForegroundColor Red
         Write-Host "Last 20 log lines:" -ForegroundColor Yellow

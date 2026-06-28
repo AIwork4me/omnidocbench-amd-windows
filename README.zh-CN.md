@@ -3,6 +3,7 @@
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
 [![Platform: AMD ROCm](https://img.shields.io/badge/Platform-AMD_ROCm_HIP-red.svg)](https://github.com/issues?q=omnidocbench+amd)
 [![OmniDocBench v1.6](https://img.shields.io/badge/OmniDocBench-v1.6-00C853.svg)](https://github.com/opendatalab/OmniDocBench)
+[![Python 3.10+](https://img.shields.io/badge/Python-3.10+-3776AB.svg)](https://www.python.org/downloads/)
 [![GitHub stars](https://img.shields.io/github/stars/AIwork4me/omnidocbench-amd-windows)](https://github.com/AIwork4me/omnidocbench-amd-windows)
 
 > **我们踩了 20+ 个坑才跑通 OmniDocBench CDM。这个 repo 把它们压缩成一条命令。**
@@ -20,32 +21,12 @@
 
 ### 快速开始
 
+克隆，然后跑四个搭建阶段。每个 `setup.*` 都是幂等的；之后跑对应的 `verify.*`。**所有命令都假定在 repo 根目录执行。**
+
 ```bash
 git clone https://github.com/AIwork4me/omnidocbench-amd-windows
 cd omnidocbench-amd-windows
-# 用 Claude Code 或 OpenCode 打开本 repo → 说"按 CLAUDE.md 搭建"
-# 或按下方步骤手动执行
 ```
-
-[English](README.md) · [架构图](docs/architecture.md) · [踩坑知识库](docs/pitfalls.md)
-
----
-
-## 这个 repo 为什么存在
-
-在 AMD Windows 上跑通 OmniDocBench v1.6 会踩 20+ 个坑：国内网络封锁、WSL 商店被墙、`\mathcolor` 渲染成黑色、ImageMagick 6 把彩色公式渲染成灰度、两个 TeX Live 树互相打架、Windows 代码页把 CJK 的 JSON 弄乱，等等。本 repo 把每个修复都固化成**幂等脚本** + **按症状索引的知识库** + **AI-agent 编排文件**，让下一个人（或 agent）能直接复刻，不用重新调试。
-
-## 快速开始
-
-把 **Claude Code**（或 OpenCode，或任何能读 `CLAUDE.md` 的 agent）指向本 repo。编排文件会带 agent 走完整个搭建流程，并显式标注人工介入点：
-
-```
-git clone <this-repo>
-cd omnidocbench-amd-windows
-# 然后对 agent 说："读取 CLAUDE.md 并执行搭建流程。"
-```
-
-手动等价流程——高层概览（每个 `setup.*` 都是幂等的；之后跑对应的 `verify.*`）：
 
 ```powershell
 # 步骤 0：环境 + 网络 + WSL
@@ -57,25 +38,35 @@ powershell -ExecutionPolicy Bypass -File eval-infra\01-omnidocbench\setup.ps1
 powershell -ExecutionPolicy Bypass -File eval-infra\01-omnidocbench\verify.ps1
 
 # 步骤 2：CDM 环境（WSL）—— 最难的一步
-wsl -d Ubuntu2204 bash /mnt/c/.../eval-infra/02-cdm-environment/setup.sh
-wsl -d Ubuntu2204 bash /mnt/c/.../eval-infra/02-cdm-environment/verify.sh
+# 把 /mnt/c/<path-to-repo> 换成你 clone 的 WSL 路径。
+wsl -d Ubuntu2204 bash /mnt/c/<path-to-repo>/eval-infra/02-cdm-environment/setup.sh
+wsl -d Ubuntu2204 bash /mnt/c/<path-to-repo>/eval-infra/02-cdm-environment/verify.sh
 
 # 步骤 3：参考适配器（PaddleOCR-VL-1.6）
 powershell -ExecutionPolicy Bypass -File adapters\paddleocr-vl-1.6\01-vlm-server\setup.ps1 -Variant hip
 powershell -ExecutionPolicy Bypass -File adapters\paddleocr-vl-1.6\02-layout-model\setup.ps1
+powershell -ExecutionPolicy Bypass -File adapters\paddleocr-vl-1.6\00-install-deps\setup.ps1
 python adapters\paddleocr-vl-1.6\run_adapter.py `
-    --img-dir eval-infra\01-omnidocbench\data\images `
-    --out-dir predictions\paddleocrvl_rocm
+    --img-dir  eval-infra\01-omnidocbench\data\images `
+    --out-dir  predictions\paddleocrvl_rocm
 
 # 步骤 4：评分 + 最终验证
 powershell -ExecutionPolicy Bypass -File eval-infra\03-scoring\score.ps1
-wsl -d Ubuntu2204 bash /mnt/c/.../eval-infra/03-scoring/score-cdm.sh
+wsl -d Ubuntu2204 bash /mnt/c/<path-to-repo>/eval-infra/03-scoring/score-cdm.sh
 powershell -ExecutionPolicy Bypass -File eval-infra\03-scoring\verify.ps1
 # 或一次性跑完：
 powershell -ExecutionPolicy Bypass -File scripts\full-verify.ps1
 ```
 
-完整的分步流程（含异常处理）见 [`CLAUDE.md`](CLAUDE.md)。
+想用 agent 驱动？把 **Claude Code**（或 OpenCode，或任何能读 `CLAUDE.md` 的 agent）指向本 repo，说"按 CLAUDE.md 搭建" / "Read CLAUDE.md and execute the setup flow."。完整分步流程（含异常处理）见 [`CLAUDE.md`](CLAUDE.md)。
+
+[English](README.md) · [架构图](docs/architecture.md) · [踩坑知识库](docs/pitfalls.md) · [CLAUDE.md](CLAUDE.md)
+
+---
+
+## 这个 repo 为什么存在
+
+在 AMD Windows 上跑通 OmniDocBench v1.6 会踩 20+ 个坑：国内网络封锁、WSL 商店被墙、`\mathcolor` 渲染成黑色、ImageMagick 6 把彩色公式渲染成灰度、两个 TeX Live 树互相打架、Windows 代码页把 CJK 的 JSON 弄乱，等等。本 repo 把每个修复都固化成**幂等脚本** + **按症状索引的知识库** + **AI-agent 编排文件**，让下一个人（或 agent）能直接复刻，不用重新调试。
 
 ---
 
@@ -140,7 +131,7 @@ CDM 的差距（3.1 pt）来自轻量 ONNX+llama.cpp 管线 vs 官方 Paddle 原
 1. `cp -r adapters/_template adapters/<your-model>`
 2. 编辑 `run_adapter.py` —— 实现 `run_adapter(img_dir, out_dir, server_url)` 调用你的模型；为每页写 `out_dir/<image_stem>.md`。捕获每页失败，避免单页出错中止整轮运行。
 3. 编辑 `setup.ps1`（或像参考适配器那样拆成编号子目录）来下载权重 / 启动服务。机器本地路径写入 gitignore 的 `.env.local`，绝不写进提交的代码。
-4. 运行：`python run_adapter.py --img-dir <dataset-images> --out-dir ..\..\predictions\<your-model>`
+4. 运行（在 repo 根目录）：`python adapters\<your-model>\run_adapter.py --img-dir eval-infra\01-omnidocbench\data\images --out-dir predictions\<your-model>`
 5. 原样重跑评分器（它只读预测路径）：`eval-infra\03-scoring\score.ps1`（+ `score-cdm.sh` 跑 CDM），再跑 `verify.ps1`。
 
 参考适配器 [`adapters/paddleocr-vl-1.6/`](adapters/paddleocr-vl-1.6/) 是一个完整、已验证的范例，可以直接参考。

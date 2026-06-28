@@ -22,12 +22,48 @@ model via [adapters](adapters/). PaddleOCR-VL-1.6 ships as the validated referen
 
 ### Quick Start
 
+Clone, then run the four setup phases. Each `setup.*` is idempotent; run the
+matching `verify.*` after each. **All commands assume the repo root as CWD.**
+
 ```bash
 git clone https://github.com/AIwork4me/omnidocbench-amd-windows
 cd omnidocbench-amd-windows
-# Point Claude Code or OpenCode at this repo → say "按 CLAUDE.md 搭建"
-# Or follow the manual steps in the sections below.
 ```
+
+```powershell
+# Step 0: environment + network + WSL
+powershell -ExecutionPolicy Bypass -File scripts\detect-mirrors.ps1
+powershell -ExecutionPolicy Bypass -File scripts\wsl-ensure.ps1
+
+# Step 1: OmniDocBench code + dataset
+powershell -ExecutionPolicy Bypass -File eval-infra\01-omnidocbench\setup.ps1
+powershell -ExecutionPolicy Bypass -File eval-infra\01-omnidocbench\verify.ps1
+
+# Step 2: CDM environment (WSL) — the hardest step
+# Replace /mnt/c/<path-to-repo> with your clone's WSL path.
+wsl -d Ubuntu2204 bash /mnt/c/<path-to-repo>/eval-infra/02-cdm-environment/setup.sh
+wsl -d Ubuntu2204 bash /mnt/c/<path-to-repo>/eval-infra/02-cdm-environment/verify.sh
+
+# Step 3: reference adapter (PaddleOCR-VL-1.6)
+powershell -ExecutionPolicy Bypass -File adapters\paddleocr-vl-1.6\01-vlm-server\setup.ps1 -Variant hip
+powershell -ExecutionPolicy Bypass -File adapters\paddleocr-vl-1.6\02-layout-model\setup.ps1
+powershell -ExecutionPolicy Bypass -File adapters\paddleocr-vl-1.6\00-install-deps\setup.ps1
+python adapters\paddleocr-vl-1.6\run_adapter.py `
+    --img-dir  eval-infra\01-omnidocbench\data\images `
+    --out-dir  predictions\paddleocrvl_rocm
+
+# Step 4: scoring + final verification
+powershell -ExecutionPolicy Bypass -File eval-infra\03-scoring\score.ps1
+wsl -d Ubuntu2204 bash /mnt/c/<path-to-repo>/eval-infra/03-scoring/score-cdm.sh
+powershell -ExecutionPolicy Bypass -File eval-infra\03-scoring\verify.ps1
+# Or all-at-once:
+powershell -ExecutionPolicy Bypass -File scripts\full-verify.ps1
+```
+
+Prefer the agent-driven flow? Point **Claude Code** (or OpenCode, or any agent
+that reads `CLAUDE.md`) at this repo and say "按 CLAUDE.md 搭建" / "Read CLAUDE.md
+and execute the setup flow." Full step-by-step with exception handling:
+[`CLAUDE.md`](CLAUDE.md).
 
 [中文文档](README.zh-CN.md) · [Architecture](docs/architecture.md) · [Pitfalls KB](docs/pitfalls.md) · [CLAUDE.md](CLAUDE.md)
 
@@ -42,51 +78,6 @@ codepage corrupting CJK JSON, and more. This repo distills every fix into
 **idempotent scripts** plus a **symptom-indexed knowledge base** and an
 **AI-agent orchestration file** so the next person (or agent) reproduces it
 without re-debugging.
-
-## Quick start
-
-Point **Claude Code** (or OpenCode, or any agent that reads `CLAUDE.md`) at this
-repo. The orchestration file walks the agent through the full setup with
-explicit human-intervention points:
-
-```
-git clone <this-repo>
-cd omnidocbench-amd-windows
-# Then in your agent: "Read CLAUDE.md and execute the setup flow."
-```
-
-Manual equivalent — the high-level flow (each `setup.*` is idempotent; run the
-`verify.*` after each):
-
-```powershell
-# Step 0: environment + network + WSL
-powershell -ExecutionPolicy Bypass -File scripts\detect-mirrors.ps1
-powershell -ExecutionPolicy Bypass -File scripts\wsl-ensure.ps1
-
-# Step 1: OmniDocBench code + dataset
-powershell -ExecutionPolicy Bypass -File eval-infra\01-omnidocbench\setup.ps1
-powershell -ExecutionPolicy Bypass -File eval-infra\01-omnidocbench\verify.ps1
-
-# Step 2: CDM environment (WSL) — the hardest step
-wsl -d Ubuntu2204 bash /mnt/c/.../eval-infra/02-cdm-environment/setup.sh
-wsl -d Ubuntu2204 bash /mnt/c/.../eval-infra/02-cdm-environment/verify.sh
-
-# Step 3: reference adapter (PaddleOCR-VL-1.6)
-powershell -ExecutionPolicy Bypass -File adapters\paddleocr-vl-1.6\01-vlm-server\setup.ps1 -Variant hip
-powershell -ExecutionPolicy Bypass -File adapters\paddleocr-vl-1.6\02-layout-model\setup.ps1
-python adapters\paddleocr-vl-1.6\run_adapter.py `
-    --img-dir eval-infra\01-omnidocbench\data\images `
-    --out-dir predictions\paddleocrvl_rocm
-
-# Step 4: scoring + final verification
-powershell -ExecutionPolicy Bypass -File eval-infra\03-scoring\score.ps1
-wsl -d Ubuntu2204 bash /mnt/c/.../eval-infra/03-scoring/score-cdm.sh
-powershell -ExecutionPolicy Bypass -File eval-infra\03-scoring\verify.ps1
-# Or all-at-once:
-powershell -ExecutionPolicy Bypass -File scripts\full-verify.ps1
-```
-
-Full step-by-step with exception handling: [`CLAUDE.md`](CLAUDE.md).
 
 ---
 
@@ -168,7 +159,7 @@ You only touch `adapters/`. Five steps (full detail in
 3. Edit `setup.ps1` (or split into numbered sub-directories like the reference
    adapter) to provision weights / start a server. Write machine-local paths to
    a gitignored `.env.local`, never into committed code.
-4. Run it: `python run_adapter.py --img-dir <dataset-images> --out-dir ..\..\predictions\<your-model>`
+4. Run it (from the repo root): `python adapters\<your-model>\run_adapter.py --img-dir eval-infra\01-omnidocbench\data\images --out-dir predictions\<your-model>`
 5. Re-run the scorer unchanged (it only reads the prediction path):
    `eval-infra\03-scoring\score.ps1` (+ `score-cdm.sh` for CDM), then `verify.ps1`.
 

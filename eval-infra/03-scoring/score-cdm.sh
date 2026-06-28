@@ -12,7 +12,7 @@ set -euo pipefail
 # Run from PowerShell (replace /mnt/c/<path-to-repo> with your clone location):
 #   wsl -d Ubuntu2204 bash /mnt/c/<path-to-repo>/eval-infra/03-scoring/score-cdm.sh
 #
-# Produces (in /root/OmniDocBench/result/):
+# Produces (in $HOME/OmniDocBench/result/):
 #   <save_name>_metric_result.json     — now display_formula has a CDM score too
 #   <save_name>_run_summary.json
 # where <save_name> = paddleocrvl_rocm_cdm_quick_match (the cdm-named
@@ -36,12 +36,20 @@ if [ ! -f "$CFG_TEMPLATE" ]; then
     exit 1
 fi
 
-# OmniDocBench code lives natively in WSL at /root/OmniDocBench (faster I/O than
-# /mnt/c; provisioned by 02-cdm-environment/setup.sh step 8). Verify the CDM
-# environment is set up before scoring — running without it yields CDM F1=0.
-ODB_LOCAL="/root/OmniDocBench"
+# OmniDocBench code lives natively in WSL under $HOME/OmniDocBench (faster I/O
+# than /mnt/c; provisioned by 02-cdm-environment/setup.sh step 8). Verify the
+# CDM environment is set up before scoring — running without it yields CDM F1=0.
+# We resolve against $HOME (not a hardcoded /root/...) so this works for
+# non-root WSL users; setup.sh installs into $HOME/OmniDocBench + $HOME/odb-venv.
+ODB_VENV="${HOME}/odb-venv"
+ODB_LOCAL="${HOME}/OmniDocBench"
 if [ ! -f "$ODB_LOCAL/pdf_validation.py" ]; then
     echo "FAIL: $ODB_LOCAL/pdf_validation.py not found." >&2
+    echo "  Run eval-infra/02-cdm-environment/setup.sh first to provision the CDM environment." >&2
+    exit 1
+fi
+if [ ! -x "$ODB_VENV/bin/python" ]; then
+    echo "FAIL: $ODB_VENV/bin/python not found (expected the CDM venv)." >&2
     echo "  Run eval-infra/02-cdm-environment/setup.sh first to provision the CDM environment." >&2
     exit 1
 fi
@@ -65,15 +73,14 @@ export PATH=/usr/local/texlive/2026/bin/x86_64-linux:/usr/local/bin:/usr/bin:/bi
 # IM7 reads its policy.xml from $MAGICK_CONFIGURE_PATH; without it the AppImage
 # lib copy can fall back to the locked-down IM6 policy and refuse PDF.
 export MAGICK_CONFIGURE_PATH=/usr/local/etc/ImageMagick-7
-export HOME=/root
 export PYTHONUTF8=1
 
 # --- Run pdf_validation.py with the OmniDocBench venv ----------------------
 cd "$ODB_LOCAL"
 echo "Scoring (Edit_dist + TEDS + CDM) with $CONFIG ..."
-/root/odb-venv/bin/python pdf_validation.py --config "$RUN_CFG" 2>&1
+"$ODB_VENV/bin/python" pdf_validation.py --config "$RUN_CFG" 2>&1
 
 echo ""
 echo "Scoring complete. Results in: $ODB_LOCAL/result/"
-echo "Next: copy <save_name>_metric_result.json to the Windows side and run"
-echo "      verify.ps1, or run verify.ps1 against the WSL result path directly."
+echo "Next: run eval-infra\\03-scoring\\verify.ps1 from the Windows side."
+echo "      It auto-finds this WSL result via \\\\wsl$\\Ubuntu2204 -- no manual copy needed."

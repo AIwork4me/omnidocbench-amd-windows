@@ -26,6 +26,14 @@ if [ -f "$REPO_ROOT/mirrors.env" ]; then
     source <(grep -E "^[A-Z_]+=." "$REPO_ROOT/mirrors.env" | sed 's/^/export /')
 fi
 
+# Resolve install locations relative to $HOME (not a hardcoded /root/...) so
+# this works for non-root WSL users too. The wsl --import path makes the
+# default user root, but a wsl --install-created distro (or a manually-set
+# non-root default user) lands elsewhere under $HOME. verify.sh / score-cdm.sh
+# read the same $HOME-relative paths.
+ODB_LOCAL="${HOME}/OmniDocBench"
+ODB_VENV="${HOME}/odb-venv"
+
 step() { echo ""; echo "=== Step $1: $2 ==="; }
 ok()   { echo "  ✓ $1"; }
 fail() { echo "  ✗ FAILED: $1"; exit 1; }
@@ -43,8 +51,8 @@ dpkg -s texlive-lang-chinese >/dev/null 2>&1 && ok "already installed" || {
 step 2 "TeX Live 2026 (official — has \\mathcolor + complete CJK package)"
 TLBIN="/usr/local/texlive/2026/bin/x86_64-linux"
 if [ -x "$TLBIN/pdflatex" ]; then ok "TL2026 already installed"; else
-    cd /root
-    curl -sL -m 180 -o install-tl.tar.gz "${CTAN_MIRROR}/install-tl-unx.tar.gz"
+    cd "$HOME"
+    curl -sL --retry 3 --retry-delay 5 -m 180 -o install-tl.tar.gz "${CTAN_MIRROR}/install-tl-unx.tar.gz"
     tar xzf install-tl.tar.gz && cd install-tl-2*
     cat > tl.profile <<'PROF'
 selected_scheme scheme-medium
@@ -102,10 +110,10 @@ fi
 step 5 "ImageMagick 7 (IM6 renders color-coded formulas as grayscale → CDM fails)"
 if magick --version 2>/dev/null | grep -q "ImageMagick 7"; then ok "IM7 already active"
 else
-    cd /root
+    cd "$HOME"
     if [ ! -f magick7.AppImage ] || [ "$(stat -c%s magick7.AppImage 2>/dev/null || echo 0)" -lt 10000000 ]; then
         PROXY="${GITHUB_PROXY:-https://ghproxy.net}"
-        curl -sL -m 300 -o magick7.AppImage "$PROXY/https://github.com/ImageMagick/ImageMagick/releases/download/7.1.2-26/ImageMagick-7.1.2-26-gcc-x86_64.AppImage"
+        curl -sL --retry 3 --retry-delay 5 -m 300 -o magick7.AppImage "$PROXY/https://github.com/ImageMagick/ImageMagick/releases/download/7.1.2-26/ImageMagick-7.1.2-26-gcc-x86_64.AppImage"
     fi
     chmod +x magick7.AppImage
     rm -rf squashfs-root
@@ -142,7 +150,6 @@ fi
 
 # ── Step 8: OmniDocBench code + \DeclareDocumentCommand fix ──
 step 8 "OmniDocBench code + \\mathcolor override fix"
-ODB_LOCAL="/root/OmniDocBench"
 if [ ! -f "$ODB_LOCAL/pdf_validation.py" ]; then
     cp -r "$ODB_CODE" "$ODB_LOCAL"
     rm -rf "$ODB_LOCAL/.git"
@@ -161,18 +168,18 @@ sed -i 's/magick -density 200 -quality 100 -colorspace sRGB/magick -density 200 
 
 # ── Step 9: Python venv + OmniDocBench deps ──
 step 9 "Python venv + OmniDocBench dependencies"
-if [ ! -d /root/odb-venv ]; then
-    python3 -m venv /root/odb-venv
+if [ ! -d "$ODB_VENV" ]; then
+    python3 -m venv "$ODB_VENV"
     # PyPI index: honour PYPI_INDEX from mirrors.env (written by
     # detect-mirrors.ps1) so a China-network machine uses Tsinghua and an
     # open-egress machine uses pypi.org. Fall back to Tsinghua if unset.
     PYPI_MIRROR="${PYPI_INDEX:-https://pypi.tuna.tsinghua.edu.cn/simple}"
-    /root/odb-venv/bin/pip install -q -i "$PYPI_MIRROR" \
+    "$ODB_VENV/bin/pip" install -q -i "$PYPI_MIRROR" \
         apted beautifulsoup4 evaluate func-timeout Levenshtein loguru lxml numpy pandas \
         Pillow pylatexenc PyYAML scipy tabulate tqdm nltk matplotlib
-    ok "venv + deps installed (index: $PYPI_MIRROR)"
+    ok "venv + deps installed (index: $PYPI_MIRROR) at $ODB_VENV"
 else
-    ok "venv already exists"
+    ok "venv already exists at $ODB_VENV"
 fi
 
 echo ""
