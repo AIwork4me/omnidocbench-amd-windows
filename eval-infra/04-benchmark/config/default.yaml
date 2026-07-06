@@ -1,0 +1,26 @@
+# Benchmark run defaults. All keys overridable via run.ps1 parameters.
+
+adapter:
+  name: paddleocr-vl-1.6
+  variant: hip                     # hip | cpu
+  server_url: ""                   # empty = resolve from .env.local
+  img_dir: <REPO_ROOT>/eval-infra/01-omnidocbench/data/images
+  out_dir: <REPO_ROOT>/predictions/paddleocrvl_rocm_bench
+
+scoring:
+  config: v16-cdm.yaml
+  windows_only: false
+
+monitor:
+  interval_sec: 1
+  gpu_backends:
+    - rocm-smi
+    - typeperf
+    - none
+  gpu_sample_fail_threshold: 3
+
+report:
+  output_dir: <REPO_ROOT>/benchmark-results
+  stability_runs: 1
+  include_ascii_charts: true
+  template: default

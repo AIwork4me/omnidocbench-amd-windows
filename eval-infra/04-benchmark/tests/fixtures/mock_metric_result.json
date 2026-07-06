@@ -1,0 +1,24 @@
+{
+  "text_block": {
+    "all": {
+      "Edit_dist": { "ALL_page_avg": 0.035, "ALL_page_std": 0.01 }
+    }
+  },
+  "display_formula": {
+    "all": {
+      "Edit_dist": { "ALL_page_avg": 0.034, "ALL_page_std": 0.01 },
+      "CDM": { "all": 0.944, "simple": 0.960, "hard": 0.920 }
+    }
+  },
+  "table": {
+    "all": {
+      "TEDS": { "all": 0.940, "simple": 0.960, "hard": 0.910 },
+      "Edit_dist": { "ALL_page_avg": 0.030, "ALL_page_std": 0.01 }
+    }
+  },
+  "reading_order": {
+    "all": {
+      "Edit_dist": { "ALL_page_avg": 0.129, "ALL_page_std": 0.02 }
+    }
+  }
+}

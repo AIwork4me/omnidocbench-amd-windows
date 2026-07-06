@@ -1,0 +1,18 @@
+{
+  "count": 10,
+  "ok": 8,
+  "stats": [
+    {"image": "page_001.jpg", "status": "ok", "seconds": 1.8},
+    {"image": "page_002.jpg", "status": "ok", "seconds": 2.1},
+    {"image": "page_003.jpg", "status": "ok", "seconds": 15.0},
+    {"image": "page_004.jpg", "status": "ok", "seconds": 2.3},
+    {"image": "page_005.jpg", "status": "ok", "seconds": 5.5},
+    {"image": "page_006.jpg", "status": "failed: VLM 500", "seconds": 3.2,
+     "traceback": "requests.exceptions.HTTPError: 500 Server Error"},
+    {"image": "page_007.jpg", "status": "ok", "seconds": 2.0},
+    {"image": "page_008.jpg", "status": "ok", "seconds": 3.0},
+    {"image": "page_009.jpg", "status": "ok", "seconds": 2.5},
+    {"image": "page_010.jpg", "status": "failed: layout NaN", "seconds": 1.2,
+     "traceback": "ValueError: array contains NaN"}
+  ]
+}
