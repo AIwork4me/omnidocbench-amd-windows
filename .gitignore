@@ -18,3 +18,8 @@ logs/
 # Keep configs/ and the .ps1 scripts tracked; ignore the large reproducible artifacts.
 eval-infra/01-omnidocbench/OmniDocBench/
 eval-infra/01-omnidocbench/data/
+
+# Benchmark outputs (machine-specific, except reference baselines)
+benchmark-results/*
+!benchmark-results/reference/
+**/monitor_stop.txt

@@ -155,6 +155,19 @@ powershell -ExecutionPolicy Bypass -File eval-infra\03-scoring\verify.ps1
 powershell -ExecutionPolicy Bypass -File scripts\full-verify.ps1
 ```
 
+### Step 5 — benchmark + capability report  (Windows, `eval-infra/04-benchmark/`)
+
+```powershell
+# 5a. Single run: full pipeline with resource monitoring → capability report.
+powershell -ExecutionPolicy Bypass -File eval-infra\04-benchmark\run.ps1
+
+# 5b. Verify the benchmark produced a valid report.
+powershell -ExecutionPolicy Bypass -File eval-infra\04-benchmark\verify.ps1 -ReportDir (Get-ChildItem benchmark-results -Directory | Where-Object { $_.Name -ne 'reference' } | Sort-Object LastWriteTime -Descending | Select-Object -First 1).FullName
+
+# 5c. Stability mode: N runs for statistical confidence (recommended for reference data).
+powershell -ExecutionPolicy Bypass -File eval-infra\04-benchmark\run.ps1 -Stability 5
+```
+
 ---
 
 ## Exception lookup table
@@ -183,6 +196,8 @@ verify that failed. Do not improvise a fix.
 | `onnxruntime ... model file not found`, no predictions | `docs/pitfalls.md#layout` |
 | VLM server 500 / connection refused / OOM | `docs/pitfalls.md#vlm` |
 | All 4 metrics 0 (incl. Edit_dist, not just CDM) | predictions dir empty/missing/misnamed — check `config.prediction.data_path` matches your `--out-dir` (see Step 3c NOTE). `verify.ps1` "(zero/non-positive - silent run failure)" with Edit_dist=0 is this, not `#cdm-zero`. |
+| Benchmark report missing GPU data | `docs/pitfalls.md#benchmark-gpu` |
+| `verify.ps1` exit 1 on score mismatch | `docs/pitfalls.md#benchmark-verify` |
 
 The single most-deceptive failure is **CDM F1 = 0 with no error printed** —
 *everything succeeds* (LaTeX compiles, PDF rasterizes, Python imports) yet the

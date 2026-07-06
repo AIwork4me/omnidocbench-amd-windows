@@ -20,6 +20,7 @@ Order mirrors CLAUDE.md's dependency chain:
   5. VLM server + layout model      (paddleocr-vl-1.6/01-vlm-server + 02-layout-model)
   6. Predictions present            (adapter output)
   7. Scores present + non-zero      (03-scoring)
+  8. Benchmark report valid         (04-benchmark, optional)
 
 Steps that depend on optional setup (e.g. predictions exist only after the
 adapter ran; CDM scores only after score-cdm.sh) are reported as SKIP rather
@@ -79,7 +80,7 @@ Write-Host "=== full-verify: OmniDocBench AMD Windows system check ===" -Foregro
 Write-Host ""
 
 # --- 1. mirrors.env ----------------------------------------------------------
-Write-Host "[1/7] network/mirrors" -ForegroundColor Cyan
+Write-Host "[1/8] network/mirrors" -ForegroundColor Cyan
 $envFile = Join-Path $rootDir "mirrors.env"
 if (Test-Path $envFile) {
     # @() forces array context so .Count is correct on PS 5.1 even when the
@@ -97,7 +98,7 @@ if (Test-Path $envFile) {
 
 # --- 2. WSL ------------------------------------------------------------------
 Write-Host ""
-Write-Host "[2/7] WSL Ubuntu2204" -ForegroundColor Cyan
+Write-Host "[2/8] WSL Ubuntu2204" -ForegroundColor Cyan
 if ($SkipWsl) {
     Add-Result "WSL Ubuntu2204" "SKIP" "-SkipWsl"
 } else {
@@ -123,13 +124,13 @@ if ($SkipWsl) {
 
 # --- 3. OmniDocBench code + dataset -----------------------------------------
 Write-Host ""
-Write-Host "[3/7] OmniDocBench code + dataset" -ForegroundColor Cyan
+Write-Host "[3/8] OmniDocBench code + dataset" -ForegroundColor Cyan
 $odbVerify = Join-Path $rootDir "eval-infra\01-omnidocbench\verify.ps1"
 [void](Invoke-Verify "01-omnidocbench/verify" $odbVerify)
 
 # --- 4. CDM environment (WSL) ------------------------------------------------
 Write-Host ""
-Write-Host "[4/7] CDM environment (WSL)" -ForegroundColor Cyan
+Write-Host "[4/8] CDM environment (WSL)" -ForegroundColor Cyan
 if ($SkipWsl) {
     Add-Result "02-cdm-environment/verify" "SKIP" "-SkipWsl"
 } else {
@@ -158,7 +159,7 @@ if ($SkipWsl) {
 
 # --- 5. VLM server + layout model (reference adapter) ------------------------
 Write-Host ""
-Write-Host "[5/7] VLM server + layout model (reference adapter)" -ForegroundColor Cyan
+Write-Host "[5/8] VLM server + layout model (reference adapter)" -ForegroundColor Cyan
 if ($SkipVlm) {
     Add-Result "01-vlm-server/verify" "SKIP" "-SkipVlm"
     Add-Result "02-layout-model/verify" "SKIP" "-SkipVlm"
@@ -173,7 +174,7 @@ if ($SkipVlm) {
 
 # --- 6. Predictions present --------------------------------------------------
 Write-Host ""
-Write-Host "[6/7] adapter predictions" -ForegroundColor Cyan
+Write-Host "[6/8] adapter predictions" -ForegroundColor Cyan
 if ($SkipVlm) {
     Add-Result "predictions/paddleocrvl_rocm" "SKIP" "-SkipVlm"
 } else {
@@ -217,9 +218,26 @@ if ($SkipVlm) {
 
 # --- 7. Scores present + non-zero -------------------------------------------
 Write-Host ""
-Write-Host "[7/7] scoring results" -ForegroundColor Cyan
+Write-Host "[7/8] scoring results" -ForegroundColor Cyan
 $scoreVerify = Join-Path $rootDir "eval-infra\03-scoring\verify.ps1"
 [void](Invoke-Verify "03-scoring/verify" $scoreVerify)
+
+# --- 8. Benchmark report (optional - skip if not run) -----------------------
+Write-Host ""
+Write-Host "[8/8] benchmark report" -ForegroundColor Cyan
+$benchVerify = Join-Path $rootDir "eval-infra\04-benchmark\verify.ps1"
+if (Test-Path $benchVerify) {
+    # Find most recent benchmark results directory
+    $benchDirs = @(Get-ChildItem (Join-Path $rootDir "benchmark-results") -Directory -ErrorAction SilentlyContinue | Where-Object { $_.Name -ne "reference" } | Sort-Object LastWriteTime -Descending)
+    if ($benchDirs.Count -gt 0) {
+        $latestBench = $benchDirs[0].FullName
+        [void](Invoke-Verify "04-benchmark/verify" "$benchVerify -ReportDir '$latestBench'")
+    } else {
+        Add-Result "04-benchmark/verify" "SKIP" "no benchmark runs found"
+    }
+} else {
+    Add-Result "04-benchmark/verify" "SKIP" "verify script not present"
+}
 
 # --- Summary -----------------------------------------------------------------
 Write-Host ""

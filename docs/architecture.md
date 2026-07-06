@@ -26,11 +26,18 @@ and the per-module READMEs.
    +-------------------+                   |  +-------------------+
                                            |
                               +------------+------------+
-                              | eval-infra/01-omnidocbench
-                              |  OmniDocBench/  (pdf_validation.py)
-                              |  data/         (OmniDocBench.json + images/)
-                              |  configs/      (v16*.yaml templates)
-                              +---------------------------+
+                               | eval-infra/01-omnidocbench
+                               |  OmniDocBench/  (pdf_validation.py)
+                               |  data/         (OmniDocBench.json + images/)
+                               |  configs/      (v16*.yaml templates)
+                               +---------------------------+
+                                            |
+                               +------------+------------+
+                               | eval-infra/04-benchmark/
+                               |  monitor.py (1 Hz sampler)
+                               |  report.py (Markdown report)
+                               |  run.ps1 (orchestrator)
+                               +---------------------------+
 ```
 
 Arrows show data dependency (producer → consumer). Everything flows rightward:
@@ -58,6 +65,7 @@ Three numbered sub-directories, in dependency order:
 | [`01-omnidocbench`](../eval-infra/01-omnidocbench/) | OmniDocBench eval code (`pdf_validation.py`) + v1.6 dataset (GT manifest + 1651 page images) + config templates | Windows (`setup.ps1`) |
 | [`02-cdm-environment`](../eval-infra/02-cdm-environment/) | A WSL environment where CDM (the formula-rendering metric) actually works: TeX Live 2026 + IM7 + gs + the `\mathcolor` fix | WSL (`setup.sh`, 9 steps) |
 | [`03-scoring`](../eval-infra/03-scoring/) | The scoring scripts themselves + result verification | `score.ps1` Windows, `score-cdm.sh` WSL |
+| [`04-benchmark`](../eval-infra/04-benchmark/) | Capability reports with GPU/RAM profiling + stability statistics | Windows (`run.ps1`) |
 
 The numbering encodes the dependency: `02-cdm-environment` copies the
 OmniDocBench code that `01-omnidocbench` cloned; `03-scoring` consumes both.
