@@ -18,6 +18,56 @@ import statistics
 from datetime import datetime, timezone
 from pathlib import Path
 
+BLOCKS = " ▁▂▃▄▅▆█"
+
+
+def _render_ascii_chart(data: list[float], *, width: int = 60, height: int = 8) -> str:
+    """Render an ASCII chart from a list of values using Unicode block chars.
+
+    Parameters
+    ----------
+    data : list[float]
+        Equally-spaced values.
+    width : int
+        Output columns.
+    height : int
+        Y-axis levels.
+
+    Returns
+    -------
+    str
+        Multi-line ASCII chart.
+    """
+    if not data:
+        return "(no data)"
+
+    y_max = max(data) * 1.05 or 1.0
+    y_min = min(0, min(data))
+    y_span = y_max - y_min
+
+    step = max(1, len(data) // width)
+    cols = []
+    for i in range(0, len(data), step):
+        chunk = data[i:i + step]
+        cols.append((sum(chunk) / len(chunk), max(chunk), min(chunk)))
+
+    lines = []
+    for row in range(height - 1, -1, -1):
+        threshold = y_min + y_span * row / (height - 1)
+        line = ""
+        for avg, mx, mn in cols:
+            if mx >= threshold + y_span / height:
+                line += BLOCKS[-1]
+            elif avg >= threshold:
+                line += BLOCKS[len(BLOCKS) // 2]
+            else:
+                line += " "
+        label = f"{y_min + y_span * row / (height - 1):5.1f} |"
+        lines.append(label + line)
+
+    lines.append("      +" + "-" * len(cols))
+    return "\n".join(lines)
+
 
 def extract_scores(metric_result: dict) -> dict[str, float | None]:
     """Extract the 4 standard metrics from an OmniDocBench metric_result.json."""
@@ -205,6 +255,15 @@ def generate_report(
         lines.append("|---|---|---|")
         lines.append(f"| System RAM | {peak_ram:.1f} | {avg_ram:.1f} |")
         lines.append("")
+
+        gpu_values = [s.get("gpu_mem_mib") or 0 for s in resource_data]
+        if gpu_values and any(v > 0 for v in gpu_values):
+            lines.append("### 3.3 GPU Memory Curve")
+            lines.append("")
+            lines.append("```")
+            lines.append(_render_ascii_chart(gpu_values))
+            lines.append("```")
+            lines.append("")
     else:
         lines.append("> :information_source: Resource log unavailable. Run with monitor.py for GPU/RAM data.")
         lines.append("")

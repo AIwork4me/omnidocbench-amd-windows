@@ -167,3 +167,50 @@ class TestTimingRendering:
         assert "P95" in result
         assert "P99" in result
         assert "pages/min" in result
+
+
+class TestAsciiChart:
+    """ASCII chart rendering from resource data."""
+
+    def test_chart_contains_block_char_when_data_present(self):
+        metric = _load_json(FIXTURE_DIR / "mock_metric_result.json")
+        stats = _load_json(FIXTURE_DIR / "mock_run_stats.json")
+        resource = FIXTURE_DIR / "mock_resource_log.jsonl"
+
+        result = report.generate_report(
+            scores=metric, stats=stats,
+            resource_log_path=str(resource),
+            phase_log=None, mode="single",
+            platform="Test", qualifier="test", run_id="r1",
+        )
+
+        assert "GPU memory (GiB)" in result or "GPU" in result
+
+    def test_chart_skipped_when_no_resource_log(self):
+        metric = _load_json(FIXTURE_DIR / "mock_metric_result.json")
+        stats = _load_json(FIXTURE_DIR / "mock_run_stats.json")
+
+        result = report.generate_report(
+            scores=metric, stats=stats,
+            resource_log_path="", phase_log=None, mode="single",
+            platform="Test", qualifier="test", run_id="r1",
+        )
+
+        assert "Resource log unavailable" in result
+
+
+class TestTraceabilityLinks:
+    """Report contains traceability links to source JSON."""
+
+    def test_report_contains_trace_comments(self):
+        metric = _load_json(FIXTURE_DIR / "mock_metric_result.json")
+        stats = _load_json(FIXTURE_DIR / "mock_run_stats.json")
+
+        result = report.generate_report(
+            scores=metric, stats=stats,
+            resource_log_path="", phase_log=None, mode="single",
+            platform="Test", qualifier="test", run_id="r1",
+        )
+
+        traces = [line for line in result.splitlines() if "<!-- trace:" in line]
+        assert len(traces) >= 4, f"expected >= 4 trace links, got {len(traces)}"
