@@ -1,0 +1,29 @@
+{
+  "expected_runs": 3,
+  "runs": [
+    {
+      "run_dir": "run-01",
+      "scores": {"text_edit_dist": 0.0350, "reading_order": 0.1290, "table_teds": 0.9400, "formula_cdm": 0.9440},
+      "duration_sec": 4680,
+      "gpu_peak_mib": 8601,
+      "pages_ok": 1648,
+      "pages_total": 1651
+    },
+    {
+      "run_dir": "run-02",
+      "scores": {"text_edit_dist": 0.0352, "reading_order": 0.1293, "table_teds": 0.9398, "formula_cdm": 0.9435},
+      "duration_sec": 4700,
+      "gpu_peak_mib": 8590,
+      "pages_ok": 1647,
+      "pages_total": 1651
+    },
+    {
+      "run_dir": "run-03",
+      "scores": {"text_edit_dist": 0.0348, "reading_order": 0.1288, "table_teds": 0.9405, "formula_cdm": 0.9448},
+      "duration_sec": 4660,
+      "gpu_peak_mib": 8610,
+      "pages_ok": 1649,
+      "pages_total": 1651
+    }
+  ]
+}

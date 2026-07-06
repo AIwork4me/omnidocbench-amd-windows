@@ -199,6 +199,40 @@ class TestAsciiChart:
         assert "Resource log unavailable" in result
 
 
+class TestReferenceMode:
+    """Reference mode: stability chapter with mean/std."""
+
+    def test_reference_has_stability_section(self):
+        metric = _load_json(FIXTURE_DIR / "mock_metric_result.json")
+        stats = _load_json(FIXTURE_DIR / "mock_run_stats.json")
+        manifest = _load_json(FIXTURE_DIR / "mock_runs_manifest.json")
+
+        result = report.generate_report(
+            scores=metric, stats=stats,
+            resource_log_path="", phase_log=None, mode="reference",
+            platform="Test", qualifier="test", run_id="r1",
+            runs_manifest=manifest,
+        )
+
+        assert "Stability" in result or "stability" in result.lower()
+
+    def test_reference_computes_mean_std(self):
+        metric = _load_json(FIXTURE_DIR / "mock_metric_result.json")
+        stats = _load_json(FIXTURE_DIR / "mock_run_stats.json")
+        manifest = _load_json(FIXTURE_DIR / "mock_runs_manifest.json")
+
+        result = report.generate_report(
+            scores=metric, stats=stats,
+            resource_log_path="", phase_log=None, mode="reference",
+            platform="Test", qualifier="test", run_id="r1",
+            runs_manifest=manifest,
+        )
+
+        assert "Mean" in result or "mean" in result.lower() or "avg" in result.lower()
+        assert "Std" in result or "std" in result.lower() or "σ" in result.lower()
+        assert "0.035" in result
+
+
 class TestTraceabilityLinks:
     """Report contains traceability links to source JSON."""
 
