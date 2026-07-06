@@ -123,3 +123,54 @@ class TestDegradation:
         for sample in lines:
             assert sample["gpu_mem_mib"] is None
             assert sample["gpu_util_pct"] is None
+
+
+class TestSentinelExit:
+    """Monitor exits cleanly when stop file appears."""
+
+    def test_exits_within_one_second_of_stop_file(self, tmp_path):
+        output = tmp_path / "resource_log.jsonl"
+        stop_file = tmp_path / "monitor_stop.txt"
+
+        stop_file.write_text("stop")
+        start = time.time()
+        monitor.sample(interval=0.1, output_path=str(output), stop_file=str(stop_file))
+        elapsed = time.time() - start
+        _cleanup(output, stop_file)
+
+        assert elapsed < 1.5, f"monitor took {elapsed:.2f}s to exit (expected < 1.5s)"
+
+    def test_output_file_closed_cleanly(self, tmp_path):
+        output = tmp_path / "resource_log.jsonl"
+        stop_file = tmp_path / "monitor_stop.txt"
+
+        stop_file.write_text("stop")
+        monitor.sample(interval=0.01, output_path=str(output), stop_file=str(stop_file))
+
+        with open(output) as f:
+            content = f.read()
+        _cleanup(output, stop_file)
+        assert len(content) > 0
+        assert content.endswith("\n") or content.endswith("\n}")
+
+
+class TestIdempotentAppend:
+    """Re-running monitor appends, no corruption."""
+
+    def test_second_run_appends_no_corruption(self, tmp_path):
+        output = tmp_path / "resource_log.jsonl"
+        stop_file = tmp_path / "monitor_stop.txt"
+
+        stop_file.write_text("stop")
+        monitor.sample(interval=0.01, output_path=str(output), stop_file=str(stop_file))
+
+        os.remove(str(stop_file))
+        stop_file.write_text("stop")
+        monitor.sample(interval=0.01, output_path=str(output), stop_file=str(stop_file))
+
+        with open(output) as f:
+            lines = [json.loads(line) for line in f if line.strip()]
+        _cleanup(output, stop_file)
+        assert len(lines) >= 2
+        for i, line in enumerate(lines):
+            assert "ts" in line, f"line {i} missing ts"
