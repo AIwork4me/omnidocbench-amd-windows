@@ -102,8 +102,8 @@ if (Test-Path $probe) {
 }
 
 # --- Phase 2: pip install -e (editable) ---
-Write-Host "[2/2] pip install -e $CloneDir (index: $pypiIndex) ..." -ForegroundColor Cyan
-& $Python -m pip install -e $CloneDir -i $pypiIndex
+Write-Host "[2/2] pip install -e $CloneDir[gpu] (index: $pypiIndex) ..." -ForegroundColor Cyan
+& $Python -m pip install -e "$CloneDir[gpu]" -i $pypiIndex
 if ($LASTEXITCODE -ne 0) {
     throw "pip install -e failed for PaddleOCR-VL-ROCm (index: $pypiIndex). See docs/pitfalls.md#network."
 }
