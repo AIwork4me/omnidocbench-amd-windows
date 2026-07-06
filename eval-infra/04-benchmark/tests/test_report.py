@@ -78,3 +78,92 @@ class TestSingleRunReport:
         )
 
         assert "<!-- generated: true" in result
+
+
+class TestResourceRendering:
+    """Resource chapter: GPU memory, RAM rendering."""
+
+    def test_gpu_peak_in_report(self):
+        metric = _load_json(FIXTURE_DIR / "mock_metric_result.json")
+        stats = _load_json(FIXTURE_DIR / "mock_run_stats.json")
+        resource = FIXTURE_DIR / "mock_resource_log.jsonl"
+
+        result = report.generate_report(
+            scores=metric, stats=stats,
+            resource_log_path=str(resource),
+            phase_log=None, mode="single",
+            platform="Test", qualifier="test", run_id="r1",
+        )
+
+        assert "8.4" in result or "8600" in result  # peak GPU
+        assert "GPU VRAM" in result
+
+    def test_gpu_unavailable_renders_warning(self):
+        metric = _load_json(FIXTURE_DIR / "mock_metric_result.json")
+        stats = _load_json(FIXTURE_DIR / "mock_run_stats.json")
+
+        result = report.generate_report(
+            scores=metric, stats=stats,
+            resource_log_path="",  # no resource log
+            phase_log=None, mode="single",
+            platform="Test", qualifier="test", run_id="r1",
+        )
+
+        assert "Resource log unavailable" in result
+
+    def test_gpu_degraded_renders_partial(self, tmp_path):
+        metric = _load_json(FIXTURE_DIR / "mock_metric_result.json")
+        stats = _load_json(FIXTURE_DIR / "mock_run_stats.json")
+        degraded_log = tmp_path / "degraded.jsonl"
+        lines = [
+            '{"ts": 1.0, "gpu_mem_mib": 1000, "gpu_util_pct": 50, "ram_gib": 4.0, "gpu_level": "gpu-full"}',
+            '{"ts": 2.0, "gpu_mem_mib": null, "gpu_util_pct": null, "ram_gib": 4.0, "gpu_level": "gpu-degraded"}',
+            '{"ts": 3.0, "gpu_mem_mib": null, "gpu_util_pct": null, "ram_gib": 4.0, "gpu_level": "gpu-degraded"}',
+        ]
+        degraded_log.write_text("\n".join(lines) + "\n")
+
+        result = report.generate_report(
+            scores=metric, stats=stats,
+            resource_log_path=str(degraded_log),
+            phase_log=None, mode="single",
+            platform="Test", qualifier="test", run_id="r1",
+        )
+
+        assert "partial" in result.lower()
+
+    def test_gpu_unavailable_level_renders_warning(self, tmp_path):
+        metric = _load_json(FIXTURE_DIR / "mock_metric_result.json")
+        stats = _load_json(FIXTURE_DIR / "mock_run_stats.json")
+        unavailable_log = tmp_path / "unavailable.jsonl"
+        lines = [
+            '{"ts": 1.0, "gpu_mem_mib": null, "gpu_util_pct": null, "ram_gib": 4.0, "gpu_level": "gpu-unavailable"}',
+        ]
+        unavailable_log.write_text("\n".join(lines) + "\n")
+
+        result = report.generate_report(
+            scores=metric, stats=stats,
+            resource_log_path=str(unavailable_log),
+            phase_log=None, mode="single",
+            platform="Test", qualifier="test", run_id="r1",
+        )
+
+        assert "unavailable" in result.lower()
+
+
+class TestTimingRendering:
+    """Timing chapter: P50/P95/P99, throughput, decomposition."""
+
+    def test_percentiles_in_report(self):
+        metric = _load_json(FIXTURE_DIR / "mock_metric_result.json")
+        stats = _load_json(FIXTURE_DIR / "mock_run_stats.json")
+
+        result = report.generate_report(
+            scores=metric, stats=stats,
+            resource_log_path="", phase_log=None, mode="single",
+            platform="Test", qualifier="test", run_id="r1",
+        )
+
+        assert "P50" in result
+        assert "P95" in result
+        assert "P99" in result
+        assert "pages/min" in result
