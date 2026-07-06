@@ -102,7 +102,7 @@ function Invoke-BenchmarkRun($runSubDir, [ref]$runIndex) {
             Write-Host "Monitor active." -ForegroundColor DarkGray
         }
 
-        $now = [DateTimeOffset]::UtcNow.ToUnixTimeSeconds()
+        $now = [int64](([DateTimeOffset]::UtcNow) - ([DateTimeOffset](Get-Date "1970-01-01Z").ToUniversalTime())).TotalSeconds
         Write-PhaseLog $phaseLog "monitor_warmup_end" $now
         Write-PhaseLog $phaseLog "adapter_start" $now
 
@@ -121,7 +121,7 @@ function Invoke-BenchmarkRun($runSubDir, [ref]$runIndex) {
         $color = if ($adapterExit -eq 0) { "Green" } else { "Yellow" }
         Write-Host "Adapter finished in ${elapsed}s (exit $adapterExit)" -ForegroundColor $color
 
-        $now = [DateTimeOffset]::UtcNow.ToUnixTimeSeconds()
+        $now = [int64](([DateTimeOffset]::UtcNow) - ([DateTimeOffset](Get-Date "1970-01-01Z").ToUniversalTime())).TotalSeconds
         Write-PhaseLog $phaseLog "adapter_end" $now
 
     } finally {
@@ -151,7 +151,7 @@ function Invoke-BenchmarkRun($runSubDir, [ref]$runIndex) {
         Write-Host "WARN: CDM scoring exited $LASTEXITCODE" -ForegroundColor Yellow
     }
 
-    $now = [DateTimeOffset]::UtcNow.ToUnixTimeSeconds()
+    $now = [int64](([DateTimeOffset]::UtcNow) - ([DateTimeOffset](Get-Date "1970-01-01Z").ToUniversalTime())).TotalSeconds
     Write-PhaseLog $phaseLog "scoring_end" $now
 
     $resultDir    = Join-Path $rootDir "eval-infra\01-omnidocbench\OmniDocBench\result"
