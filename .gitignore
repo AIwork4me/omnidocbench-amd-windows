@@ -23,3 +23,6 @@ eval-infra/01-omnidocbench/data/
 benchmark-results/*
 !benchmark-results/reference/
 **/monitor_stop.txt
+
+# Local git worktrees for agent implementation branches.
+.worktrees/
