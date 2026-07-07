@@ -70,6 +70,17 @@ PROF
 fi
 export PATH="$TLBIN:$PATH"
 
+# ── Step 2b: Install CDM-critical LaTeX packages missing from scheme-medium ──
+step 2b "Install CDM-critical LaTeX packages (standalone, was/upgreek)"
+STANDALONE_TL=$(kpsewhich standalone.cls 2>/dev/null || true)
+UPGREEK_TL=$(kpsewhich upgreek.sty 2>/dev/null || true)
+if [ -n "$STANDALONE_TL" ] && [ -n "$UPGREEK_TL" ]; then ok "CDM packages already present"
+else
+    tlmgr install standalone was collection-latex --repository "$CTAN_MIRROR" >/dev/null 2>&1
+    mktexlsr >/dev/null 2>&1
+    kpsewhich standalone.cls >/dev/null 2>&1 && kpsewhich upgreek.sty >/dev/null 2>&1 && ok "CDM packages installed" || fail "CDM packages install"
+fi
+
 # ── Step 3: Copy CJK macros + gkai/arphic fonts from TL2026 to system texlive ──
 # (Ubuntu's texlive lacks the classic CJK.sty + c70gkai.fd; TL2026 has them)
 step 3 "Copy CJK.sty + gkai fonts from TL2026 → system texlive"
@@ -171,6 +182,15 @@ fi
 # Revert any stray Windows patches (shlex.quote, -strip, etc.)
 sed -i 's/magick -density 200 -quality 100 -strip/magick -density 200 -quality 100/g' "$FIXFILE" 2>/dev/null || true
 sed -i 's/magick -density 200 -quality 100 -colorspace sRGB/magick -density 200 -quality 100/g' "$FIXFILE" 2>/dev/null || true
+
+# Patch texlive_env.py to search TL2026 bin directory (upstream only lists 2025).
+TEXLIVE_ENV="$ODB_LOCAL/src/metrics/cdm/modules/texlive_env.py"
+if grep -q "/usr/local/texlive/2026" "$TEXLIVE_ENV" 2>/dev/null; then
+    ok "texlive_env.py already lists TL2026"
+else
+    sed -i 's|"/usr/local/texlive/2025/bin/x86_64-linux",|"/usr/local/texlive/2025/bin/x86_64-linux",\n    "/usr/local/texlive/2026/bin/x86_64-linux",|' "$TEXLIVE_ENV"
+    grep -q "/usr/local/texlive/2026" "$TEXLIVE_ENV" && ok "texlive_env.py patched for TL2026" || fail "texlive_env.py patch"
+fi
 
 # ── Step 9: Python venv + OmniDocBench deps ──
 step 9 "Python venv + OmniDocBench dependencies"
