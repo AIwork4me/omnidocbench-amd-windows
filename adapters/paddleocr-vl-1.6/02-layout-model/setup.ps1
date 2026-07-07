@@ -147,7 +147,9 @@ elif source == 'modelscope':
 else:
     sys.exit('Unknown source: ' + source)
 "@
-    $dl | python -
+    $venvPy = Join-Path $repoRoot ".venv\Scripts\python.exe"
+    $pythonExe = if (Test-Path $venvPy) { $venvPy } else { "python" }
+    $dl | & $pythonExe -
     if ($LASTEXITCODE -ne 0) { throw "PP-DocLayoutV3 download failed (source=$Source)" }
 }
 

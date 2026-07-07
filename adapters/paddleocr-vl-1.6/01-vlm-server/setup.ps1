@@ -187,8 +187,9 @@ except ImportError:
 p = snapshot_download(model_id='$repoId', local_dir=str(Path(r'$vlmModelDir')))
 print('Downloaded to:', p)
 "@
-        # Prefer the system python; modelscope is a plain pip install.
-        $py | python -
+        $venvPy = Join-Path $repoRoot ".venv\Scripts\python.exe"
+        $pythonExe = if (Test-Path $venvPy) { $venvPy } else { "python" }
+        $py | & $pythonExe -
         if ($LASTEXITCODE -ne 0) { throw "modelscope download failed for $repoId" }
     }
     $ggufs = @(Get-ChildItem -LiteralPath $vlmModelDir -Recurse -File -Filter "*.gguf" -ErrorAction SilentlyContinue)
