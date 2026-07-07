@@ -14,11 +14,11 @@ reading-order Edit-distance, table TEDS, **formula CDM**. Model-agnostic — swa
 model via [adapters](adapters/). PaddleOCR-VL-1.6 ships as the validated reference.
 
 | Metric | PaddleOCR-VL-1.6 (ours) | Official | Gap |
-|---|---:|---:|---:|
-| Text Edit-dist ↓ | **0.035** (96.5%) | 0.033 | 0.17pt |
-| Reading-order ↓ | **0.129** (87.1%) | 0.127 | 0.19pt |
-| Table TEDS ↑ | **0.940** | 0.948 | 0.76pt |
-| Formula CDM ↑ | **0.944** | 0.975 | 3.1pt |
+|---:|---:|---:|---:|
+| Text Edit-dist ↓ | **0.035** (96.5%) | 0.033 | +0.002 |
+| Reading-order ↓ | **0.130** (87.0%) | 0.127 | +0.003 |
+| Table TEDS ↑ | **0.930** | 0.948 | -0.018 |
+| Formula CDM ↑ | **0.944** | 0.975 | -0.031 |
 
 ## System Requirements
 
@@ -150,14 +150,14 @@ these numbers are reproducible across runs and machines.
 
 | Metric | Direction | This repo<br>(PaddleOCR-VL-1.6) | Official 1.6 | Gap |
 |---|:---:|---:|---:|---:|
-| Text Edit-distance | ↓ | **0.035** (96.5%) | 0.033 (96.7%) | 0.17 pt |
-| Reading-order Edit-distance | ↓ | **0.129** (87.1%) | 0.127 (87.3%) | 0.19 pt |
-| Table TEDS | ↑ | **0.940** | 0.948 | 0.76 pt |
-| Formula CDM | ↑ | **0.944** | 0.975 | 3.1 pt |
+| Text Edit-distance | ↓ | **0.035** (96.5%) | 0.033 (96.7%) | +0.002 |
+| Reading-order Edit-distance | ↓ | **0.130** (87.0%) | 0.127 (87.3%) | +0.003 |
+| Table TEDS | ↑ | **0.930** | 0.948 | -0.018 |
+| Formula CDM | ↑ | **0.944** | 0.975 | -0.031 |
 
-The CDM gap (3.1 pt) reflects the cost of the lightweight ONNX+llama.cpp
-pipeline vs the official Paddle-native path (the model itself is BF16
-unquantized) plus the `\mathcolor` rendering override; see
+The CDM gap (3.1 pt) and TEDS gap (1.8 pt) reflect the cost of the lightweight
+ONNX+llama.cpp pipeline vs the official Paddle-native path (the model itself
+is BF16 unquantized) plus the `\mathcolor` rendering override; see
 [`docs/pitfalls.md#mathcolor`](docs/pitfalls.md#mathcolor).
 
 These are the success thresholds a fresh run must clear to count as
