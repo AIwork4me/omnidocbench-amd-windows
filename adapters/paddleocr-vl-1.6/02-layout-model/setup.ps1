@@ -65,7 +65,7 @@ if ($Source -eq "auto") {
     $Source = if ($mirrors["HF_OR_MS"]) { $mirrors["HF_OR_MS"] } else { "huggingface" }
 }
 
-$repoId = "AlexTransformer/PP-DocLayoutV3-onnx"
+$repoId = "PaddlePaddle/PP-DocLayoutV3_onnx"
 $required = @("inference.onnx", "inference.yml")
 
 # --- .env.local helpers (KEY='VALUE') ---

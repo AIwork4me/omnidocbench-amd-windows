@@ -47,12 +47,12 @@ if ($hf) {
     $lines += "HF_OR_MS=huggingface"
     $lines += "DATASET_URL=https://huggingface.co/datasets/opendatalab/OmniDocBench"
     $lines += "VLM_MODEL_URL=https://huggingface.co/PaddlePaddle/PaddleOCR-VL-1.6-GGUF"
-    $lines += "LAYOUT_MODEL_URL=https://huggingface.co/AlexTransformer/PP-DocLayoutV3-onnx"
+    $lines += "LAYOUT_MODEL_URL=https://huggingface.co/PaddlePaddle/PP-DocLayoutV3_onnx"
 } elseif ($ms) {
     $lines += "HF_OR_MS=modelscope"
     $lines += "DATASET_URL=modelscope://OpenDataLab/OmniDocBench"
     $lines += "VLM_MODEL_URL=modelscope://PaddlePaddle/PaddleOCR-VL-1.6-GGUF"
-    $lines += "LAYOUT_MODEL_URL=modelscope://AlexTransformer/PP-DocLayoutV3-onnx"
+    $lines += "LAYOUT_MODEL_URL=modelscope://PaddlePaddle/PP-DocLayoutV3_onnx"
 } else {
     # Neither dataset host is reachable. Write a partial mirrors.env anyway so
     # downstream scripts see NETWORK_STATUS=degraded rather than "file missing",
