@@ -254,7 +254,7 @@ def run_pair_probe(cases: list[dict[str, Any]], tmp_dir: str | Path) -> list[dic
         failure_class = classify_probe(case, probe)
         updated = dict(case)
         updated["failure_class"] = failure_class
-        updated["probe"] = probe
+        updated.update(probe)
         results.append(updated)
     return results
 
@@ -282,15 +282,68 @@ def _metric_lines(summary: dict[str, Any]) -> list[str]:
     return lines
 
 
+def _notebook_overall(summary: dict[str, Any]) -> float | None:
+    notebook = summary.get("notebook_metric_summary") or summary
+    return _safe_float(notebook.get("overall_notebook"))
+
+
+def _notebook_metric(summary: dict[str, Any], name: str) -> float | None:
+    notebook = summary.get("notebook_metric_summary") or summary
+    metrics = notebook.get("metrics") or {}
+    metric = metrics.get(name) or {}
+    return _safe_float(metric.get("notebook_value"))
+
+
+def _engine_comparison_line(label: str, stats: dict[str, Any], summary: dict[str, Any]) -> str:
+    cdm = _notebook_metric(summary, "display_formula_CDM")
+    overall = _notebook_overall(summary)
+    return (
+        f"- {label}: pages={stats.get('count')} ok={stats.get('ok')} fail={stats.get('fail')} "
+        f"Formula CDM={cdm} Overall={overall}"
+    )
+
+
+def _recovery_potential_lines(cases: list[dict[str, Any]]) -> list[str]:
+    by_class: dict[str, dict[str, float | int]] = {}
+    for case in cases:
+        failure_class = str(case.get("failure_class") or "pending")
+        cdm = _safe_float(case.get("cdm"))
+        if cdm is None:
+            continue
+        gap = max(0.0, 1.0 - cdm)
+        row = by_class.setdefault(failure_class, {"count": 0, "gap": 0.0})
+        row["count"] = int(row["count"]) + 1
+        row["gap"] = float(row["gap"]) + gap
+
+    lines: list[str] = []
+    for failure_class in FAILURE_CLASSES:
+        row = by_class.get(failure_class)
+        if not row:
+            continue
+        lines.append(
+            f"- {failure_class}: count={int(row['count'])} "
+            f"sample_cdm_gap_upper_bound={float(row['gap']):.4f}"
+        )
+    return lines
+
+
 def build_report(
     cases: list[dict[str, Any]],
     probes: list[dict[str, Any]],
     run_summary: dict[str, Any],
     prediction_stats: dict[str, Any],
+    hard_run_summary: dict[str, Any] | None = None,
+    lightweight_run_summary: dict[str, Any] | None = None,
+    official_run_summary: dict[str, Any] | None = None,
+    lightweight_stats: dict[str, Any] | None = None,
+    official_stats: dict[str, Any] | None = None,
 ) -> str:
     by_case = {case["case_id"]: dict(case) for case in cases}
     for probe_case in probes:
-        by_case.setdefault(probe_case["case_id"], {}).update(probe_case)
+        merged_probe = dict(probe_case)
+        if isinstance(merged_probe.get("probe"), dict):
+            merged_probe.update(merged_probe["probe"])
+        by_case.setdefault(probe_case["case_id"], {}).update(merged_probe)
     merged = list(by_case.values())
     counts = Counter(case.get("failure_class") or "pending" for case in merged)
 
@@ -304,6 +357,11 @@ def build_report(
     ]
     metric_lines = _metric_lines(run_summary)
     lines.extend(metric_lines or ["- Run summary not provided."])
+
+    if hard_run_summary:
+        lines.extend(["", "## Hard-Subset Metrics", ""])
+        lines.extend(_metric_lines(hard_run_summary) or ["- Hard-subset run summary not provided."])
+
     lines.extend(["", "## Prediction Stats", ""])
     if prediction_stats:
         lines.append(f"- Pages: {prediction_stats.get('count')}")
@@ -322,6 +380,24 @@ def build_report(
     if not counts:
         lines.append("- No cases available.")
 
+    comparison_delta: float | None = None
+    if lightweight_run_summary and official_run_summary:
+        lines.extend(["", "## Official Vs Lightweight Hard-Subset Comparison", ""])
+        lightweight_stats = lightweight_stats or {}
+        official_stats = official_stats or {}
+        lines.append(_engine_comparison_line("lightweight", lightweight_stats, lightweight_run_summary))
+        lines.append(_engine_comparison_line("official", official_stats, official_run_summary))
+        lightweight_cdm = _notebook_metric(lightweight_run_summary, "display_formula_CDM")
+        official_cdm = _notebook_metric(official_run_summary, "display_formula_CDM")
+        if lightweight_cdm is not None and official_cdm is not None:
+            comparison_delta = official_cdm - lightweight_cdm
+            lines.append(f"- Formula CDM delta official-lightweight: {comparison_delta:.4f}")
+
+    lines.extend(["", "## Selected-Case Recovery Potential", ""])
+    lines.append("- Values are sample-level upper bounds over the selected hard cases, not direct full-run score deltas.")
+    recovery_lines = _recovery_potential_lines(merged)
+    lines.extend(recovery_lines or ["- No CDM values available."])
+
     lines.extend(["", "## Top Cases", ""])
     for case in merged[:20]:
         lines.append(
@@ -331,7 +407,9 @@ def build_report(
         )
 
     lines.extend(["", "## Recommended Next Action", ""])
-    if counts.get("evaluator_gt_compat", 0) > 0:
+    if comparison_delta is not None and comparison_delta >= 1.0:
+        lines.append("Official doc_parser is materially higher on this hard subset; prioritize official/lightweight adapter delta analysis before changing public reference scores.")
+    elif counts.get("evaluator_gt_compat", 0) > 0:
         lines.append("Prioritize scorer compatibility fixes for GT self-CDM failures.")
     elif counts.get("normalization_or_matching", 0) > 0:
         lines.append("Investigate normalization and formula matching on close Edit-distance cases.")
@@ -378,8 +456,23 @@ def cmd_report(args: argparse.Namespace) -> int:
     cases = read_json(args.cases)
     probes = read_json(args.probe) if args.probe and Path(args.probe).exists() else []
     run_summary = _load_run_summary(args.run_summary)
+    hard_run_summary = _load_run_summary(args.hard_run_summary)
+    lightweight_run_summary = _load_run_summary(args.lightweight_run_summary)
+    official_run_summary = _load_run_summary(args.official_run_summary)
     prediction_stats = read_json(args.prediction_stats) if args.prediction_stats and Path(args.prediction_stats).exists() else {}
-    report = build_report(cases, probes, run_summary, prediction_stats)
+    lightweight_stats = read_json(args.lightweight_stats) if args.lightweight_stats and Path(args.lightweight_stats).exists() else {}
+    official_stats = read_json(args.official_stats) if args.official_stats and Path(args.official_stats).exists() else {}
+    report = build_report(
+        cases,
+        probes,
+        run_summary,
+        prediction_stats,
+        hard_run_summary,
+        lightweight_run_summary,
+        official_run_summary,
+        lightweight_stats,
+        official_stats,
+    )
     out = Path(args.report_out)
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(report, encoding="utf-8")
@@ -411,7 +504,12 @@ def build_parser() -> argparse.ArgumentParser:
     report.add_argument("--cases", required=True)
     report.add_argument("--probe")
     report.add_argument("--run-summary")
+    report.add_argument("--hard-run-summary")
+    report.add_argument("--lightweight-run-summary")
+    report.add_argument("--official-run-summary")
     report.add_argument("--prediction-stats")
+    report.add_argument("--lightweight-stats")
+    report.add_argument("--official-stats")
     report.add_argument("--report-out", required=True)
     report.set_defaults(func=cmd_report)
     return parser

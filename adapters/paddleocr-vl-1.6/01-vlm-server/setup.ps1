@@ -213,7 +213,7 @@ $mainGguf = $envLocal["PADDLEOCR_VL_GGUF"]
 $mmproj   = $envLocal["PADDLEOCR_VL_MMPROJ"]
 if (-not $serverExe) { throw "llama-server.exe path unknown -- Phase 1 did not run?" }
 if (-not $mainGguf)  { throw "PADDLEOCR_VL_GGUF not set in $envFile -- Phase 2 did not run?" }
-if (-not (Test-Path $serverExe)) { throw "llama-server.exe missing: $serverExe" }
+if (-not (Test-Path -LiteralPath $serverExe.FullName)) { throw "llama-server.exe missing: $($serverExe.FullName)" }
 if (-not (Test-Path $mainGguf))  { throw "Main GGUF missing: $mainGguf" }
 
 # Persist server metadata so run_adapter.py + verify.ps1 can find it.
@@ -223,6 +223,7 @@ Set-DotEnv -Path $envFile -Values @{
     LLAMA_TAG        = $Tag
     LLAMA_HOST       = $host_
     LLAMA_PORT       = $Port
+    VL_REC_API_MODEL_NAME = $mainGguf
 }
 
 # ===========================================================================

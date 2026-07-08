@@ -1,0 +1,16 @@
+# OmniDocBench v1.6 Formula CDM hard-case subset: lightweight adapter rerun.
+# Generated hard-case inputs come from eval-infra/03-scoring/formula_cdm_diagnostics.py.
+#
+# This is a TEMPLATE: <REPO_ROOT> is replaced with the absolute repo root at runtime.
+end2end_eval:
+  metrics:
+    text_block:      { metric: [Edit_dist] }
+    display_formula: { metric: [Edit_dist, CDM], cdm_workers: 8 }
+    table:           { metric: [TEDS, Edit_dist], teds_workers: 16 }
+    reading_order:   { metric: [Edit_dist] }
+  dataset:
+    dataset_name: end2end_dataset
+    ground_truth: { data_path: <REPO_ROOT>/eval-infra/01-omnidocbench/data/OmniDocBench_formula_cdm_hard.json }
+    prediction:   { data_path: <REPO_ROOT>/predictions/paddleocrvl_rocm_formula_cdm_hard_lightweight }
+    match_method: quick_match
+    match_workers: 8

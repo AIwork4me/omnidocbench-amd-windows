@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import importlib.util
 import json
+import sys
+import types
 from pathlib import Path
 
 
@@ -90,3 +92,106 @@ def test_write_page_manifest_filters_selected_pages(tmp_path):
     assert json.loads(out.read_text(encoding="utf-8")) == [
         {"img_id": "b.png", "page_info": 2}
     ]
+
+
+def test_run_pair_probe_writes_probe_metrics_at_case_top_level(tmp_path, monkeypatch):
+    diag = load_module()
+
+    def fake_cdm_metrics(left, right, save_vis=False, tmp_dir=""):
+        return {
+            "recall": 1.0,
+            "precision": 1.0,
+            "F1_score": 1.0 if left == right else 0.25,
+            "tp": 1,
+            "gt_tokens": 1,
+            "pred_tokens": 1,
+        }
+
+    cdm_module = types.ModuleType("src.metrics.cdm.cdm")
+    cdm_module.cdm_metrics = fake_cdm_metrics
+    monkeypatch.setitem(sys.modules, "src", types.ModuleType("src"))
+    monkeypatch.setitem(sys.modules, "src.metrics", types.ModuleType("src.metrics"))
+    monkeypatch.setitem(sys.modules, "src.metrics.cdm", types.ModuleType("src.metrics.cdm"))
+    monkeypatch.setitem(sys.modules, "src.metrics.cdm.cdm", cdm_module)
+    case = {
+        "case_id": "cdm-0001",
+        "gt_cdm": "x",
+        "pred_cdm": "y",
+        "pred": "y",
+        "edit": 0.01,
+    }
+
+    result = diag.run_pair_probe([case], tmp_path)[0]
+
+    assert result["gt_self"]["F1_score"] == 1.0
+    assert result["pred_self"]["F1_score"] == 1.0
+    assert result["gt_pred"]["F1_score"] == 0.25
+    assert result["failure_class"] == "normalization_or_matching"
+
+
+def test_build_report_includes_hard_subset_metrics_and_recovery_potential():
+    diag = load_module()
+    cases = [
+        {"case_id": "cdm-0001", "cdm": 0.0, "failure_class": "pending"},
+        {"case_id": "cdm-0002", "cdm": 0.25, "failure_class": "pending"},
+    ]
+    probes = [
+        {"case_id": "cdm-0001", "failure_class": "evaluator_gt_compat"},
+        {"case_id": "cdm-0002", "failure_class": "pred_latex_unrenderable"},
+    ]
+    hard_summary = {
+        "notebook_metric_summary": {
+            "overall_notebook": 88.25,
+            "metrics": {"display_formula_CDM": {"notebook_value": 75.91}},
+        }
+    }
+
+    report = diag.build_report(
+        cases,
+        probes,
+        run_summary={},
+        prediction_stats={},
+        hard_run_summary=hard_summary,
+    )
+
+    assert "## Hard-Subset Metrics" in report
+    assert "- Overall notebook: 88.25" in report
+    assert "- display_formula_CDM: 75.91" in report
+    assert "## Selected-Case Recovery Potential" in report
+    assert "- evaluator_gt_compat: count=1 sample_cdm_gap_upper_bound=1.0000" in report
+    assert "- pred_latex_unrenderable: count=1 sample_cdm_gap_upper_bound=0.7500" in report
+
+
+def test_build_report_includes_official_lightweight_subset_comparison():
+    diag = load_module()
+    lightweight_summary = {
+        "notebook_metric_summary": {
+            "overall_notebook": 88.25,
+            "metrics": {"display_formula_CDM": {"notebook_value": 75.90}},
+        }
+    }
+    official_summary = {
+        "notebook_metric_summary": {
+            "overall_notebook": 89.88,
+            "metrics": {"display_formula_CDM": {"notebook_value": 80.72}},
+        }
+    }
+    lightweight_stats = {"count": 31, "ok": 31, "fail": 0, "engine": "lightweight"}
+    official_stats = {"count": 31, "ok": 31, "fail": 0, "engine": "official"}
+
+    report = diag.build_report(
+        cases=[],
+        probes=[],
+        run_summary={},
+        prediction_stats={},
+        lightweight_run_summary=lightweight_summary,
+        official_run_summary=official_summary,
+        lightweight_stats=lightweight_stats,
+        official_stats=official_stats,
+    )
+
+    assert "## Official Vs Lightweight Hard-Subset Comparison" in report
+    assert "- lightweight: pages=31 ok=31 fail=0 Formula CDM=75.9 Overall=88.25" in report
+    assert "- official: pages=31 ok=31 fail=0 Formula CDM=80.72 Overall=89.88" in report
+    assert "- Formula CDM delta official-lightweight: 4.8200" in report
+    assert "Official doc_parser is materially higher on this hard subset" in report

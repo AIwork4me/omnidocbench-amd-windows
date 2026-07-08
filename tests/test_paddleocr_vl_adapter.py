@@ -6,6 +6,7 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 ADAPTER = REPO_ROOT / "adapters" / "paddleocr-vl-1.6" / "run_adapter.py"
+VLM_SETUP = REPO_ROOT / "adapters" / "paddleocr-vl-1.6" / "01-vlm-server" / "setup.ps1"
 
 
 def load_adapter():
@@ -78,3 +79,24 @@ def test_official_result_to_markdown_reads_markdown_attribute():
         markdown = "# title\n"
 
     assert adapter._official_result_to_markdown(Result()) == "# title\n"
+
+
+def test_official_result_to_markdown_reads_paddlex_markdown_dict():
+    adapter = load_adapter()
+
+    class Result:
+        markdown = {"markdown_texts": "# title\n"}
+
+    assert adapter._official_result_to_markdown(Result()) == "# title\n"
+
+
+def test_vlm_setup_checks_llama_server_full_name():
+    text = VLM_SETUP.read_text(encoding="utf-8")
+
+    assert "Test-Path -LiteralPath $serverExe.FullName" in text
+
+
+def test_vlm_setup_uses_served_gguf_path_as_api_model_id():
+    text = VLM_SETUP.read_text(encoding="utf-8")
+
+    assert "VL_REC_API_MODEL_NAME = $mainGguf" in text

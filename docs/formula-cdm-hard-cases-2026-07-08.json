@@ -1,0 +1,976 @@
+[
+  {
+    "case_id": "cdm-0001",
+    "idx": 3,
+    "img_id": "page-d1561665-5359-42fe-920c-d6e3bff81953.png",
+    "image_name": "page-d1561665-5359-42fe-920c-d6e3bff81953.png",
+    "gt_idx": [
+      3
+    ],
+    "pred_idx": [
+      1
+    ],
+    "gt": "$$AB = \n\\left[\\begin{array}{ccc}\n2 & 3 \\\\\n1 & 4\n\\end{array}\\right]\n\\left[\\begin{array}{ccc}\n5 & 2 & 1 \\\\\n3 & 8 & 6\n\\end{array}\\right]$$",
+    "pred": "\\[\\boldsymbol{A}\\boldsymbol{B}&=\\left[\\begin{array}{ccc}2&3\\\\1&4\\end{array}\\right]\\left[\\begin{array}{ccc}5&2&1\\\\3&8&6\\end{array}\\right]\\]",
+    "edit": 0.0,
+    "cdm": 1.0,
+    "gt_cdm": "AB = \n\\left[\\begin{array}{ccc}\n2 & 3 \\\\\n1 & 4\n\\end{array}\\right]\n\\left[\\begin{array}{ccc}\n5 & 2 & 1 \\\\\n3 & 8 & 6\n\\end{array}\\right]",
+    "pred_cdm": "\\boldsymbol{A}\\boldsymbol{B}&=\\left[\\begin{array}{ccc}2&3\\\\1&4\\end{array}\\right]\\left[\\begin{array}{ccc}5&2&1\\\\3&8&6\\end{array}\\right]",
+    "pred_cdm_alt": "AB&=\\left[\\begin{array}{ccc}2&3\\\\1&4\\end{array}\\right]\\left[\\begin{array}{ccc}5&2&1\\\\3&8&6\\end{array}\\right]",
+    "selection_reason": "control_high_cdm",
+    "failure_class": "pending"
+  },
+  {
+    "case_id": "cdm-0002",
+    "idx": 4,
+    "img_id": "page-d1561665-5359-42fe-920c-d6e3bff81953.png",
+    "image_name": "page-d1561665-5359-42fe-920c-d6e3bff81953.png",
+    "gt_idx": [
+      4
+    ],
+    "pred_idx": [
+      2
+    ],
+    "gt": "$$=\\left[\\begin{array}{cccc}\n10 + 9 & 4 + 24 & 2&18 \\\\\n5 + 12 & 2 + 32 & 1  &24\n\\end{array}\\right]=\n\\left[\\begin{array}{ccc}\n19 & 20 & 16 \\\\\n7 & 34 & 25\n\\end{array}\\right]\n= C.$$",
+    "pred": "\\[&=\\left[\\begin{array}{cccc}10+9&4+24&2&18\\\\5+12&2+32&1&24\\end{array}\\right]=\\left[\\begin{array}{ccc}19&20&16\\\\7&34&25\\end{array}\\right]=\\boldsymbol{C}.\\]",
+    "edit": 0.0,
+    "cdm": 1.0,
+    "gt_cdm": "=\\left[\\begin{array}{cccc}\n10 + 9 & 4 + 24 & 2&18 \\\\\n5 + 12 & 2 + 32 & 1  &24\n\\end{array}\\right]=\n\\left[\\begin{array}{ccc}\n19 & 20 & 16 \\\\\n7 & 34 & 25\n\\end{array}\\right]\n= C.",
+    "pred_cdm": "&=\\left[\\begin{array}{cccc}10+9&4+24&2&18\\\\5+12&2+32&1&24\\end{array}\\right]=\\left[\\begin{array}{ccc}19&20&16\\\\7&34&25\\end{array}\\right]=\\boldsymbol{C}.",
+    "pred_cdm_alt": "&=\\left[\\begin{array}{cccc}10+9&4+24&2&18\\\\5+12&2+32&1&24\\end{array}\\right]=\\left[\\begin{array}{ccc}19&20&16\\\\7&34&25\\end{array}\\right]=C.",
+    "selection_reason": "control_high_cdm",
+    "failure_class": "pending"
+  },
+  {
+    "case_id": "cdm-0003",
+    "idx": 8,
+    "img_id": "page-d1561665-5359-42fe-920c-d6e3bff81953.png",
+    "image_name": "page-d1561665-5359-42fe-920c-d6e3bff81953.png",
+    "gt_idx": [
+      8
+    ],
+    "pred_idx": [
+      7
+    ],
+    "gt": "$$\\mathbf{A}\\mathbf{X} = \\left\\lbrack  \\begin{array}{cccccc} {a}_{11} & {a}_{12} & \\cdots & {a}_{1j} & \\cdots & {a}_{1N} \\\\  {a}_{21} & {a}_{22} & \\cdots & {a}_{2j} & \\cdots & {a}_{2N} \\\\  \\vdots & \\vdots & & \\vdots & & \\vdots \\\\  {a}_{k1} & {a}_{k2} & \\cdots & {a}_{kj} & \\cdots & {a}_{kN} \\\\  \\vdots & \\vdots & & \\vdots & & \\vdots \\\\  {a}_{M1} & {a}_{M2} & \\cdots & {a}_{Mj} & \\cdots & {a}_{MN} \\end{array}\\right\\rbrack  \\left\\lbrack  \\begin{array}{cccccc} {x}_{1} \\\\  {x}_{2} \\\\  \\vdots \\\\  {x}_{j} \\\\  \\vdots \\\\  {x}_{N} \\end{array}\\right\\rbrack   = \\left\\lbrack  \\begin{array}{cccccc} {b}_{1} \\\\  {b}_{2} \\\\  \\vdots \\\\  {b}_{j} \\\\  \\vdots \\\\  {b}_{M} \\end{array}\\right\\rbrack   = \\mathbf{B}.\\tag{8}$$",
+    "pred": "\\[ A X=\\left[\\begin{matrix}{a_{11}}&{a_{12}}&{\\cdots}&{a_{1j}}&{\\cdots}&{a_{1N}}\\\\ {a_{21}}&{a_{22}}&{\\cdots}&{a_{2j}}&{\\cdots}&{a_{2N}}\\\\ {\\vdots}&{\\vdots}&{}&{\\vdots}&{}&{\\vdots}\\\\ {a_{k1}}&{a_{k2}}&{\\cdots}&{a_{k j}}&{\\cdots}&{a_{k N}}\\\\ {\\vdots}&{\\vdots}&{}&{\\vdots}&{}&{\\vdots}\\\\ {a_{M1}}&{a_{M2}}&{\\cdots}&{a_{M j}}&{\\cdots}&{a_{M N}}\\\\ \\end{matrix}\\right]\\left[\\begin{matrix}{x_{1}}\\\\ {x_{2}}\\\\ {\\vdots}\\\\ {x_{j}}\\\\ {\\vdots}\\\\ {x_{N}}\\\\ \\end{matrix}\\right]=\\left[\\begin{matrix}{b_{1}}\\\\ {b_{2}}\\\\ {\\vdots}\\\\ {b_{j}}\\\\ {\\vdots}\\\\ {b_{M}}\\\\ \\end{matrix}\\right]=B. \\]",
+    "edit": 0.2635135135135135,
+    "cdm": 1.0,
+    "gt_cdm": "\\mathbf{A}\\mathbf{X} = \\left\\lbrack  \\begin{array}{cccccc} {a}_{11} & {a}_{12} & \\cdots & {a}_{1j} & \\cdots & {a}_{1N} \\\\  {a}_{21} & {a}_{22} & \\cdots & {a}_{2j} & \\cdots & {a}_{2N} \\\\  \\vdots & \\vdots & & \\vdots & & \\vdots \\\\  {a}_{k1} & {a}_{k2} & \\cdots & {a}_{kj} & \\cdots & {a}_{kN} \\\\  \\vdots & \\vdots & & \\vdots & & \\vdots \\\\  {a}_{M1} & {a}_{M2} & \\cdots & {a}_{Mj} & \\cdots & {a}_{MN} \\end{array}\\right\\rbrack  \\left\\lbrack  \\begin{array}{cccccc} {x}_{1} \\\\  {x}_{2} \\\\  \\vdots \\\\  {x}_{j} \\\\  \\vdots \\\\  {x}_{N} \\end{array}\\right\\rbrack   = \\left\\lbrack  \\begin{array}{cccccc} {b}_{1} \\\\  {b}_{2} \\\\  \\vdots \\\\  {b}_{j} \\\\  \\vdots \\\\  {b}_{M} \\end{array}\\right\\rbrack   = \\mathbf{B}.",
+    "pred_cdm": "A X=\\left[\\begin{matrix}{a_{11}}&{a_{12}}&{\\cdots}&{a_{1j}}&{\\cdots}&{a_{1N}}\\\\ {a_{21}}&{a_{22}}&{\\cdots}&{a_{2j}}&{\\cdots}&{a_{2N}}\\\\ {\\vdots}&{\\vdots}&{}&{\\vdots}&{}&{\\vdots}\\\\ {a_{k1}}&{a_{k2}}&{\\cdots}&{a_{k j}}&{\\cdots}&{a_{k N}}\\\\ {\\vdots}&{\\vdots}&{}&{\\vdots}&{}&{\\vdots}\\\\ {a_{M1}}&{a_{M2}}&{\\cdots}&{a_{M j}}&{\\cdots}&{a_{M N}}\\\\ \\end{matrix}\\right]\\left[\\begin{matrix}{x_{1}}\\\\ {x_{2}}\\\\ {\\vdots}\\\\ {x_{j}}\\\\ {\\vdots}\\\\ {x_{N}}\\\\ \\end{matrix}\\right]=\\left[\\begin{matrix}{b_{1}}\\\\ {b_{2}}\\\\ {\\vdots}\\\\ {b_{j}}\\\\ {\\vdots}\\\\ {b_{M}}\\\\ \\end{matrix}\\right]=B.",
+    "pred_cdm_alt": "A X=\\left[\\begin{matrix}a_{11}&a_{12}&\\cdots&a_{1j}&\\cdots&a_{1N}\\\\a_{21}&a_{22}&\\cdots&a_{2j}&\\cdots&a_{2N}\\\\\\vdots&\\vdots&{}&\\vdots&{}&\\vdots\\\\a_{k1}&a_{k2}&\\cdots&a_{k j}&\\cdots&a_{k N}\\\\\\vdots&\\vdots&{}&\\vdots&{}&\\vdots\\\\a_{M1}&a_{M2}&\\cdots&a_{M j}&\\cdots&a_{M N}\\end{matrix}\\right]\\left[\\begin{matrix}x_{1}\\\\x_{2}\\\\\\vdots\\\\x_{j}\\\\\\vdots\\\\x_{N}\\end{matrix}\\right]=\\left[\\begin{matrix}b_{1}\\\\b_{2}\\\\\\vdots\\\\b_{j}\\\\\\vdots\\\\b_{M}\\end{matrix}\\right]=B.",
+    "selection_reason": "control_high_cdm",
+    "failure_class": "pending"
+  },
+  {
+    "case_id": "cdm-0004",
+    "idx": 11,
+    "img_id": "page-d1561665-5359-42fe-920c-d6e3bff81953.png",
+    "image_name": "page-d1561665-5359-42fe-920c-d6e3bff81953.png",
+    "gt_idx": [
+      11
+    ],
+    "pred_idx": [
+      11
+    ],
+    "gt": "$$\\left[\\begin{array}{cccccc}\n0.125 & 0.200 & 0.400 \\\\\n0.375 & 0.500 & 0.600 \\\\\n0.500 & 0.300 & 0.000\\end{array}\\right]\n\\left[\\begin{array}{cccccc}\nx_1 \\\\\nx_2 \\\\\nx_3\\end{array}\\right]\n=\\left[\\begin{array}{cccccc}2.3 \\\\4.8 \\\\2.9\\end{array}\\right].\\tag{9}$$",
+    "pred": "\\[ \\begin{bmatrix}0.125&0.200&0.400\\\\ 0.375&0.500&0.600\\\\ 0.500&0.300&0.000\\end{bmatrix}\\begin{bmatrix}x_{1}\\\\ x_{2}\\\\ x_{3}\\end{bmatrix}=\\begin{bmatrix}2.3\\\\ 4.8\\\\ 2.9\\end{bmatrix}. \\]",
+    "edit": 0.07317073170731707,
+    "cdm": 1.0,
+    "gt_cdm": "\\left[\\begin{array}{cccccc}\n0.125 & 0.200 & 0.400 \\\\\n0.375 & 0.500 & 0.600 \\\\\n0.500 & 0.300 & 0.000\\end{array}\\right]\n\\left[\\begin{array}{cccccc}\nx_1 \\\\\nx_2 \\\\\nx_3\\end{array}\\right]\n=\\left[\\begin{array}{cccccc}2.3 \\\\4.8 \\\\2.9\\end{array}\\right].",
+    "pred_cdm": "\\begin{bmatrix}0.125&0.200&0.400\\\\ 0.375&0.500&0.600\\\\ 0.500&0.300&0.000\\end{bmatrix}\\begin{bmatrix}x_{1}\\\\ x_{2}\\\\ x_{3}\\end{bmatrix}=\\begin{bmatrix}2.3\\\\ 4.8\\\\ 2.9\\end{bmatrix}.",
+    "pred_cdm_alt": "\\begin{bmatrix}0.125&0.200&0.400\\\\0.375&0.500&0.600\\\\0.500&0.300&0.000\\end{bmatrix}\\begin{bmatrix}x_{1}\\\\x_{2}\\\\x_{3}\\end{bmatrix}=\\begin{bmatrix}2.3\\\\4.8\\\\2.9\\end{bmatrix}.",
+    "selection_reason": "control_high_cdm",
+    "failure_class": "pending"
+  },
+  {
+    "case_id": "cdm-0005",
+    "idx": 1,
+    "img_id": "page-14cd673f-d86d-45a7-a13e-2b4e1d91c08f.png",
+    "image_name": "page-14cd673f-d86d-45a7-a13e-2b4e1d91c08f.png",
+    "gt_idx": [
+      1
+    ],
+    "pred_idx": [
+      6
+    ],
+    "gt": "$$\\therefore 3m+1 = 1, 5, -1, -5.$$",
+    "pred": "\\[ \\therefore3m+1=1,5,-1,-5. \\]",
+    "edit": 0.0,
+    "cdm": 1.0,
+    "gt_cdm": "\\therefore 3m+1 = 1, 5, -1, -5.",
+    "pred_cdm": "\\therefore3m+1=1,5,-1,-5.",
+    "pred_cdm_alt": null,
+    "selection_reason": "control_high_cdm",
+    "failure_class": "pending"
+  },
+  {
+    "case_id": "cdm-0006",
+    "idx": 3,
+    "img_id": "page-cdd33cf6-76ce-42bb-a99c-342c861afed0.png",
+    "image_name": "page-cdd33cf6-76ce-42bb-a99c-342c861afed0.png",
+    "gt_idx": [
+      3
+    ],
+    "pred_idx": [
+      14,
+      15,
+      16,
+      17
+    ],
+    "gt": "$$\\left\\{\\begin{array}{l}\\left(1\\right)\\text{ 令 }\\tan\\frac{x}{2}=t\\Rightarrow\\left\\{{\\begin{array}{l}\\sin x=\\frac{2t}{1 + {t}^{2}}\\\\ \\cos x=\\frac{1 - {t}^{2}}{1 + {t}^{2}}\\neq\\frac{2}{3}\\end{array}\\Rightarrow\\frac{1 - \\sin x}{2 - 3\\cos x}=\\frac{1-\\frac{2t}{1 + {t}^{2}}}{2-3 \\cdot \\frac{1 - {t}^{2}}{1 + {t}^{2}}}=\\frac{1 + t^2 - {2t}}{5{t}^{2} - 1}\\left({5{t}^{2} \\neq1}\\right)}\\right.\\\\ \\left(2\\right)\\text{ 令 }\\frac{1+{t}^{2} - {2t}}{5{t}^{2} - 1}=y\\Rightarrow\\left\\{\\begin{array}{l}\\left({{5y} - 1}\\right){t}^2+{2t}-y-1=0\\\\ \\text{ 判别式法 }\\end{array}\\right.\\\\ \\Rightarrow\\left\\{{\\begin{array}{l} {5y} - 1 - 0\\text{ 时,}t = \\frac{3}{5}\\text{ 符合题意 } \\\\ 5y - 1 \\neq0\\text{ 时,}\\Delta= 4 + 4\\left( {{5y} - 1}\\right) \\left( {y + 1}\\right) \\geq0 \\end{array} \\Rightarrow y \\geq0\\text{ 或 }y \\leq\\frac{4}{5}}\\right.\\end{array}\\right.$$",
+    "pred": "\\begin{array}{l} {\\tan\\frac{x}{2}=t\\Rightarrow\\begin{cases}\\sin x=\\dfrac{2t}{1+t^2}\\\\ \\cos x=\\dfrac{1-t^2}{1+t^2}\\neq\\dfrac{2}{3}\\end{cases}\\Rightarrow\\dfrac{1-\\sin x}{2-3\\cos x}=\\dfrac{1-\\dfrac{2t}{1+t^2}}{2-3\\cdot\\dfrac{1-t^2}{1+t^2}}=\\dfrac{1+t^2-2}{5^2-1}t,} \\\\ {\\vec{5}t\\neq0} \\\\ {\\dfrac{1+t^2-2t}{5t^2-1}=y\\Rightarrow\\begin{cases}(5y-1)t^2+2t-y-1=0\\\\ \\text{判别式法}\\end{cases}} \\\\ {\\Rightarrow\\begin{cases}5y-1=0\\text{时},&t=\\dfrac{3}{5}\\text{符合题意}\\\\5y-1\\neq0\\text{时},&\\Delta=4+4(5y-1)(y+1)\\geq0\\end{cases}\\Rightarrow y\\geq0\\text{或}y\\leq\\dfrac{4}{5}} \\end{array}",
+    "edit": 0.1293800539083558,
+    "cdm": 0.0,
+    "gt_cdm": "\\left\\{\\begin{array}{l}\\left(1\\right)\\text{ 令 }\\tan\\frac{x}{2}=t\\Rightarrow\\left\\{{\\begin{array}{l}\\sin x=\\frac{2t}{1 + {t}^{2}}\\\\ \\cos x=\\frac{1 - {t}^{2}}{1 + {t}^{2}}\\neq\\frac{2}{3}\\end{array}\\Rightarrow\\frac{1 - \\sin x}{2 - 3\\cos x}=\\frac{1-\\frac{2t}{1 + {t}^{2}}}{2-3 \\cdot \\frac{1 - {t}^{2}}{1 + {t}^{2}}}=\\frac{1 + t^2 - {2t}}{5{t}^{2} - 1}\\left({5{t}^{2} \\neq1}\\right)}\\right.\\\\ \\left(2\\right)\\text{ 令 }\\frac{1+{t}^{2} - {2t}}{5{t}^{2} - 1}=y\\Rightarrow\\left\\{\\begin{array}{l}\\left({{5y} - 1}\\right){t}^2+{2t}-y-1=0\\\\ \\text{ 判别式法 }\\end{array}\\right.\\\\ \\Rightarrow\\left\\{{\\begin{array}{l} {5y} - 1 - 0\\text{ 时,}t = \\frac{3}{5}\\text{ 符合题意 } \\\\ 5y - 1 \\neq0\\text{ 时,}\\Delta= 4 + 4\\left( {{5y} - 1}\\right) \\left( {y + 1}\\right) \\geq0 \\end{array} \\Rightarrow y \\geq0\\text{ 或 }y \\leq\\frac{4}{5}}\\right.\\end{array}\\right.",
+    "pred_cdm": "\\begin{array}{l} {\\tan\\frac{x}{2}=t\\Rightarrow\\begin{cases}\\sin x=\\dfrac{2t}{1+t^2}\\\\ \\cos x=\\dfrac{1-t^2}{1+t^2}\\neq\\dfrac{2}{3}\\end{cases}\\Rightarrow\\dfrac{1-\\sin x}{2-3\\cos x}=\\dfrac{1-\\dfrac{2t}{1+t^2}}{2-3\\cdot\\dfrac{1-t^2}{1+t^2}}=\\dfrac{1+t^2-2}{5^2-1}t,} \\\\ {\\vec{5}t\\neq0} \\\\ {\\dfrac{1+t^2-2t}{5t^2-1}=y\\Rightarrow\\begin{cases}(5y-1)t^2+2t-y-1=0\\\\ \\text{判别式法}\\end{cases}} \\\\ {\\Rightarrow\\begin{cases}5y-1=0\\text{时},&t=\\dfrac{3}{5}\\text{符合题意}\\\\5y-1\\neq0\\text{时},&\\Delta=4+4(5y-1)(y+1)\\geq0\\end{cases}\\Rightarrow y\\geq0\\text{或}y\\leq\\dfrac{4}{5}} \\end{array}",
+    "pred_cdm_alt": "\\begin{array}{l}\\tan\\frac{x}{2}=t\\Rightarrow\\begin{cases}\\sin x=\\frac{2t}{1+t^2}\\\\ \\cos x=\\frac{1-t^2}{1+t^2}\\neq\\frac{2}{3}\\end{cases}\\Rightarrow\\frac{1-\\sin x}{2-3\\cos x}=\\frac{1-\\frac{2t}{1+t^2}}{2-3\\cdot\\frac{1-t^2}{1+t^2}}=\\frac{1+t^2-2}{5^2-1}t,\\\\\\vec{5}t\\neq0\\\\\\frac{1+t^2-2t}{5t^2-1}=y\\Rightarrow\\begin{cases}(5y-1)t^2+2t-y-1=0\\\\ \\text{判别式法}\\end{cases}\\\\\\Rightarrow\\begin{cases}5y-1=0\\text{时},&t=\\frac{3}{5}\\text{符合题意}\\\\5y-1\\neq0\\text{时},&\\Delta=4+4(5y-1)(y+1)\\geq0\\end{cases}\\Rightarrow y\\geq0\\text{或}y\\leq\\frac{4}{5}\\end{array}",
+    "selection_reason": "cdm_zero",
+    "failure_class": "pending"
+  },
+  {
+    "case_id": "cdm-0007",
+    "idx": 1,
+    "img_id": "page-7dfc88d8-6d95-446c-b910-2410e8552f76.png",
+    "image_name": "page-7dfc88d8-6d95-446c-b910-2410e8552f76.png",
+    "gt_idx": [
+      1
+    ],
+    "pred_idx": [
+      0
+    ],
+    "gt": "$$\\min \\left\\{  \\begin{array}{l} \\mathop{\\sum }\\limits_{{i = 1}}^{N}\\mathop{\\sum }\\limits_{{t = {t}_{start}}}^{T}\\left\\lbrack  {{C}_{i,t}\\left( {P}_{i,t}\\right) {d}_{t}}\\right\\rbrack   + \\mathop{\\sum }\\limits_{{i = 1}}^{n}\\mathop{\\sum }\\limits_{{t = {t}_{\\text {start}}}}^{T}{P}_{gwf}\\left\\lbrack  {{P}_{L,i,t}{d}_{t}}\\right\\rbrack   + \\mathop{\\sum }\\limits_{{l = 1}}^{{NL}}\\mathop{\\sum }\\limits_{{t = {t}_{\\text {start}}}}^{T}{M}_{1}\\left\\lbrack  {S{L}_{t}^{ + } + S{L}_{t}^{ - }}\\right\\rbrack   + \\mathop{\\sum }\\limits_{{s = 1}}^{{NS}}\\mathop{\\sum }\\limits_{{t = {t}_{\\text {start}}}}^{T}{M}_{1}\\left\\lbrack  {S{L}_{s}^{ + }}+\\right. \\\\  \\left. {+\\mathop{\\sum }\\limits_{{r = 1}}^{{NR}}\\mathop{\\sum }\\limits_{{t = 1}}^{T}{M}_{2}{P}_{r,t}^{d} + \\mathop{\\sum }\\limits_{{i = 1}}^{{NH}}\\mathop{\\sum }\\limits_{{t = 1}}^{T}{M}_{3}{P}_{i,t}^{d} + \\mathop{\\sum }\\limits_{{k \\in  {\\Phi }_{n}}}\\mathop{\\sum }\\limits_{{t = 1}}^{T}{M}_{4}\\left\\lbrack  {S{L}_{k}^{ - }}\\right\\rbrack   + \\mathop{\\sum }\\limits_{{es = 1}}^{{ES}}\\mathop{\\sum }\\limits_{{t = 1}}^{T}\\left\\lbrack  {{\\lambda }_{es}^{dis}{P}_{es,t}^{dis} + {\\lambda }_{es}^{ch}{P}_{es,t}^{ch}}\\right\\rbrack  }\\right.  \\end{array}\\right.$$",
+    "pred": "\\[ \\min \\left\\{ \\begin{array}{l} \\mathop{\\sum}\\limits_{i=1}^{N}\\mathop{\\sum}\\limits_{t={t}_{start}}^{T}\\left\\lbrack {C}_{i,t}({P}_{i,t}){d}_{t}\\right\\rbrack+\\mathop{\\sum}\\limits_{i=1}^{n}\\mathop{\\sum}\\limits_{t={t}_{start}}^{T} {P}_{gwf}\\left\\lbrack {P}_{L,i,t} {d}_{t}\\right\\rbrack+\\mathop{\\sum}\\limits_{l=1}^{N}\\mathop{\\sum}\\limits_{t={t}_{start}}^{T} {M}_{1}\\lbrack S{L}_{l}^{+}+S{L}_{l}^{-}\\rbrack+\\mathop{\\sum}\\limits_{s=1}^{N}\\mathop{\\sum}\\limits_{t={t}_{start}}^{T} {M}_{1}\\lbrack S{L}_{s}^{+}} + \\\\ +\\mathop{\\sum}\\limits_{r=1}^{N}\\mathop{\\sum}\\limits_{t=1}^{T} {M}_{2} {P}_{r,t}^{d}+\\mathop{\\sum}\\limits_{i=1}^{N}\\mathop{\\sum}\\limits_{t=1}^{T} {M}_{3} {P}_{i,t}^{d}+\\mathop{\\sum}\\limits_{k \\in {\\Phi}_{a}}^{T}\\mathop{\\sum}\\limits_{t=1}^{T} {M}_{4}\\left\\lbrack S{L}_{k}^{-}\\right\\rbrack+\\mathop{\\sum}\\limits_{e=1}^{E}\\mathop{\\sum}\\limits_{t=1}^{T} \\lbrack {{{\\lambda}_{es}}^{dis} {P}_{es,t}^{dis}} + {{{\\lambda}_{es}}^{ch} {P}_{es,t}^{ch}} \\rbrack \\end{array} \\right. \\]",
+    "edit": 0.038135593220338986,
+    "cdm": 0.036,
+    "gt_cdm": "\\min \\left\\{  \\begin{array}{l} \\mathop{\\sum }\\limits_{{i = 1}}^{N}\\mathop{\\sum }\\limits_{{t = {t}_{start}}}^{T}\\left\\lbrack  {{C}_{i,t}\\left( {P}_{i,t}\\right) {d}_{t}}\\right\\rbrack   + \\mathop{\\sum }\\limits_{{i = 1}}^{n}\\mathop{\\sum }\\limits_{{t = {t}_{\\text {start}}}}^{T}{P}_{gwf}\\left\\lbrack  {{P}_{L,i,t}{d}_{t}}\\right\\rbrack   + \\mathop{\\sum }\\limits_{{l = 1}}^{{NL}}\\mathop{\\sum }\\limits_{{t = {t}_{\\text {start}}}}^{T}{M}_{1}\\left\\lbrack  {S{L}_{t}^{ + } + S{L}_{t}^{ - }}\\right\\rbrack   + \\mathop{\\sum }\\limits_{{s = 1}}^{{NS}}\\mathop{\\sum }\\limits_{{t = {t}_{\\text {start}}}}^{T}{M}_{1}\\left\\lbrack  {S{L}_{s}^{ + }}+\\right. \\\\  \\left. {+\\mathop{\\sum }\\limits_{{r = 1}}^{{NR}}\\mathop{\\sum }\\limits_{{t = 1}}^{T}{M}_{2}{P}_{r,t}^{d} + \\mathop{\\sum }\\limits_{{i = 1}}^{{NH}}\\mathop{\\sum }\\limits_{{t = 1}}^{T}{M}_{3}{P}_{i,t}^{d} + \\mathop{\\sum }\\limits_{{k \\in  {\\Phi }_{n}}}\\mathop{\\sum }\\limits_{{t = 1}}^{T}{M}_{4}\\left\\lbrack  {S{L}_{k}^{ - }}\\right\\rbrack   + \\mathop{\\sum }\\limits_{{es = 1}}^{{ES}}\\mathop{\\sum }\\limits_{{t = 1}}^{T}\\left\\lbrack  {{\\lambda }_{es}^{dis}{P}_{es,t}^{dis} + {\\lambda }_{es}^{ch}{P}_{es,t}^{ch}}\\right\\rbrack  }\\right.  \\end{array}\\right.",
+    "pred_cdm": "\\min \\left\\{ \\begin{array}{l} \\mathop{\\sum}\\limits_{i=1}^{N}\\mathop{\\sum}\\limits_{t={t}_{start}}^{T}\\left\\lbrack {C}_{i,t}({P}_{i,t}){d}_{t}\\right\\rbrack+\\mathop{\\sum}\\limits_{i=1}^{n}\\mathop{\\sum}\\limits_{t={t}_{start}}^{T} {P}_{gwf}\\left\\lbrack {P}_{L,i,t} {d}_{t}\\right\\rbrack+\\mathop{\\sum}\\limits_{l=1}^{N}\\mathop{\\sum}\\limits_{t={t}_{start}}^{T} {M}_{1}\\lbrack S{L}_{l}^{+}+S{L}_{l}^{-}\\rbrack+\\mathop{\\sum}\\limits_{s=1}^{N}\\mathop{\\sum}\\limits_{t={t}_{start}}^{T} {M}_{1}\\lbrack S{L}_{s}^{+}} + \\\\ +\\mathop{\\sum}\\limits_{r=1}^{N}\\mathop{\\sum}\\limits_{t=1}^{T} {M}_{2} {P}_{r,t}^{d}+\\mathop{\\sum}\\limits_{i=1}^{N}\\mathop{\\sum}\\limits_{t=1}^{T} {M}_{3} {P}_{i,t}^{d}+\\mathop{\\sum}\\limits_{k \\in {\\Phi}_{a}}^{T}\\mathop{\\sum}\\limits_{t=1}^{T} {M}_{4}\\left\\lbrack S{L}_{k}^{-}\\right\\rbrack+\\mathop{\\sum}\\limits_{e=1}^{E}\\mathop{\\sum}\\limits_{t=1}^{T} \\lbrack {{{\\lambda}_{es}}^{dis} {P}_{es,t}^{dis}} + {{{\\lambda}_{es}}^{ch} {P}_{es,t}^{ch}} \\rbrack \\end{array} \\right.",
+    "pred_cdm_alt": null,
+    "selection_reason": "cdm_low_edit_close",
+    "failure_class": "pending"
+  },
+  {
+    "case_id": "cdm-0008",
+    "idx": 1,
+    "img_id": "page-67013be9-58e5-4842-809d-7a3c1fc91fc7.png",
+    "image_name": "page-67013be9-58e5-4842-809d-7a3c1fc91fc7.png",
+    "gt_idx": [
+      1
+    ],
+    "pred_idx": [
+      15,
+      16,
+      17,
+      18,
+      19,
+      20
+    ],
+    "gt": "$$\\left\\{  \\begin{array}{l} y = \\sin \\left( {{wx} + \\varphi }\\right) \\\\  k \\in  Z,w > 0,\\left| \\varphi \\right|  < \\frac{\\pi }{2} \\end{array}\\right. \\left\\{  \\begin{array}{l} \\left( {a,b}\\right) \\text{ 单调}\\uparrow\\longrightarrow   - \\frac{\\pi }{2} \\leq  {aw} + \\varphi  < {bw} + \\varphi  \\leq  \\frac{\\pi }{2},\\left| {b - a}\\right|  \\leq  \\frac{T}{2} \\\\  \\left( {a,b}\\right) \\text{ 不单调 } \\longrightarrow   {aw} + \\varphi  < \\frac{\\pi }{2}\\left( {\\text{ 或 } - \\frac{\\pi }{2}}\\right)  < {bw} + \\varphi \\left( \\text{ 视情况具体分析 }\\right)  \\end{array}\\right.$$",
+    "pred": "\\begin{array}{l} {\\left\\{\\begin{array}{l} y = \\sin(wx + \\varphi) \\\\ k \\in \\mathbb{Z}, \\ w > 0, |\\varphi| < \\frac{\\pi}{2} \\end{array}\\right.} \\\\ {(a, b)} \\\\ {\\uparrow} \\\\ {(a, b)} \\\\ {-\\frac{\\pi}{2}} \\\\ {< bw + \\varphi} \\end{array}",
+    "edit": 0.6300813008130082,
+    "cdm": 0.0,
+    "gt_cdm": "\\left\\{  \\begin{array}{l} y = \\sin \\left( {{wx} + \\varphi }\\right) \\\\  k \\in  Z,w > 0,\\left| \\varphi \\right|  < \\frac{\\pi }{2} \\end{array}\\right. \\left\\{  \\begin{array}{l} \\left( {a,b}\\right) \\text{ 单调}\\uparrow\\longrightarrow   - \\frac{\\pi }{2} \\leq  {aw} + \\varphi  < {bw} + \\varphi  \\leq  \\frac{\\pi }{2},\\left| {b - a}\\right|  \\leq  \\frac{T}{2} \\\\  \\left( {a,b}\\right) \\text{ 不单调 } \\longrightarrow   {aw} + \\varphi  < \\frac{\\pi }{2}\\left( {\\text{ 或 } - \\frac{\\pi }{2}}\\right)  < {bw} + \\varphi \\left( \\text{ 视情况具体分析 }\\right)  \\end{array}\\right.",
+    "pred_cdm": "\\begin{array}{l} {\\left\\{\\begin{array}{l} y = \\sin(wx + \\varphi) \\\\ k \\in \\mathbb{Z}, \\ w > 0, |\\varphi| < \\frac{\\pi}{2} \\end{array}\\right.} \\\\ {(a, b)} \\\\ {\\uparrow} \\\\ {(a, b)} \\\\ {-\\frac{\\pi}{2}} \\\\ {< bw + \\varphi} \\end{array}",
+    "pred_cdm_alt": null,
+    "selection_reason": "cdm_zero",
+    "failure_class": "pending"
+  },
+  {
+    "case_id": "cdm-0009",
+    "idx": 1,
+    "img_id": "page-49776237-a9be-441d-a326-002eb7084385.png",
+    "image_name": "page-49776237-a9be-441d-a326-002eb7084385.png",
+    "gt_idx": [
+      1
+    ],
+    "pred_idx": [
+      1
+    ],
+    "gt": "$$\\left| \\begin{array}{c}\n\\binom{r}{r-1} & \\binom{r}{r} & 0 & \\cdots & 0 & 0 \\\\\n\\binom{r+1}{r-1} & \\binom{r+1}{r} & \\binom{r+1}{r+1} & \\cdots & 0 & 0 \\\\\n\\vdots & \\vdots & \\vdots & & \\vdots & \\vdots \\\\\n\\binom{n-3}{r-1} & \\binom{n-3}{r} & \\binom{n-3}{r+1} & \\cdots & \\binom{n-3}{n-3} & 0 \\\\\n\\binom{n-2}{r-1} & \\binom{n-2}{r} & \\binom{n-2}{r+1} & \\cdots & \\binom{n-2}{n-3} & \\binom{n-2}{n-2} \\\\\n\\binom{n-1}{r-1} & \\binom{n-1}{r} & \\binom{n-1}{r+1} & \\cdots & \\binom{n-1}{n-3} & \\binom{n-1}{n-2} \n\\end{array}\\right|+\n\\left| \\begin{array}{c}\n\\binom{r}{r} & 0 & 0 & \\cdots & 0 & 0 \\\\\n\\binom{r+1}{r-1} & \\binom{r+1}{r} & \\binom{r+1}{r+1} & \\cdots & 0 & 0 \\\\\n\\vdots & \\vdots & \\vdots &  & \\vdots & \\vdots \\\\\n\\binom{n-3}{r-1} & \\binom{n-3}{r} & \\binom{n-3}{r+1} & \\cdots & \\binom{n-3}{n-3} & 0 \\\\\n\\binom{n-2}{r-1} & \\binom{n-2}{r} & \\binom{n-2}{r+1} & \\cdots & \\binom{n-2}{n-3} & \\binom{n-2}{n-2}\\\\\n\\binom{n-1}{r-1} & \\binom{n-1}{r} & \\binom{n-1}{r+1} & \\cdots & \\binom{n-1}{n-3} & \\binom{n-1}{n-2}\n\\end{array}\\right|$$",
+    "pred": "\\[\\begin{vmatrix}{{{\\binom{r}{r-1}}}}&{{{\\binom{r}{r}}}}&{{{0}}}&{{{\\cdots}}}&{{{0}}}&{{{0}}} \\\\{{{\\binom{r+1}{r-1}}}}&{{{\\binom{r+1}{r}}}}&{{{\\binom{r+1}{r+1}}}}&{{{\\cdots}}}&{{{0}}}&{{{0}}} \\\\{{{\\vdots}}}&{{{\\vdots}}}&{{{\\vdots}}}&{{{\\vdots}}}&{{{\\vdots}}} \\\\{{{\\binom{n-3}{r-1}}}}&{{{\\binom{n-3}{r}}}}&{{{\\binom{n-3}{r+1}}}}&{{{\\cdots}}}&{{{\\binom{n-3}{n-3}}}}&{{{0}}} \\\\{{{\\binom{n-2}{r-1}}}}&{{{\\binom{n-2}{r}}}}&{{{\\binom{n-2}{r+1}}}}&{{{\\cdots}}}&{{{\\binom{n-2}{n-3}}}}&{{{\\binom{n-2}{n-2}}}} \\\\{{{\\binom{n-1}{r-1}}}}&{{{\\binom{n-1}{r}}}}&{{{\\binom{n-1}{r+1}}}}&{{{\\cdots}}}&{{{\\binom{n-1}{n-3}}}}&{{{\\binom{n-1}{n-2}}}}\\end{vmatrix}+\\begin{vmatrix}{{{\\binom{r}{r}}}}&{{{0}}}&{{{0}}}&{{{\\cdots}}}&{{{0}}}&{{{0}}} \\\\{{{\\binom{r+1}{r-1}}}}&{{{\\binom{r+1}{r}}}}&{{{\\binom{r+1}{r+1}}}}&{{{\\cdots}}}&{{{0}}}&{{{0}}} \\\\{{{\\vdots}}}&{{{\\vdots}}}&{{{\\vdots}}}&{{{\\vdots}}}&{{{\\vdots}}} \\\\{{{\\binom{n-3}{r-1}}}}&{{{\\binom{n-3}{r}}}}&{{{\\binom{n-3}{r+1}}}}&{{{\\cdots}}}&{{{\\binom{n-3}{n-3}}}}&{{{0}}} \\\\{{{\\binom{n-2}{r-1}}}}&{{{\\binom{n-2}{r}}}}&{{{\\binom{n-2}{r+1}}}}&{{{\\cdots}}}&{{{\\binom{n-2}{n-3}}}}&{{{\\binom{n-2}{n-2}}}} \\\\{{{\\binom{n-1}{r-1}}}}&{{{\\binom{n-1}{r}}}}&{{{\\binom{n-1}{r+1}}}}&{{{\\cdots}}}&{{{\\binom{n-1}{n-3}}}}&{{{\\binom{n-1}{n-2}}}}\\end{vmatrix}\\]",
+    "edit": 0.0893760539629005,
+    "cdm": 0.394,
+    "gt_cdm": "\\left| \\begin{array}{c}\n\\binom{r}{r-1} & \\binom{r}{r} & 0 & \\cdots & 0 & 0 \\\\\n\\binom{r+1}{r-1} & \\binom{r+1}{r} & \\binom{r+1}{r+1} & \\cdots & 0 & 0 \\\\\n\\vdots & \\vdots & \\vdots & & \\vdots & \\vdots \\\\\n\\binom{n-3}{r-1} & \\binom{n-3}{r} & \\binom{n-3}{r+1} & \\cdots & \\binom{n-3}{n-3} & 0 \\\\\n\\binom{n-2}{r-1} & \\binom{n-2}{r} & \\binom{n-2}{r+1} & \\cdots & \\binom{n-2}{n-3} & \\binom{n-2}{n-2} \\\\\n\\binom{n-1}{r-1} & \\binom{n-1}{r} & \\binom{n-1}{r+1} & \\cdots & \\binom{n-1}{n-3} & \\binom{n-1}{n-2} \n\\end{array}\\right|+\n\\left| \\begin{array}{c}\n\\binom{r}{r} & 0 & 0 & \\cdots & 0 & 0 \\\\\n\\binom{r+1}{r-1} & \\binom{r+1}{r} & \\binom{r+1}{r+1} & \\cdots & 0 & 0 \\\\\n\\vdots & \\vdots & \\vdots &  & \\vdots & \\vdots \\\\\n\\binom{n-3}{r-1} & \\binom{n-3}{r} & \\binom{n-3}{r+1} & \\cdots & \\binom{n-3}{n-3} & 0 \\\\\n\\binom{n-2}{r-1} & \\binom{n-2}{r} & \\binom{n-2}{r+1} & \\cdots & \\binom{n-2}{n-3} & \\binom{n-2}{n-2}\\\\\n\\binom{n-1}{r-1} & \\binom{n-1}{r} & \\binom{n-1}{r+1} & \\cdots & \\binom{n-1}{n-3} & \\binom{n-1}{n-2}\n\\end{array}\\right|",
+    "pred_cdm": "\\begin{vmatrix}\\binom{r}{r-1}&\\binom{r}{r}&0&\\cdots&0&0\\\\\\binom{r+1}{r-1}&\\binom{r+1}{r}&\\binom{r+1}{r+1}&\\cdots&0&0\\\\\\vdots&\\vdots&\\vdots&\\vdots&\\vdots\\\\\\binom{n-3}{r-1}&\\binom{n-3}{r}&\\binom{n-3}{r+1}&\\cdots&\\binom{n-3}{n-3}&0\\\\\\binom{n-2}{r-1}&\\binom{n-2}{r}&\\binom{n-2}{r+1}&\\cdots&\\binom{n-2}{n-3}&\\binom{n-2}{n-2}\\\\\\binom{n-1}{r-1}&\\binom{n-1}{r}&\\binom{n-1}{r+1}&\\cdots&\\binom{n-1}{n-3}&\\binom{n-1}{n-2}\\end{vmatrix}+\\begin{vmatrix}\\binom{r}{r}&0&0&\\cdots&0&0\\\\\\binom{r+1}{r-1}&\\binom{r+1}{r}&\\binom{r+1}{r+1}&\\cdots&0&0\\\\\\vdots&\\vdots&\\vdots&\\vdots&\\vdots\\\\\\binom{n-3}{r-1}&\\binom{n-3}{r}&\\binom{n-3}{r+1}&\\cdots&\\binom{n-3}{n-3}&0\\\\\\binom{n-2}{r-1}&\\binom{n-2}{r}&\\binom{n-2}{r+1}&\\cdots&\\binom{n-2}{n-3}&\\binom{n-2}{n-2}\\\\\\binom{n-1}{r-1}&\\binom{n-1}{r}&\\binom{n-1}{r+1}&\\cdots&\\binom{n-1}{n-3}&\\binom{n-1}{n-2}\\end{vmatrix}",
+    "pred_cdm_alt": "\\begin{vmatrix}\\binom{r}{r-1}&\\binom{r}{r}&0&\\cdots&0&0\\\\\\binom{r+1}{r-1}&\\binom{r+1}{r}&\\binom{r+1}{r+1}&\\cdots&0&0\\\\\\vdots&\\vdots&\\vdots&\\vdots&\\vdots\\\\\\binom{n-3}{r-1}&\\binom{n-3}{r}&\\binom{n-3}{r+1}&\\cdots&\\binom{n-3}{n-3}&0\\\\\\binom{n-2}{r-1}&\\binom{n-2}{r}&\\binom{n-2}{r+1}&\\cdots&\\binom{n-2}{n-3}&\\binom{n-2}{n-2}\\\\\\binom{n-1}{r-1}&\\binom{n-1}{r}&\\binom{n-1}{r+1}&\\cdots&\\binom{n-1}{n-3}&\\binom{n-1}{n-2}\\end{vmatrix}+\\begin{vmatrix}\\binom{r}{r}&0&0&\\cdots&0&0\\\\\\binom{r+1}{r-1}&\\binom{r+1}{r}&\\binom{r+1}{r+1}&\\cdots&0&0\\\\\\vdots&\\vdots&\\vdots&\\vdots&\\vdots\\\\\\binom{n-3}{r-1}&\\binom{n-3}{r}&\\binom{n-3}{r+1}&\\cdots&\\binom{n-3}{n-3}&0\\\\\\binom{n-2}{r-1}&\\binom{n-2}{r}&\\binom{n-2}{r+1}&\\cdots&\\binom{n-2}{n-3}&\\binom{n-2}{n-2}\\\\\\binom{n-1}{r-1}&\\binom{n-1}{r}&\\binom{n-1}{r+1}&\\cdots&\\binom{n-1}{n-3}&\\binom{n-1}{n-2}\\end{vmatrix}",
+    "selection_reason": "cdm_low_edit_close",
+    "failure_class": "pending"
+  },
+  {
+    "case_id": "cdm-0010",
+    "idx": 10,
+    "img_id": "page-b2349b51-01db-4dc1-9e4a-58e52f5e4362.png",
+    "image_name": "page-b2349b51-01db-4dc1-9e4a-58e52f5e4362.png",
+    "gt_idx": [
+      10
+    ],
+    "pred_idx": [
+      11
+    ],
+    "gt": "$$[M]_{p_{2},T_{2}}-[M]_{p_{1},T_{1}}=[\\underbrace {M]_{p_2,~T_2}^{*}-[M}_{\\mathbf {A}}]_{p_1,~T_1}^{*}\\underbrace {+[M_{1r}]}_{\\mathbf {B}}-\\underbrace {[M_{2r}}_{\\mathbf {C}}]\\tag{8-79}$$",
+    "pred": "\\[ \\frac{\\left[M\\right]_{p_{2},r_{2}}-\\left[M\\right]_{p_{1},r_{1}}=\\underbrace{[\\underbrace{M}_{p_{2},r_{2}}]}^{*,\\underbrace{r_{2}-\\left[M\\right]}_{p_{1},r_{1}}}_{\\mathbf{A}},\\underbrace{\\frac{1}{r}\\left[\\underbrace{M}_{p_{1},r_{1}}]}_{B}-\\underbrace{\\left[\\underbrace{M}_{2r}\\right]}_{C}}{} \\]",
+    "edit": 0.48502994011976047,
+    "cdm": 0.0,
+    "gt_cdm": "[M]_{p_{2},T_{2}}-[M]_{p_{1},T_{1}}=[\\underbrace {M]_{p_2,~T_2}^{*}-[M}_{\\mathbf {A}}]_{p_1,~T_1}^{*}\\underbrace {+[M_{1r}]}_{\\mathbf {B}}-\\underbrace {[M_{2r}}_{\\mathbf {C}}]",
+    "pred_cdm": "\\frac{\\left[M\\right]_{p_{2},r_{2}}-\\left[M\\right]_{p_{1},r_{1}}=\\underbrace{[\\underbrace{M}_{p_{2},r_{2}}]}^{*,\\underbrace{r_{2}-\\left[M\\right]}_{p_{1},r_{1}}}_{\\mathbf{A}},\\underbrace{\\frac{1}{r}\\left[\\underbrace{M}_{p_{1},r_{1}}]}_{B}-\\underbrace{\\left[\\underbrace{M}_{2r}\\right]}_{C}}{}",
+    "pred_cdm_alt": null,
+    "selection_reason": "cdm_zero",
+    "failure_class": "pending"
+  },
+  {
+    "case_id": "cdm-0011",
+    "idx": 16,
+    "img_id": "page-21967f5d-667d-488e-a5b3-76b9d6f53656.png",
+    "image_name": "page-21967f5d-667d-488e-a5b3-76b9d6f53656.png",
+    "gt_idx": [
+      16
+    ],
+    "pred_idx": [
+      ""
+    ],
+    "gt": "$$Q_{\\mu \\nu}(\\nabla^{(m)} h, \\nabla^{(m)} h)$$",
+    "pred": "",
+    "edit": 1.0,
+    "cdm": 0.0,
+    "gt_cdm": "Q_{\\mu \\nu}(\\nabla^{(m)} h, \\nabla^{(m)} h)",
+    "pred_cdm": "",
+    "pred_cdm_alt": null,
+    "selection_reason": "prediction_empty",
+    "failure_class": "pending"
+  },
+  {
+    "case_id": "cdm-0012",
+    "idx": 20,
+    "img_id": "page-21967f5d-667d-488e-a5b3-76b9d6f53656.png",
+    "image_name": "page-21967f5d-667d-488e-a5b3-76b9d6f53656.png",
+    "gt_idx": [
+      20
+    ],
+    "pred_idx": [
+      ""
+    ],
+    "gt": "$$+ \\frac{1}{2} m^{\\alpha {\\alpha}^{\\prime}} m^{\\beta {\\beta}^{\\prime}} (\\nabla^{(m)}{}_{{\\beta}^{\\prime}} h_{\\alpha {\\alpha}^{\\prime}} \\, \\nabla^{(m)}{}_\\mu h_{\\beta \\nu} - \\nabla^{(m)}{}_\\mu h_{\\alpha {\\alpha}^{\\prime}} \\, \\nabla^{(m)}{}_{{\\beta}^{\\prime}} h_{\\beta \\nu})$$",
+    "pred": "",
+    "edit": 1.0,
+    "cdm": 0.0,
+    "gt_cdm": "+ \\frac{1}{2} m^{\\alpha {\\alpha}^{\\prime}} m^{\\beta {\\beta}^{\\prime}} (\\nabla^{(m)}{}_{{\\beta}^{\\prime}} h_{\\alpha {\\alpha}^{\\prime}} \\, \\nabla^{(m)}{}_\\mu h_{\\beta \\nu} - \\nabla^{(m)}{}_\\mu h_{\\alpha {\\alpha}^{\\prime}} \\, \\nabla^{(m)}{}_{{\\beta}^{\\prime}} h_{\\beta \\nu})",
+    "pred_cdm": "",
+    "pred_cdm_alt": null,
+    "selection_reason": "prediction_empty",
+    "failure_class": "pending"
+  },
+  {
+    "case_id": "cdm-0013",
+    "idx": 21,
+    "img_id": "page-21967f5d-667d-488e-a5b3-76b9d6f53656.png",
+    "image_name": "page-21967f5d-667d-488e-a5b3-76b9d6f53656.png",
+    "gt_idx": [
+      21
+    ],
+    "pred_idx": [
+      ""
+    ],
+    "gt": "$$+ \\frac{1}{2} m^{\\alpha {\\alpha}^{\\prime}} m^{\\beta {\\beta}^{\\prime}} (\\nabla^{(m)}{}_{{\\beta}^{\\prime}} h_{\\alpha {\\alpha}^{\\prime}} \\, \\nabla^{(m)}{}_\\nu h_{\\beta \\mu} - \\nabla^{(m)}{}_\\nu h_{\\alpha {\\alpha}^{\\prime}} \\, \\nabla^{(m)}{}_{{\\beta}^{\\prime}} h_{\\beta \\mu}).$$",
+    "pred": "",
+    "edit": 1.0,
+    "cdm": 0.0,
+    "gt_cdm": "+ \\frac{1}{2} m^{\\alpha {\\alpha}^{\\prime}} m^{\\beta {\\beta}^{\\prime}} (\\nabla^{(m)}{}_{{\\beta}^{\\prime}} h_{\\alpha {\\alpha}^{\\prime}} \\, \\nabla^{(m)}{}_\\nu h_{\\beta \\mu} - \\nabla^{(m)}{}_\\nu h_{\\alpha {\\alpha}^{\\prime}} \\, \\nabla^{(m)}{}_{{\\beta}^{\\prime}} h_{\\beta \\mu}).",
+    "pred_cdm": "",
+    "pred_cdm_alt": null,
+    "selection_reason": "prediction_empty",
+    "failure_class": "pending"
+  },
+  {
+    "case_id": "cdm-0014",
+    "idx": 4,
+    "img_id": "page-cdb92c2f-f43f-45ef-ace7-91d4664a7834.png",
+    "image_name": "page-cdb92c2f-f43f-45ef-ace7-91d4664a7834.png",
+    "gt_idx": [
+      4
+    ],
+    "pred_idx": [
+      2
+    ],
+    "gt": "$$= \\left\\{  \\begin{array}{ll}  - {\\lambda }_{i}{f}_{{\\lambda }_{1},{\\lambda }_{2},\\cdots ,{\\lambda }_{n - 1}}\\left( {{p}_{1},{p}_{2},\\cdots ,{p}_{n}}\\right) , & i = 1,\\cdots n-1,\\\\  \\left( {\\partial  + {\\lambda }_{1} + {\\lambda }_{2} + \\cdots  + {\\lambda }_{n - 1}}\\right) {f}_{{\\lambda }_{1},{\\lambda }_{2},\\cdots ,{\\lambda }_{n - 1}}\\left( {{p}_{1},{p}_{2},\\cdots ,{p}_{n}}\\right) , & i = n. \\end{array}\\right.  \\tag{12}$$",
+    "pred": "\\[&=\\begin{cases}-\\lambda_{i}f_{\\lambda_{1},\\lambda_{2},\\cdots,\\lambda_{n-1}}(p_{1},p_{2},\\cdots,p_{n}),&i=1,\\cdots,n-1,\\ $ \\partial+\\lambda_{1}+\\lambda_{2}+\\cdots+\\lambda_{n-1})f_{\\lambda_{1},\\lambda_{2},\\cdots,\\lambda_{n-1}}(p_{1},p_{2},\\cdots,p_{n}),&i=n.\\end{cases}\\]",
+    "edit": 0.1277533039647577,
+    "cdm": 0.0,
+    "gt_cdm": "= \\left\\{  \\begin{array}{ll}  - {\\lambda }_{i}{f}_{{\\lambda }_{1},{\\lambda }_{2},\\cdots ,{\\lambda }_{n - 1}}\\left( {{p}_{1},{p}_{2},\\cdots ,{p}_{n}}\\right) , & i = 1,\\cdots n-1,\\\\  \\left( {\\partial  + {\\lambda }_{1} + {\\lambda }_{2} + \\cdots  + {\\lambda }_{n - 1}}\\right) {f}_{{\\lambda }_{1},{\\lambda }_{2},\\cdots ,{\\lambda }_{n - 1}}\\left( {{p}_{1},{p}_{2},\\cdots ,{p}_{n}}\\right) , & i = n. \\end{array}\\right.",
+    "pred_cdm": "&=\\begin{cases}-\\lambda_{i}f_{\\lambda_{1},\\lambda_{2},\\cdots,\\lambda_{n-1}}(p_{1},p_{2},\\cdots,p_{n}),&i=1,\\cdots,n-1,\\ $ \\partial+\\lambda_{1}+\\lambda_{2}+\\cdots+\\lambda_{n-1})f_{\\lambda_{1},\\lambda_{2},\\cdots,\\lambda_{n-1}}(p_{1},p_{2},\\cdots,p_{n}),&i=n.\\end{cases}",
+    "pred_cdm_alt": null,
+    "selection_reason": "cdm_zero",
+    "failure_class": "pending"
+  },
+  {
+    "case_id": "cdm-0015",
+    "idx": 12,
+    "img_id": "page-cdb92c2f-f43f-45ef-ace7-91d4664a7834.png",
+    "image_name": "page-cdb92c2f-f43f-45ef-ace7-91d4664a7834.png",
+    "gt_idx": [
+      12
+    ],
+    "pred_idx": [
+      12
+    ],
+    "gt": "$$= \\sum_{i=1}^{n} (-1)^{i+1} [\\alpha^{n-1}(p_i)_{\\lambda_i} f_{\\lambda_1, \\cdots, \\hat{\\lambda}_i, \\cdots, \\lambda_n}(p_1, \\cdots, \\hat{p}_i, \\cdots, p_{n+1})\\tag{14}]$$",
+    "pred": "\\[=&\\sum_{i=1}^{n}(-1)^{i+1}[\\alpha^{n-1}(p_{i})_{\\lambda_{i}}f_{\\lambda_{1},\\cdots,\\hat{\\lambda_{i}}},\\cdots,\\lambda_{n}}(p_{1},\\cdots,\\hat{p_{i}},\\cdots,p_{n+1})]\\]",
+    "edit": 0.030303030303030304,
+    "cdm": 0.0,
+    "gt_cdm": "= \\sum_{i=1}^{n} (-1)^{i+1} [\\alpha^{n-1}(p_i)_{\\lambda_i} f_{\\lambda_1, \\cdots, \\hat{\\lambda}_i, \\cdots, \\lambda_n}(p_1, \\cdots, \\hat{p}_i, \\cdots, p_{n+1})]",
+    "pred_cdm": "=&\\sum_{i=1}^{n}(-1)^{i+1}[\\alpha^{n-1}(p_{i})_{\\lambda_{i}}f_{\\lambda_{1},\\cdots,\\hat{\\lambda_{i}}},\\cdots,\\lambda_{n}}(p_{1},\\cdots,\\hat{p_{i}},\\cdots,p_{n+1})]",
+    "pred_cdm_alt": null,
+    "selection_reason": "cdm_zero",
+    "failure_class": "pending"
+  },
+  {
+    "case_id": "cdm-0016",
+    "idx": 9,
+    "img_id": "page-e721a819-6dbf-453a-a7ad-857c24f9aa3e.png",
+    "image_name": "page-e721a819-6dbf-453a-a7ad-857c24f9aa3e.png",
+    "gt_idx": [
+      9
+    ],
+    "pred_idx": [
+      10
+    ],
+    "gt": "$$= \\frac{{\\zeta }_{\\mathfrak{q}}{\\left( 2\\right) }^{2}\\chi \\left( \\mathfrak{l}\\right) \\deg \\left( {\\mathrm{T}}_{\\mathrm{\\mathfrak{l}}}\\right) }{{\\zeta }_{\\mathfrak{q}}{\\left( 1\\right) }^{2}{V}_{F}} \\cdot  {\\left| \\frac{1}{{q}^{1/2}}\\left( \\left\\langle  {\\varphi }_{1} \\cdot  \\left( {\\mathrm{T}}_{\\mathfrak{q}}{\\varphi }_{2}\\right) ,{\\varphi }_{\\chi }\\right\\rangle   - \\frac{1}{{q}_{1}} \\cdot  \\left\\langle  {\\varphi }_{1} \\cdot  \\left( {\\mathrm{T}}_{{\\mathfrak{q}}_{1}^{m - 2}}{\\varphi }_{2}\\right) ,{\\varphi }_{\\chi }\\right\\rangle  \\right) \\right| }^{2}\\tag{5.5}$$",
+    "pred": "\\[&=\\frac{\\zeta_{\\mathfrak{q}}(2)^{2}\\chi(\\mathfrak{l})\\deg(\\mathrm{T}_{\\mathfrak{l}})}{\\zeta_{\\mathfrak{q}}(1)^{2}V_{F}}\\cdot\\left|\\frac{1}{q^{1/2}}\\left(\\langle\\varphi_{1}\\cdot(\\mathrm{T}_{\\mathfrak{q}}\\varphi_{2}),\\varphi_{\\chi}\\rangle-\\frac{1}{q_{1}}\\cdot\\left\\langle\\varphi_{1}\\cdot(\\mathrm{T}_{\\mathfrak{q}_{1}^{m-2}}\\varphi_{2}),\\varphi_{\\chi}\\right\\rangle\\right)\\right|^{2}\\]",
+    "edit": 0.09210526315789473,
+    "cdm": 0.0,
+    "gt_cdm": "= \\frac{{\\zeta }_{\\mathfrak{q}}{\\left( 2\\right) }^{2}\\chi \\left( \\mathfrak{l}\\right) \\deg \\left( {\\mathrm{T}}_{\\mathrm{\\mathfrak{l}}}\\right) }{{\\zeta }_{\\mathfrak{q}}{\\left( 1\\right) }^{2}{V}_{F}} \\cdot  {\\left| \\frac{1}{{q}^{1/2}}\\left( \\left\\langle  {\\varphi }_{1} \\cdot  \\left( {\\mathrm{T}}_{\\mathfrak{q}}{\\varphi }_{2}\\right) ,{\\varphi }_{\\chi }\\right\\rangle   - \\frac{1}{{q}_{1}} \\cdot  \\left\\langle  {\\varphi }_{1} \\cdot  \\left( {\\mathrm{T}}_{{\\mathfrak{q}}_{1}^{m - 2}}{\\varphi }_{2}\\right) ,{\\varphi }_{\\chi }\\right\\rangle  \\right) \\right| }^{2}",
+    "pred_cdm": "&=\\frac{\\zeta_{\\mathfrak{q}}(2)^{2}\\chi(\\mathfrak{l})\\deg(\\mathrm{T}_{\\mathfrak{l}})}{\\zeta_{\\mathfrak{q}}(1)^{2}V_{F}}\\cdot\\left|\\frac{1}{q^{1/2}}\\left(\\langle\\varphi_{1}\\cdot(\\mathrm{T}_{\\mathfrak{q}}\\varphi_{2}),\\varphi_{\\chi}\\rangle-\\frac{1}{q_{1}}\\cdot\\left\\langle\\varphi_{1}\\cdot(\\mathrm{T}_{\\mathfrak{q}_{1}^{m-2}}\\varphi_{2}),\\varphi_{\\chi}\\right\\rangle\\right)\\right|^{2}",
+    "pred_cdm_alt": null,
+    "selection_reason": "cdm_zero",
+    "failure_class": "pending"
+  },
+  {
+    "case_id": "cdm-0017",
+    "idx": 3,
+    "img_id": "page-dc728bd5-50a9-41e8-9e5a-d4b01e6664a2.png",
+    "image_name": "page-dc728bd5-50a9-41e8-9e5a-d4b01e6664a2.png",
+    "gt_idx": [
+      3
+    ],
+    "pred_idx": [
+      1
+    ],
+    "gt": "$${\\int }_{Q}\\left| {g\\lambda }\\right| \\mathop{\\prod }\\limits_{{i \\in  \\tau }}{\\left( \\mathop{\\sum }\\limits_{{P \\in  \\tilde{\\mathcal{S}},P \\subseteq  Q}}{\\eta }_{i,P}{\\chi }_{P}\\left( x\\right) \\right) }^{{k}_{i} - {t}_{i}} \\lesssim  {\\int }_{Q}{A}_{\\tilde{\\mathcal{S}},{\\eta }_{\\tau \\left( 1\\right) }}^{{k}_{\\tau \\left( 1\\right) } - {t}_{\\tau \\left( 1\\right) }}\\left( {{A}_{\\tilde{\\mathcal{S}},{\\eta }_{\\tau \\left( 2\\right) }}^{{k}_{\\tau \\left( 2\\right) } - {t}_{\\tau \\left( 2\\right) }}\\left( {{A}_{\\tilde{\\mathcal{S}},{\\eta }_{\\tau \\left( 3\\right) }}^{{k}_{\\tau \\left( 3\\right) } - {t}_{\\tau \\left( 3\\right) }}\\left| {g\\lambda }\\right| }\\right) }\\right) .\\tag{4.27}$$",
+    "pred": "\\[ \\int_{Q}|g\\lambda|\\prod_{i\\in\\tau}\\Big(\\sum_{P\\in\\tilde{\\mathcal{S}},P\\subseteq Q}\\eta_{i,P}\\chi_{P}(x)\\Big)^{k_{i}-t_{i}}\\lesssim\\int_{Q}A_{\\tilde{\\mathcal{S}},\\eta_{\\tau(1)}}^{k_{\\tau(1)}-t_{\\tau(1)}}\\big(A_{\\tilde{\\mathcal{S}},\\eta_{\\tau(2)}}^{k_{\\tau(2)}-t_{\\tau(2)}}\\big(A_{\\tilde{\\mathcal{S}},\\eta_{\\tau(3)}}^{k_{\\tau(3)}-t_{\\tau(3)}}|g\\lambda|\\big)\\Big). \\]",
+    "edit": 0.24104234527687296,
+    "cdm": 0.0,
+    "gt_cdm": "{\\int }_{Q}\\left| {g\\lambda }\\right| \\mathop{\\prod }\\limits_{{i \\in  \\tau }}{\\left( \\mathop{\\sum }\\limits_{{P \\in  \\tilde{\\mathcal{S}},P \\subseteq  Q}}{\\eta }_{i,P}{\\chi }_{P}\\left( x\\right) \\right) }^{{k}_{i} - {t}_{i}} \\lesssim  {\\int }_{Q}{A}_{\\tilde{\\mathcal{S}},{\\eta }_{\\tau \\left( 1\\right) }}^{{k}_{\\tau \\left( 1\\right) } - {t}_{\\tau \\left( 1\\right) }}\\left( {{A}_{\\tilde{\\mathcal{S}},{\\eta }_{\\tau \\left( 2\\right) }}^{{k}_{\\tau \\left( 2\\right) } - {t}_{\\tau \\left( 2\\right) }}\\left( {{A}_{\\tilde{\\mathcal{S}},{\\eta }_{\\tau \\left( 3\\right) }}^{{k}_{\\tau \\left( 3\\right) } - {t}_{\\tau \\left( 3\\right) }}\\left| {g\\lambda }\\right| }\\right) }\\right) .",
+    "pred_cdm": "\\int_{Q}|g\\lambda|\\prod_{i\\in\\tau}\\Big(\\sum_{P\\in\\tilde{\\mathcal{S}},P\\subseteq Q}\\eta_{i,P}\\chi_{P}(x)\\Big)^{k_{i}-t_{i}}\\lesssim\\int_{Q}A_{\\tilde{\\mathcal{S}},\\eta_{\\tau(1)}}^{k_{\\tau(1)}-t_{\\tau(1)}}\\big(A_{\\tilde{\\mathcal{S}},\\eta_{\\tau(2)}}^{k_{\\tau(2)}-t_{\\tau(2)}}\\big(A_{\\tilde{\\mathcal{S}},\\eta_{\\tau(3)}}^{k_{\\tau(3)}-t_{\\tau(3)}}|g\\lambda|\\big)\\Big).",
+    "pred_cdm_alt": null,
+    "selection_reason": "cdm_zero",
+    "failure_class": "pending"
+  },
+  {
+    "case_id": "cdm-0018",
+    "idx": 16,
+    "img_id": "page-dc728bd5-50a9-41e8-9e5a-d4b01e6664a2.png",
+    "image_name": "page-dc728bd5-50a9-41e8-9e5a-d4b01e6664a2.png",
+    "gt_idx": [
+      16
+    ],
+    "pred_idx": [
+      15
+    ],
+    "gt": "$$= \\mathop{\\prod }\\limits_{{i \\in  \\tau }}{\\|{b}_{i}\\|}_{{\\mathrm{{BMO}}}_{{\\eta }_{i}}}^{{k}_{i}}{\\int }_{X}{A}_{\\tilde{\\mathcal{S}}}\\left( {{A}_{\\tilde{\\mathcal{S}},{\\eta }_{\\tau \\left( 3\\right) }}^{{k}_{\\tau \\left( 3\\right) } - {t}_{\\tau \\left( 3\\right) }}\\left( {{A}_{\\tilde{\\mathcal{S}},{\\eta }_{\\tau \\left( 2\\right) }}^{{k}_{\\tau \\left( 2\\right) } - {t}_{\\tau \\left( 2\\right) }}\\left( {{A}_{\\tilde{\\mathcal{S}},{\\eta }_{\\tau \\left( 1\\right) }}^{{k}_{\\tau \\left( 1\\right) } - {t}_{\\tau \\left( 1\\right) } - 1}\\left( {{\\mathcal{A}}_{\\eta ,\\tilde{\\mathcal{S}},{\\eta }_{\\tau \\left( 1\\right) }}\\left( \\vec{\\mathbf{A}}\\right) }\\right) }\\right) }\\right) }\\right) \\left| {g\\lambda }\\right| ,$$",
+    "pred": "\\[=&\\prod_{i\\in\\tau}\\|b_{i}\\|_{\\mathrm{BMO}_{\\eta_{i}}}^{k_{i}}\\int_{X}A_{\\tilde{\\mathcal{S}}}\\left(A_{\\tilde{\\mathcal{S}},\\eta_{\\tau(3)}}^{k_{\\tau(3)}-t_{\\tau(3)}}\\left(A_{\\tilde{\\mathcal{S}},\\eta_{\\tau(2)}}^{k_{\\tau(2)}-t_{\\tau(2)}}\\left(A_{\\tilde{\\mathcal{S}},\\eta_{\\tau(1)}}^{k_{\\tau(1)}-t_{\\tau(1)}-1}\\left(\\mathcal{A}_{\\eta,\\tilde{\\mathcal{S}},\\eta_{\\tau(1)}}(\\overrightarrow{\\mathbf{A}})\\right)\\right)\\right)\\right)|g\\lambda|,\\]",
+    "edit": 0.175,
+    "cdm": 0.0,
+    "gt_cdm": "= \\mathop{\\prod }\\limits_{{i \\in  \\tau }}{\\|{b}_{i}\\|}_{{\\mathrm{{BMO}}}_{{\\eta }_{i}}}^{{k}_{i}}{\\int }_{X}{A}_{\\tilde{\\mathcal{S}}}\\left( {{A}_{\\tilde{\\mathcal{S}},{\\eta }_{\\tau \\left( 3\\right) }}^{{k}_{\\tau \\left( 3\\right) } - {t}_{\\tau \\left( 3\\right) }}\\left( {{A}_{\\tilde{\\mathcal{S}},{\\eta }_{\\tau \\left( 2\\right) }}^{{k}_{\\tau \\left( 2\\right) } - {t}_{\\tau \\left( 2\\right) }}\\left( {{A}_{\\tilde{\\mathcal{S}},{\\eta }_{\\tau \\left( 1\\right) }}^{{k}_{\\tau \\left( 1\\right) } - {t}_{\\tau \\left( 1\\right) } - 1}\\left( {{\\mathcal{A}}_{\\eta ,\\tilde{\\mathcal{S}},{\\eta }_{\\tau \\left( 1\\right) }}\\left( \\vec{\\mathbf{A}}\\right) }\\right) }\\right) }\\right) }\\right) \\left| {g\\lambda }\\right| ,",
+    "pred_cdm": "=&\\prod_{i\\in\\tau}\\|b_{i}\\|_{\\mathrm{BMO}_{\\eta_{i}}}^{k_{i}}\\int_{X}A_{\\tilde{\\mathcal{S}}}\\left(A_{\\tilde{\\mathcal{S}},\\eta_{\\tau(3)}}^{k_{\\tau(3)}-t_{\\tau(3)}}\\left(A_{\\tilde{\\mathcal{S}},\\eta_{\\tau(2)}}^{k_{\\tau(2)}-t_{\\tau(2)}}\\left(A_{\\tilde{\\mathcal{S}},\\eta_{\\tau(1)}}^{k_{\\tau(1)}-t_{\\tau(1)}-1}\\left(\\mathcal{A}_{\\eta,\\tilde{\\mathcal{S}},\\eta_{\\tau(1)}}(\\overrightarrow{\\mathbf{A}})\\right)\\right)\\right)\\right)|g\\lambda|,",
+    "pred_cdm_alt": "=&\\prod_{i\\in\\tau}\\|b_{i}\\|_{\\mathrm{BMO}_{\\eta_{i}}}^{k_{i}}\\int_{X}A_{\\tilde{\\mathcal{S}}}\\left(A_{\\tilde{\\mathcal{S}},\\eta_{\\tau(3)}}^{k_{\\tau(3)}-t_{\\tau(3)}}\\left(A_{\\tilde{\\mathcal{S}},\\eta_{\\tau(2)}}^{k_{\\tau(2)}-t_{\\tau(2)}}\\left(A_{\\tilde{\\mathcal{S}},\\eta_{\\tau(1)}}^{k_{\\tau(1)}-t_{\\tau(1)}-1}\\left(\\mathcal{A}_{\\eta,\\tilde{\\mathcal{S}},\\eta_{\\tau(1)}}(\\vec{\\mathbf{A}})\\right)\\right)\\right)\\right)|g\\lambda|,",
+    "selection_reason": "cdm_zero",
+    "failure_class": "pending"
+  },
+  {
+    "case_id": "cdm-0019",
+    "idx": 18,
+    "img_id": "page-dc728bd5-50a9-41e8-9e5a-d4b01e6664a2.png",
+    "image_name": "page-dc728bd5-50a9-41e8-9e5a-d4b01e6664a2.png",
+    "gt_idx": [
+      18
+    ],
+    "pred_idx": [
+      17
+    ],
+    "gt": "$$\\vec{\\mathbf{A}} = \\left( {{A}_{\\tilde{\\mathcal{S}},{\\eta }_{\\tau \\left( 1\\right) }}^{{t}_{\\tau \\left( 1\\right) }}\\left( \\left| {f}_{\\tau \\left( 1\\right) }\\right| \\right) ,{A}_{\\tilde{\\mathcal{S}},{\\eta }_{\\tau \\left( 2\\right) }}^{{t}_{\\tau \\left( 2\\right) }}\\left( \\left| {f}_{\\tau \\left( 2\\right) }\\right| \\right) ,{A}_{\\tilde{\\mathcal{S}},{\\eta }_{\\tau \\left( 3\\right) }}^{{t}_{\\tau \\left( 3\\right) }}\\left( \\left| {f}_{\\tau \\left( 3\\right) }\\right| \\right) ,{f}_{\\tau \\left( 4\\right) }}\\right) .$$",
+    "pred": "\\[ \\begin{array}{r}{\\vec{\\mathbf{A}}=\\left(A_{\\tilde{\\mathcal{S}},\\eta_{\\tau(1)}}^{t_{\\tau(1)}}(|f_{\\tau(1)}|),A_{\\tilde{\\mathcal{S}},\\eta_{\\tau(2)}}^{t_{\\tau(2)}}(|f_{\\tau(2)}|),A_{\\tilde{\\mathcal{S}},\\eta_{\\tau(3)}}^{t_{\\tau(3)}}(|f_{\\tau(3)}|),f_{\\tau(4)}\\right).}\\end{array} \\]",
+    "edit": 0.05952380952380952,
+    "cdm": 0.0,
+    "gt_cdm": "\\vec{\\mathbf{A}} = \\left( {{A}_{\\tilde{\\mathcal{S}},{\\eta }_{\\tau \\left( 1\\right) }}^{{t}_{\\tau \\left( 1\\right) }}\\left( \\left| {f}_{\\tau \\left( 1\\right) }\\right| \\right) ,{A}_{\\tilde{\\mathcal{S}},{\\eta }_{\\tau \\left( 2\\right) }}^{{t}_{\\tau \\left( 2\\right) }}\\left( \\left| {f}_{\\tau \\left( 2\\right) }\\right| \\right) ,{A}_{\\tilde{\\mathcal{S}},{\\eta }_{\\tau \\left( 3\\right) }}^{{t}_{\\tau \\left( 3\\right) }}\\left( \\left| {f}_{\\tau \\left( 3\\right) }\\right| \\right) ,{f}_{\\tau \\left( 4\\right) }}\\right) .",
+    "pred_cdm": "\\begin{array}{r}{\\vec{\\mathbf{A}}=\\left(A_{\\tilde{\\mathcal{S}},\\eta_{\\tau(1)}}^{t_{\\tau(1)}}(|f_{\\tau(1)}|),A_{\\tilde{\\mathcal{S}},\\eta_{\\tau(2)}}^{t_{\\tau(2)}}(|f_{\\tau(2)}|),A_{\\tilde{\\mathcal{S}},\\eta_{\\tau(3)}}^{t_{\\tau(3)}}(|f_{\\tau(3)}|),f_{\\tau(4)}\\right).}\\end{array}",
+    "pred_cdm_alt": null,
+    "selection_reason": "cdm_zero",
+    "failure_class": "pending"
+  },
+  {
+    "case_id": "cdm-0020",
+    "idx": 4,
+    "img_id": "page-85377cdf-d6a2-4611-bd50-08795bf7acb6.png",
+    "image_name": "page-85377cdf-d6a2-4611-bd50-08795bf7acb6.png",
+    "gt_idx": [
+      4
+    ],
+    "pred_idx": [
+      5
+    ],
+    "gt": "$$\\mathop{\\max }\\limits_{{j \\in  \\left\\lbrack  J\\right\\rbrack  }}{\\|{\\mathcal{P}}_{ : ,{S}_{{l}_{j}}}\\left( \\mathbf{E}\\right) {\\mathbf{V}}^{\\left( j\\right) }\\|}_{F} = \\mathop{\\max }\\limits_{{j \\in  \\left\\lbrack  J\\right\\rbrack  }}{\\|{\\mathbf{E}}_{ : ,{S}_{{l}_{j}}}{\\mathbf{V}}_{{S}_{{l}_{j}}, : }^{\\left( j\\right) }\\|}_{F} \\leq  2\\mathop{\\max }\\limits_{{j \\in  \\left\\lbrack  J\\right\\rbrack  }}{\\|{\\mathbf{E}}_{ : ,{S}_{{l}_{j}}}{\\mathbf{V}}_{{S}_{{l}_{j}}, : }^{\\left( j\\right) }{\\mathbf{V}}^{\\left( j\\right) \\top }{\\mathbf{V}}^{ * }\\|}_{F}$$",
+    "pred": "\\[\\max_{j\\in[J]}\\left\\|\\mathcal{P}_{:,S_{l_{j}}}(\\mathbf{E})\\mathbf{V}^{(j)}\\right\\|_{F}=&\\max_{j\\in[J]}\\left\\|\\mathbf{E}_{:,S_{l_{j}}}\\mathbf{V}_{S_{l_{j}},:}^{(j)}\\right\\|_{F}\\leq2\\max_{j\\in[J]}\\left\\|\\mathbf{E}_{:,S_{l_{j}}}\\mathbf{V}_{S_{l_{j}},:}^{(j)}\\mathbf{V}^{(j)\\top}\\mathbf{V}^{*}\\right\\|_{F}\\]",
+    "edit": 0.47555555555555556,
+    "cdm": 0.0,
+    "gt_cdm": "\\mathop{\\max }\\limits_{{j \\in  \\left\\lbrack  J\\right\\rbrack  }}{\\|{\\mathcal{P}}_{ : ,{S}_{{l}_{j}}}\\left( \\mathbf{E}\\right) {\\mathbf{V}}^{\\left( j\\right) }\\|}_{F} = \\mathop{\\max }\\limits_{{j \\in  \\left\\lbrack  J\\right\\rbrack  }}{\\|{\\mathbf{E}}_{ : ,{S}_{{l}_{j}}}{\\mathbf{V}}_{{S}_{{l}_{j}}, : }^{\\left( j\\right) }\\|}_{F} \\leq  2\\mathop{\\max }\\limits_{{j \\in  \\left\\lbrack  J\\right\\rbrack  }}{\\|{\\mathbf{E}}_{ : ,{S}_{{l}_{j}}}{\\mathbf{V}}_{{S}_{{l}_{j}}, : }^{\\left( j\\right) }{\\mathbf{V}}^{\\left( j\\right) \\top }{\\mathbf{V}}^{ * }\\|}_{F}",
+    "pred_cdm": "\\max_{j\\in[J]}\\left\\|\\mathcal{P}_{:,S_{l_{j}}}(\\mathbf{E})\\mathbf{V}^{(j)}\\right\\|_{F}=&\\max_{j\\in[J]}\\left\\|\\mathbf{E}_{:,S_{l_{j}}}\\mathbf{V}_{S_{l_{j}},:}^{(j)}\\right\\|_{F}\\leq2\\max_{j\\in[J]}\\left\\|\\mathbf{E}_{:,S_{l_{j}}}\\mathbf{V}_{S_{l_{j}},:}^{(j)}\\mathbf{V}^{(j)\\top}\\mathbf{V}^{*}\\right\\|_{F}",
+    "pred_cdm_alt": null,
+    "selection_reason": "cdm_zero",
+    "failure_class": "pending"
+  },
+  {
+    "case_id": "cdm-0021",
+    "idx": 7,
+    "img_id": "page-ad5a110f-a4b4-430b-b5db-ecd0ee394451.png",
+    "image_name": "page-ad5a110f-a4b4-430b-b5db-ecd0ee394451.png",
+    "gt_idx": [
+      7
+    ],
+    "pred_idx": [
+      ""
+    ],
+    "gt": "$$\\mathop{\\lim }\\limits_{{\\varepsilon  \\rightarrow  0}}{\\int }_{\\left\\{  \\parallel \\pmb x{\\parallel }_{\\mathbb{V}} \\geq  {\\varepsilon }^{-1}\\right\\}  }{e}^{\\kappa \\parallel \\pmb x{\\parallel }_{\\mathbb{H}}^{2}}\\parallel \\mathcal{C}\\left( \\pmb x\\right) {\\parallel }_{\\mathbb{H}}^{2}\\eta \\left( {\\mathrm{d}\\pmb x}\\right)  = 0. \\tag{6.19}$$",
+    "pred": "",
+    "edit": 1.0,
+    "cdm": 0.0,
+    "gt_cdm": "\\mathop{\\lim }\\limits_{{\\varepsilon  \\rightarrow  0}}{\\int }_{\\left\\{  \\parallel \\pmb x{\\parallel }_{\\mathbb{V}} \\geq  {\\varepsilon }^{-1}\\right\\}  }{e}^{\\kappa \\parallel \\pmb x{\\parallel }_{\\mathbb{H}}^{2}}\\parallel \\mathcal{C}\\left( \\pmb x\\right) {\\parallel }_{\\mathbb{H}}^{2}\\eta \\left( {\\mathrm{d}\\pmb x}\\right)  = 0.",
+    "pred_cdm": "",
+    "pred_cdm_alt": null,
+    "selection_reason": "prediction_empty",
+    "failure_class": "pending"
+  },
+  {
+    "case_id": "cdm-0022",
+    "idx": 10,
+    "img_id": "page-ad5a110f-a4b4-430b-b5db-ecd0ee394451.png",
+    "image_name": "page-ad5a110f-a4b4-430b-b5db-ecd0ee394451.png",
+    "gt_idx": [
+      10
+    ],
+    "pred_idx": [
+      ""
+    ],
+    "gt": "$$\\leq C \\int_{\\{\\|\\pmb x\\|_\\mathbb{V} \\geq \\varepsilon^{-1}\\}} e^{\\kappa \\|\\pmb x\\|_\\mathbb{H}^2} \\|\\pmb x\\|_\\mathbb{V}^4 \\|\\pmb x\\|_\\mathbb{H}^2 \\eta(d\\pmb x)$$",
+    "pred": "",
+    "edit": 1.0,
+    "cdm": 0.0,
+    "gt_cdm": "\\leq C \\int_{\\{\\|\\pmb x\\|_\\mathbb{V} \\geq \\varepsilon^{-1}\\}} e^{\\kappa \\|\\pmb x\\|_\\mathbb{H}^2} \\|\\pmb x\\|_\\mathbb{V}^4 \\|\\pmb x\\|_\\mathbb{H}^2 \\eta(d\\pmb x)",
+    "pred_cdm": "",
+    "pred_cdm_alt": null,
+    "selection_reason": "prediction_empty",
+    "failure_class": "pending"
+  },
+  {
+    "case_id": "cdm-0023",
+    "idx": 11,
+    "img_id": "page-ad5a110f-a4b4-430b-b5db-ecd0ee394451.png",
+    "image_name": "page-ad5a110f-a4b4-430b-b5db-ecd0ee394451.png",
+    "gt_idx": [
+      11
+    ],
+    "pred_idx": [
+      11
+    ],
+    "gt": "$$\\leq  \\frac{C}{{\\lambda }_{1}^{2\\delta }}{\\int }_{\\left\\{  \\parallel \\pmb x {\\parallel }_{\\mathbb{V}} \\geq  {\\varepsilon }^{-1}\\right\\}  }{e}^{\\kappa \\parallel \\pmb x {\\parallel }_{\\mathbb{H}}^{2}}{\\|{\\mathrm{A}}^{\\delta } \\pmb x \\|}_{\\mathbb{H}}^{8\\delta }{\\|{\\mathrm{A}}^{\\delta  + \\frac{1}{2}}\\pmb x \\|}_{\\mathbb{H}}^{4 - {8\\delta }}{\\|{\\mathrm{A}}^{\\delta }\\pmb x \\|}_{\\mathbb{H}}^{2}\\eta \\left( {\\mathrm{d}\\pmb x }\\right)$$",
+    "pred": "\\[ \\begin{align*}&\\int_{\\{\\|\\pmb x\\|_{\\mathbb{V}\\geq\\varepsilon^{-1}\\}\\}}e^{\\kappa\\|\\pmb x\\|_{\\mathbb{H}}^{2}}\\|\\mathcal{C}(\\pmb x)\\|_{\\mathbb{H}}^{2}\\eta(\\mathrm{d}\\pmb x)\\\\&\\leq C\\int_{\\{\\|\\pmb x\\|_{\\mathbb{V}\\geq\\varepsilon^{-1}\\}\\}}e^{\\kappa\\|\\pmb x\\|_{\\mathbb{H}}^{2}}\\|\\pmb x\\|_{\\mathbb{V}}^{4}\\|\\pmb x\\|_{\\mathbb{H}}^{2}\\eta(\\mathrm{d}\\pmb x)\\\\&\\leq\\frac{C}{\\lambda_{1}^{2\\delta}}\\int_{\\{\\|\\pmb x\\|_{\\mathbb{V}\\geq\\varepsilon^{-1}\\}\\}}e^{\\kappa\\|\\pmb x\\|_{\\mathbb{H}}^{2}}\\|\\mathrm{A}^{\\delta}\\pmb x\\|_{\\mathbb{H}}^{8\\delta}\\|\\mathrm{A}^{\\delta+\\frac{1}{2}}\\pmb x\\|_{\\mathbb{H}}^{4-8\\delta}\\|\\mathrm{A}^{\\delta}\\pmb x\\|_{\\mathbb{H}}^{2}\\eta(\\mathrm{d}\\pmb x)\\\\&\\leq\\frac{C}{\\lambda_{1}^{2\\delta}}\\int_{\\{\\|\\pmb x\\|_{\\mathbb{V}\\geq\\varepsilon^{-1}\\}\\}}e^{\\kappa\\|\\pmb x\\|_{\\mathbb{H}}^{2}}\\|\\mathrm{A}^{\\delta}\\pmb x\\|_{\\mathbb{H}}^{8\\delta+2}\\frac{\\|\\mathrm{A}^{\\delta+\\frac{1}{2}}\\pmb x\\|_{\\mathbb{H}}^{2}}{\\|\\mathrm{A}^{\\delta+\\frac{1}{2}}\\pmb x\\|_{\\mathbb{H}}^{8\\delta-2}}\\eta(\\mathrm{d}\\pmb x)\\\\&\\leq C\\lambda_{1}^{\\delta(2-8\\delta)}\\int_{\\{\\|\\pmb x\\|_{\\mathbb{V}\\geq\\varepsilon^{-1}\\}\\}}e^{\\kappa\\|\\pmb x\\|_{\\mathbb{H}}^{2}}\\|\\mathrm{A}^{\\delta}\\pmb x\\|_{\\mathbb{H}}^{8\\delta+2}\\frac{\\|\\mathrm{A}^{\\delta+\\frac{1}{2}}\\pmb x\\|_{\\mathbb{H}}^{2}}{\\|\\pmb x\\|_{\\mathbb{V}}^{8\\delta-2}}\\eta(\\mathrm{d}\\pmb x)\\\\&\\leq C\\lambda_{1}^{\\delta(2-8\\delta)}\\varepsilon^{8\\delta-2}\\int_{\\mathbb{H}}e^{\\kappa\\|\\pmb x\\|_{\\mathbb{H}}^{2}}\\|\\mathrm{A}^{\\delta}\\pmb x\\|_{\\mathbb{H}}^{8\\delta+2}\\|\\mathrm{A}^{\\delta+\\frac{1}{2}}\\pmb x\\|_{\\mathbb{H}}^{2}\\eta(\\mathrm{d}\\pmb x)\\\\&\\leq C\\varepsilon^{8\\delta-2},\\end{align*} \\]",
+    "edit": 0.7878787878787878,
+    "cdm": 0.0,
+    "gt_cdm": "\\leq  \\frac{C}{{\\lambda }_{1}^{2\\delta }}{\\int }_{\\left\\{  \\parallel \\pmb x {\\parallel }_{\\mathbb{V}} \\geq  {\\varepsilon }^{-1}\\right\\}  }{e}^{\\kappa \\parallel \\pmb x {\\parallel }_{\\mathbb{H}}^{2}}{\\|{\\mathrm{A}}^{\\delta } \\pmb x \\|}_{\\mathbb{H}}^{8\\delta }{\\|{\\mathrm{A}}^{\\delta  + \\frac{1}{2}}\\pmb x \\|}_{\\mathbb{H}}^{4 - {8\\delta }}{\\|{\\mathrm{A}}^{\\delta }\\pmb x \\|}_{\\mathbb{H}}^{2}\\eta \\left( {\\mathrm{d}\\pmb x }\\right)",
+    "pred_cdm": "\\begin{align*}&\\int_{\\{\\|\\pmb x\\|_{\\mathbb{V}\\geq\\varepsilon^{-1}\\}\\}}e^{\\kappa\\|\\pmb x\\|_{\\mathbb{H}}^{2}}\\|\\mathcal{C}(\\pmb x)\\|_{\\mathbb{H}}^{2}\\eta(\\mathrm{d}\\pmb x)\\\\&\\leq C\\int_{\\{\\|\\pmb x\\|_{\\mathbb{V}\\geq\\varepsilon^{-1}\\}\\}}e^{\\kappa\\|\\pmb x\\|_{\\mathbb{H}}^{2}}\\|\\pmb x\\|_{\\mathbb{V}}^{4}\\|\\pmb x\\|_{\\mathbb{H}}^{2}\\eta(\\mathrm{d}\\pmb x)\\\\&\\leq\\frac{C}{\\lambda_{1}^{2\\delta}}\\int_{\\{\\|\\pmb x\\|_{\\mathbb{V}\\geq\\varepsilon^{-1}\\}\\}}e^{\\kappa\\|\\pmb x\\|_{\\mathbb{H}}^{2}}\\|\\mathrm{A}^{\\delta}\\pmb x\\|_{\\mathbb{H}}^{8\\delta}\\|\\mathrm{A}^{\\delta+\\frac{1}{2}}\\pmb x\\|_{\\mathbb{H}}^{4-8\\delta}\\|\\mathrm{A}^{\\delta}\\pmb x\\|_{\\mathbb{H}}^{2}\\eta(\\mathrm{d}\\pmb x)\\\\&\\leq\\frac{C}{\\lambda_{1}^{2\\delta}}\\int_{\\{\\|\\pmb x\\|_{\\mathbb{V}\\geq\\varepsilon^{-1}\\}\\}}e^{\\kappa\\|\\pmb x\\|_{\\mathbb{H}}^{2}}\\|\\mathrm{A}^{\\delta}\\pmb x\\|_{\\mathbb{H}}^{8\\delta+2}\\frac{\\|\\mathrm{A}^{\\delta+\\frac{1}{2}}\\pmb x\\|_{\\mathbb{H}}^{2}}{\\|\\mathrm{A}^{\\delta+\\frac{1}{2}}\\pmb x\\|_{\\mathbb{H}}^{8\\delta-2}}\\eta(\\mathrm{d}\\pmb x)\\\\&\\leq C\\lambda_{1}^{\\delta(2-8\\delta)}\\int_{\\{\\|\\pmb x\\|_{\\mathbb{V}\\geq\\varepsilon^{-1}\\}\\}}e^{\\kappa\\|\\pmb x\\|_{\\mathbb{H}}^{2}}\\|\\mathrm{A}^{\\delta}\\pmb x\\|_{\\mathbb{H}}^{8\\delta+2}\\frac{\\|\\mathrm{A}^{\\delta+\\frac{1}{2}}\\pmb x\\|_{\\mathbb{H}}^{2}}{\\|\\pmb x\\|_{\\mathbb{V}}^{8\\delta-2}}\\eta(\\mathrm{d}\\pmb x)\\\\&\\leq C\\lambda_{1}^{\\delta(2-8\\delta)}\\varepsilon^{8\\delta-2}\\int_{\\mathbb{H}}e^{\\kappa\\|\\pmb x\\|_{\\mathbb{H}}^{2}}\\|\\mathrm{A}^{\\delta}\\pmb x\\|_{\\mathbb{H}}^{8\\delta+2}\\|\\mathrm{A}^{\\delta+\\frac{1}{2}}\\pmb x\\|_{\\mathbb{H}}^{2}\\eta(\\mathrm{d}\\pmb x)\\\\&\\leq C\\varepsilon^{8\\delta-2},\\end{align*}",
+    "pred_cdm_alt": null,
+    "selection_reason": "cdm_zero",
+    "failure_class": "pending"
+  },
+  {
+    "case_id": "cdm-0024",
+    "idx": 12,
+    "img_id": "page-ad5a110f-a4b4-430b-b5db-ecd0ee394451.png",
+    "image_name": "page-ad5a110f-a4b4-430b-b5db-ecd0ee394451.png",
+    "gt_idx": [
+      12
+    ],
+    "pred_idx": [
+      ""
+    ],
+    "gt": "$$\\leq \\frac{C}{\\lambda_1^{2\\delta}} \\int_{\\{\\|\\pmb x\\|_\\mathbb{V} \\geq \\varepsilon^{-1}\\}} e^{\\kappa \\|\\pmb x\\|_\\mathbb{H}^2} \\|A^{\\delta} \\pmb x\\|_{\\mathbb{H}}^{8\\delta + 2}  \\frac{\\|A^{\\delta + \\frac{1}{2}} \\pmb x\\|_{\\mathbb{H}}^2}{\\|A^{\\delta + \\frac{1}{2}} \\pmb x\\|_{\\mathbb{H}}^{8\\delta - 2}}  \\eta(d\\pmb x)$$",
+    "pred": "",
+    "edit": 1.0,
+    "cdm": 0.0,
+    "gt_cdm": "\\leq \\frac{C}{\\lambda_1^{2\\delta}} \\int_{\\{\\|\\pmb x\\|_\\mathbb{V} \\geq \\varepsilon^{-1}\\}} e^{\\kappa \\|\\pmb x\\|_\\mathbb{H}^2} \\|A^{\\delta} \\pmb x\\|_{\\mathbb{H}}^{8\\delta + 2}  \\frac{\\|A^{\\delta + \\frac{1}{2}} \\pmb x\\|_{\\mathbb{H}}^2}{\\|A^{\\delta + \\frac{1}{2}} \\pmb x\\|_{\\mathbb{H}}^{8\\delta - 2}}  \\eta(d\\pmb x)",
+    "pred_cdm": "",
+    "pred_cdm_alt": null,
+    "selection_reason": "prediction_empty",
+    "failure_class": "pending"
+  },
+  {
+    "case_id": "cdm-0025",
+    "idx": 13,
+    "img_id": "page-ad5a110f-a4b4-430b-b5db-ecd0ee394451.png",
+    "image_name": "page-ad5a110f-a4b4-430b-b5db-ecd0ee394451.png",
+    "gt_idx": [
+      13
+    ],
+    "pred_idx": [
+      ""
+    ],
+    "gt": "$$\\le C \\lambda _ { 1 } ^ { \\delta ( 2 - 8 \\delta ) }  \\int _ { \\{ \\| { \\pmb x } \\| _ { \\mathbb { V } } \\geq \\varepsilon ^ { - 1 } \\} } e ^ { \\kappa \\| { \\pmb x } \\| _ { \\mathbb { H } } ^ { 2 } } \\| \\mathrm { A } ^ { \\delta } { \\pmb x } \\| _ { \\mathbb { H } } ^ { 8 \\delta+2} \\frac { \\| \\mathrm { A } ^ { \\delta + \\frac { 1 } { 2 } } { \\pmb x } \\| _ { \\mathbb { H } } ^ { 2 } } { \\| { \\pmb x } \\| _ { \\mathbb { V } } ^ { 8 \\delta - 2 } } \\eta ( \\mathrm { d } { \\pmb x } )$$",
+    "pred": "",
+    "edit": 1.0,
+    "cdm": 0.0,
+    "gt_cdm": "\\le C \\lambda _ { 1 } ^ { \\delta ( 2 - 8 \\delta ) }  \\int _ { \\{ \\| { \\pmb x } \\| _ { \\mathbb { V } } \\geq \\varepsilon ^ { - 1 } \\} } e ^ { \\kappa \\| { \\pmb x } \\| _ { \\mathbb { H } } ^ { 2 } } \\| \\mathrm { A } ^ { \\delta } { \\pmb x } \\| _ { \\mathbb { H } } ^ { 8 \\delta+2} \\frac { \\| \\mathrm { A } ^ { \\delta + \\frac { 1 } { 2 } } { \\pmb x } \\| _ { \\mathbb { H } } ^ { 2 } } { \\| { \\pmb x } \\| _ { \\mathbb { V } } ^ { 8 \\delta - 2 } } \\eta ( \\mathrm { d } { \\pmb x } )",
+    "pred_cdm": "",
+    "pred_cdm_alt": null,
+    "selection_reason": "prediction_empty",
+    "failure_class": "pending"
+  },
+  {
+    "case_id": "cdm-0026",
+    "idx": 15,
+    "img_id": "page-6486c98f-3fc3-4c8f-b35c-ce6005ecb876.png",
+    "image_name": "page-6486c98f-3fc3-4c8f-b35c-ce6005ecb876.png",
+    "gt_idx": [
+      15
+    ],
+    "pred_idx": [
+      13
+    ],
+    "gt": "$$\\mathcal{W}\\left( {p,t, \\geq  \\epsilon }\\right)  \\mathrel{\\text{:=}} \\left\\{  {\\underline{y} \\in  \\mathcal{W}\\left( {p,t}\\right)  : \\left| {\\frac{n\\left( \\underline{y}\\right) }{t} - {t}_{m}}\\right|  \\geq  \\epsilon }\\right\\}  \\;\\text{ and }\\;\\mathcal{W}\\left( {p,t, < \\epsilon }\\right)  \\mathrel{\\text{:=}} \\left\\{  {\\underline{y} \\in  \\mathcal{W}\\left( {p,t}\\right)  : \\left| {\\frac{n\\left( \\underline{y}\\right) }{t} - {t}_{m}}\\right|  < \\epsilon }\\right\\}$$",
+    "pred": "\\[ \\mathcal{W}(p,t,\\geq\\epsilon):=\\left\\{\\underline{{y}}\\in\\mathcal{W}(p,t)\\colon\\left|\\frac{n(\\underline{{y}})}{t}-t_{m}\\right|\\geq\\epsilon\\right\\}\\quad\\mathrm{a n d}\\quad\\mathcal{W}(p,t,<\\epsilon):=\\left\\{\\underline{{y}}\\in\\mathcal{W}(p,t)\\colon\\left|\\frac{n(\\underline{{y}})}{t}-t_{m}\\right|<\\epsilon\\right\\} \\]",
+    "edit": 0.21621621621621623,
+    "cdm": 0.0,
+    "gt_cdm": "\\mathcal{W}\\left( {p,t, \\geq  \\epsilon }\\right)  \\mathrel{\\text{:=}} \\left\\{  {\\underline{y} \\in  \\mathcal{W}\\left( {p,t}\\right)  : \\left| {\\frac{n\\left( \\underline{y}\\right) }{t} - {t}_{m}}\\right|  \\geq  \\epsilon }\\right\\}  \\;\\text{ and }\\;\\mathcal{W}\\left( {p,t, < \\epsilon }\\right)  \\mathrel{\\text{:=}} \\left\\{  {\\underline{y} \\in  \\mathcal{W}\\left( {p,t}\\right)  : \\left| {\\frac{n\\left( \\underline{y}\\right) }{t} - {t}_{m}}\\right|  < \\epsilon }\\right\\}",
+    "pred_cdm": "\\mathcal{W}(p,t,\\geq\\epsilon):=\\left\\{\\underline{{y}}\\in\\mathcal{W}(p,t)\\colon\\left|\\frac{n(\\underline{{y}})}{t}-t_{m}\\right|\\geq\\epsilon\\right\\}\\quad\\mathrm{a n d}\\quad\\mathcal{W}(p,t,<\\epsilon):=\\left\\{\\underline{{y}}\\in\\mathcal{W}(p,t)\\colon\\left|\\frac{n(\\underline{{y}})}{t}-t_{m}\\right|<\\epsilon\\right\\}",
+    "pred_cdm_alt": null,
+    "selection_reason": "cdm_zero",
+    "failure_class": "pending"
+  },
+  {
+    "case_id": "cdm-0027",
+    "idx": 8,
+    "img_id": "page-05746fc5-2045-4dea-94e7-4bbab648d702.png",
+    "image_name": "page-05746fc5-2045-4dea-94e7-4bbab648d702.png",
+    "gt_idx": [
+      8
+    ],
+    "pred_idx": [
+      6
+    ],
+    "gt": "$$h\\left(t\\right)=\\left\\{\\begin{array}{ll}-\\frac{1}{{\\pi t}{f}_{\\mu\\boxtimes\\nu}\\left( t\\right) }{\\int}_{{\\mathbb{R}}_{+}}f\\left(s\\right)\\operatorname{Im}\\left(\\frac{1}{1 - \\omega\\left( {1/{t}}\\right)s }\\right){d\\mu}\\left(s\\right) & \\text{ if }t\\in\\operatorname{supp}\\left({\\mu\\boxtimes\\nu}\\right)^{ac} \\setminus  E,\\\\ f\\left(\\frac{1}{\\omega\\left( {1/t}\\right) }\\right) & \\text{ if }t>0\\text{ is an atom of }\\mu\\boxtimes\\nu,\\\\ \\frac{1}{\\nu\\left( {\\{ 0\\} }\\right) }{\\int}_{{\\mathbb{R}}_{+}}\\frac{f\\left( s\\right) }{1 - s{\\psi}_{\\mu}^{-1}\\left( {\\nu\\left( {\\{ 0\\} }\\right) - 1}\\right) }{d\\mu}\\left(s\\right) & \\text{ if }t=0\\text{ and }\\mu\\left({\\{ 0\\} }\\right)<\\nu\\left({\\{ 0\\} }\\right),\\\\ f\\left(0\\right) & \\text{ if }t=0\\text{ and }\\mu\\left({\\{ 0\\} }\\right)\\geq\\nu\\left({\\{ 0\\} }\\right).\\end{array}\\right.$$",
+    "pred": "\\[ h(t)=\\left\\{\\begin{aligned}&-\\frac{1}{\\pi t f_{\\mu\\boxtimes\\nu}(t)}\\int_{\\mathbb{R}_{+}}f(s)\\operatorname{I m}\\left(\\frac{1}{1-\\omega(1/t)s}\\right)d\\mu(s)&\\quad&if t\\in\\operatorname{supp}(\\mu\\boxtimes\\nu)^{ac}\\setminus E,\\\\ &f\\left(\\frac{1}{\\omega(1/t)}\\right)&\\quad&if t>0~is~an~atom~of\\mu\\boxtimes\\nu,\\\\ &\\frac{1}{\\nu(\\{0\\})}\\int_{\\mathbb{R}_{+}}\\frac{f(s)}{1-s\\psi_{\\mu}^{-1}(\\nu(\\{0\\})-1)}d\\mu(s)&\\quad&if t=0~and~\\mu(\\{0\\})<\\nu(\\{0\\}),\\\\ &f(0)&\\quad&if t=0~and~\\mu(\\{0\\})\\geq\\nu(\\{0\\}).\\end{aligned}\\right. \\]",
+    "edit": 0.07210031347962383,
+    "cdm": 0.0,
+    "gt_cdm": "h\\left(t\\right)=\\left\\{\\begin{array}{ll}-\\frac{1}{{\\pi t}{f}_{\\mu\\boxtimes\\nu}\\left( t\\right) }{\\int}_{{\\mathbb{R}}_{+}}f\\left(s\\right)\\operatorname{Im}\\left(\\frac{1}{1 - \\omega\\left( {1/{t}}\\right)s }\\right){d\\mu}\\left(s\\right) & \\text{ if }t\\in\\operatorname{supp}\\left({\\mu\\boxtimes\\nu}\\right)^{ac} \\setminus  E,\\\\ f\\left(\\frac{1}{\\omega\\left( {1/t}\\right) }\\right) & \\text{ if }t>0\\text{ is an atom of }\\mu\\boxtimes\\nu,\\\\ \\frac{1}{\\nu\\left( {\\{ 0\\} }\\right) }{\\int}_{{\\mathbb{R}}_{+}}\\frac{f\\left( s\\right) }{1 - s{\\psi}_{\\mu}^{-1}\\left( {\\nu\\left( {\\{ 0\\} }\\right) - 1}\\right) }{d\\mu}\\left(s\\right) & \\text{ if }t=0\\text{ and }\\mu\\left({\\{ 0\\} }\\right)<\\nu\\left({\\{ 0\\} }\\right),\\\\ f\\left(0\\right) & \\text{ if }t=0\\text{ and }\\mu\\left({\\{ 0\\} }\\right)\\geq\\nu\\left({\\{ 0\\} }\\right).\\end{array}\\right.",
+    "pred_cdm": "h(t)=\\left\\{\\begin{aligned}&-\\frac{1}{\\pi t f_{\\mu\\boxtimes\\nu}(t)}\\int_{\\mathbb{R}_{+}}f(s)\\operatorname{I m}\\left(\\frac{1}{1-\\omega(1/t)s}\\right)d\\mu(s)&\\quad&if t\\in\\operatorname{supp}(\\mu\\boxtimes\\nu)^{ac}\\setminus E,\\\\ &f\\left(\\frac{1}{\\omega(1/t)}\\right)&\\quad&if t>0~is~an~atom~of\\mu\\boxtimes\\nu,\\\\ &\\frac{1}{\\nu(\\{0\\})}\\int_{\\mathbb{R}_{+}}\\frac{f(s)}{1-s\\psi_{\\mu}^{-1}(\\nu(\\{0\\})-1)}d\\mu(s)&\\quad&if t=0~and~\\mu(\\{0\\})<\\nu(\\{0\\}),\\\\ &f(0)&\\quad&if t=0~and~\\mu(\\{0\\})\\geq\\nu(\\{0\\}).\\end{aligned}\\right.",
+    "pred_cdm_alt": null,
+    "selection_reason": "cdm_zero",
+    "failure_class": "pending"
+  },
+  {
+    "case_id": "cdm-0028",
+    "idx": 12,
+    "img_id": "page-05746fc5-2045-4dea-94e7-4bbab648d702.png",
+    "image_name": "page-05746fc5-2045-4dea-94e7-4bbab648d702.png",
+    "gt_idx": [
+      12
+    ],
+    "pred_idx": [
+      11
+    ],
+    "gt": "$$h(t) = \n\\left\\{\\begin{array}{lll}\n-\\frac{1}{\\pi t f_{\\mu \\boxtimes \\nu}(t)} \\operatorname{Im} \\left( \\frac{1}{\\omega(1/t)} \\psi_{\\mu \\boxtimes \\nu} \\left( \\frac{1}{t} \\right) \\right) & \\text{if } t \\in \\operatorname{supp}(\\mu \\boxtimes \\nu)^{ac} \\setminus E, \\\\\n\\frac{1}{\\omega(1/t)} & \\text{if } t > 0 \\text{ is an atom of } \\mu \\boxtimes \\nu, \\\\\n\\frac{\\nu(\\{0\\}) - 1}{\\nu(\\{0\\}) \\psi_\\mu^{-1}(\\nu(\\{0\\}) - 1)} & \\text{if } t = 0 \\text{ and } \\mu(\\{0\\}) < \\nu(\\{0\\}), \\\\\n0 & \\text{if } t = 0 \\text{ and } \\mu(\\{0\\}) \\geq \\nu(\\{0\\}).\n\\end{array}\\right.\\tag{5.2}$$",
+    "pred": "\\[ \\left[\\begin{matrix}{h(t)=\\left\\{\\begin{matrix}{-\\frac{1}{\\pi t f_{\\mu\\boxtimes\\nu}(t)}\\operatorname{I m}\\left(\\frac{1}{\\omega(1/t)}\\psi_{\\mu\\boxtimes\\nu}\\left(\\frac{1}{t}\\right)\\right)}&{\\qquad{i f~}t\\in\\operatorname{s u p p}(\\mu\\boxtimes\\nu)^{{a c}}\\setminus E,}\\\\ {\\frac{1}{\\omega(1/t)}}&{\\qquad{i f~}t>0{~i s~a n~a t o m~o f~}\\mu\\boxtimes\\nu,}\\\\ {\\frac{\\nu(\\{0\\})-1}{\\nu(\\{0\\})\\psi_{\\mu}^{-1}(\\nu(\\{0\\})-1)}}&{\\qquad{i f~}t=0{~a n d~}\\mu(\\{0\\})<\\nu(\\{0\\}),}\\\\ {0}&{\\qquad{i f~}t=0{~a n d~}\\mu(\\{0\\})\\geq\\nu(\\{0\\}).}\\\\ \\end{matrix}\\right. \\]",
+    "edit": 0.04844290657439446,
+    "cdm": 0.0,
+    "gt_cdm": "h(t) = \n\\left\\{\\begin{array}{lll}\n-\\frac{1}{\\pi t f_{\\mu \\boxtimes \\nu}(t)} \\operatorname{Im} \\left( \\frac{1}{\\omega(1/t)} \\psi_{\\mu \\boxtimes \\nu} \\left( \\frac{1}{t} \\right) \\right) & \\text{if } t \\in \\operatorname{supp}(\\mu \\boxtimes \\nu)^{ac} \\setminus E, \\\\\n\\frac{1}{\\omega(1/t)} & \\text{if } t > 0 \\text{ is an atom of } \\mu \\boxtimes \\nu, \\\\\n\\frac{\\nu(\\{0\\}) - 1}{\\nu(\\{0\\}) \\psi_\\mu^{-1}(\\nu(\\{0\\}) - 1)} & \\text{if } t = 0 \\text{ and } \\mu(\\{0\\}) < \\nu(\\{0\\}), \\\\\n0 & \\text{if } t = 0 \\text{ and } \\mu(\\{0\\}) \\geq \\nu(\\{0\\}).\n\\end{array}\\right.",
+    "pred_cdm": "\\left[\\begin{matrix}{h(t)=\\left\\{\\begin{matrix}{-\\frac{1}{\\pi t f_{\\mu\\boxtimes\\nu}(t)}\\operatorname{I m}\\left(\\frac{1}{\\omega(1/t)}\\psi_{\\mu\\boxtimes\\nu}\\left(\\frac{1}{t}\\right)\\right)}&{\\qquad{i f~}t\\in\\operatorname{s u p p}(\\mu\\boxtimes\\nu)^{{a c}}\\setminus E,}\\\\ {\\frac{1}{\\omega(1/t)}}&{\\qquad{i f~}t>0{~i s~a n~a t o m~o f~}\\mu\\boxtimes\\nu,}\\\\ {\\frac{\\nu(\\{0\\})-1}{\\nu(\\{0\\})\\psi_{\\mu}^{-1}(\\nu(\\{0\\})-1)}}&{\\qquad{i f~}t=0{~a n d~}\\mu(\\{0\\})<\\nu(\\{0\\}),}\\\\ {0}&{\\qquad{i f~}t=0{~a n d~}\\mu(\\{0\\})\\geq\\nu(\\{0\\}).}\\\\ \\end{matrix}\\right.",
+    "pred_cdm_alt": "\\left[\\begin{matrix}{h(t)=\\left\\{\\begin{matrix}{-\\frac{1}{\\pi t f_{\\mu\\boxtimes\\nu}(t)}\\operatorname{I m}\\left(\\frac{1}{\\omega(1/t)}\\psi_{\\mu\\boxtimes\\nu}\\left(\\frac{1}{t}\\right)\\right)}&{\\qquad{i f~}t\\in\\operatorname{s u p p}(\\mu\\boxtimes\\nu)^{{a c}}\\setminus E,}\\\\ {\\frac{1}{\\omega(1/t)}}&{\\qquad{i f~}t>0{~i s~a n~a t o m~o f~}\\mu\\boxtimes\\nu,}\\\\ {\\frac{\\nu(\\{0\\})-1}{\\nu(\\{0\\})\\psi_{\\mu}^{-1}(\\nu(\\{0\\})-1)}}&{\\qquad{i f~}t=0{~a n d~}\\mu(\\{0\\})<\\nu(\\{0\\}),}\\\\ {0}&{\\qquad{i f~}t=0{~a n d~}\\mu(\\{0\\})\\geq\\nu(\\{0\\}).}\\end{matrix}\\right.",
+    "selection_reason": "cdm_zero",
+    "failure_class": "pending"
+  },
+  {
+    "case_id": "cdm-0029",
+    "idx": 0,
+    "img_id": "page-404e0471-bd71-426a-8e5a-81b8327f88e5.png",
+    "image_name": "page-404e0471-bd71-426a-8e5a-81b8327f88e5.png",
+    "gt_idx": [
+      0
+    ],
+    "pred_idx": [
+      0
+    ],
+    "gt": "$$Z{Z}^{\\top }\\stackrel{\\left( 1\\right) }{ = }T\\left\\lbrack  \\begin{array}{cc} {D}_{\\text{des }}^{\\frac{1}{2}\\top }\\left( {\\left( {\\mathop{\\sum }\\limits_{{i = 1}}^{T}\\bar{x}{\\left( {\\omega }_{i}\\right) }^{\\mathrm{H}}\\bar{x}\\left( {\\omega }_{i}\\right) }\\right)  \\otimes  {I}_{{n}_{\\phi }}}\\right) {D}_{\\text{des }}^{\\frac{1}{2}\\top }{D}_{\\text{des }}^{\\frac{1}{2}\\top }\\left( {\\mathop{\\sum }\\limits_{{i = 1}}^{T}\\bar{x}{\\left( {\\omega }_{i}\\right) }^{\\top }\\left( {\\bar{\\phi }{\\left( {\\omega }_{i}\\right) }^{\\mathrm{H}} \\otimes  {I}_{{n}_{x}}}\\right) }\\right)  \\otimes  {I}_{{n}_{\\phi }} \\\\  {\\left( \\mathop{\\sum }\\limits_{{i = 1}}^{T}\\bar{x}{\\left( {\\omega }_{i}\\right) }^{\\top }\\left( \\bar{\\phi }{\\left( {\\omega }_{i}\\right) }^{\\mathrm{H}} \\otimes  {I}_{{n}_{x}}\\right) \\right) }^{\\mathrm{H}} \\otimes  {I}_{{n}_{\\phi }}{D}_{\\text{des }}^{\\frac{1}{2}}\\left( {\\left( {\\mathop{\\sum }\\limits_{{i = 1}}^{T}\\bar{\\phi }\\left( {\\omega }_{i}\\right) \\bar{\\phi }{\\left( {\\omega }_{i}\\right) }^{\\mathrm{H}}}\\right)  \\otimes  {I}_{{n}_{x}}}\\right)  \\otimes  {I}_{{n}_{\\phi }} \\end{array}\\right\\rbrack$$",
+    "pred": "\\[Z Z^{\\top}&\\stackrel{(1)}{=}T\\left[\\begin{array}{c c}D_{\\mathrm{d e s}}^{\\frac{1}{2}\\top}\\left(\\left(\\sum_{i=1}^{T}\\bar{x}(\\omega_{i})^{\\sf H}\\bar{x}(\\omega_{i})\\right)\\otimes I_{n_{\\phi}}\\right)D_{\\mathrm{d e s}}^{\\frac{1}{2}}&D_{\\mathrm{d e s}}^{\\frac{1}{2}\\top}\\left(\\sum_{i=1}^{T}\\bar{x}(\\omega_{i})^{\\top}\\left(\\bar{\\phi}(\\omega_{i})^{\\sf H}\\otimes I_{n_{\\mathrm{x}}}\\right)\\right)\\otimes I_{n_{\\phi}}\\\\ \\left(\\sum_{i=1}^{T}\\bar{x}(\\omega_{i})^{\\top}\\left(\\bar{\\phi}(\\omega_{i})^{\\sf H}\\otimes I_{n_{\\mathrm{x}}}\\right)\\right)^{\\sf H}\\otimes I_{n_{\\phi}}D_{\\mathrm{d e s}}^{\\frac{1}{2}}&\\left(\\left(\\sum_{i=1}^{T}\\bar{\\phi}(\\omega_{i})^{\\prime}\\bar{\\phi}(\\omega_{i})^{\\sf H}\\right)\\otimes I_{n_{\\mathrm{x}}}\\right)\\otimes I_{n_{\\phi}}\\end{array}\\right]\\]",
+    "edit": 0.2902033271719039,
+    "cdm": 0.0,
+    "gt_cdm": "Z{Z}^{\\top }\\stackrel{\\left( 1\\right) }{ = }T\\left\\lbrack  \\begin{array}{cc} {D}_{\\text{des }}^{\\frac{1}{2}\\top }\\left( {\\left( {\\mathop{\\sum }\\limits_{{i = 1}}^{T}\\bar{x}{\\left( {\\omega }_{i}\\right) }^{\\mathrm{H}}\\bar{x}\\left( {\\omega }_{i}\\right) }\\right)  \\otimes  {I}_{{n}_{\\phi }}}\\right) {D}_{\\text{des }}^{\\frac{1}{2}\\top }{D}_{\\text{des }}^{\\frac{1}{2}\\top }\\left( {\\mathop{\\sum }\\limits_{{i = 1}}^{T}\\bar{x}{\\left( {\\omega }_{i}\\right) }^{\\top }\\left( {\\bar{\\phi }{\\left( {\\omega }_{i}\\right) }^{\\mathrm{H}} \\otimes  {I}_{{n}_{x}}}\\right) }\\right)  \\otimes  {I}_{{n}_{\\phi }} \\\\  {\\left( \\mathop{\\sum }\\limits_{{i = 1}}^{T}\\bar{x}{\\left( {\\omega }_{i}\\right) }^{\\top }\\left( \\bar{\\phi }{\\left( {\\omega }_{i}\\right) }^{\\mathrm{H}} \\otimes  {I}_{{n}_{x}}\\right) \\right) }^{\\mathrm{H}} \\otimes  {I}_{{n}_{\\phi }}{D}_{\\text{des }}^{\\frac{1}{2}}\\left( {\\left( {\\mathop{\\sum }\\limits_{{i = 1}}^{T}\\bar{\\phi }\\left( {\\omega }_{i}\\right) \\bar{\\phi }{\\left( {\\omega }_{i}\\right) }^{\\mathrm{H}}}\\right)  \\otimes  {I}_{{n}_{x}}}\\right)  \\otimes  {I}_{{n}_{\\phi }} \\end{array}\\right\\rbrack",
+    "pred_cdm": "Z Z^{\\top}&\\stackrel{(1)}{=}T\\left[\\begin{array}{c c}D_{\\mathrm{d e s}}^{\\frac{1}{2}\\top}\\left(\\left(\\sum_{i=1}^{T}\\bar{x}(\\omega_{i})^{\\sf H}\\bar{x}(\\omega_{i})\\right)\\otimes I_{n_{\\phi}}\\right)D_{\\mathrm{d e s}}^{\\frac{1}{2}}&D_{\\mathrm{d e s}}^{\\frac{1}{2}\\top}\\left(\\sum_{i=1}^{T}\\bar{x}(\\omega_{i})^{\\top}\\left(\\bar{\\phi}(\\omega_{i})^{\\sf H}\\otimes I_{n_{\\mathrm{x}}}\\right)\\right)\\otimes I_{n_{\\phi}}\\\\ \\left(\\sum_{i=1}^{T}\\bar{x}(\\omega_{i})^{\\top}\\left(\\bar{\\phi}(\\omega_{i})^{\\sf H}\\otimes I_{n_{\\mathrm{x}}}\\right)\\right)^{\\sf H}\\otimes I_{n_{\\phi}}D_{\\mathrm{d e s}}^{\\frac{1}{2}}&\\left(\\left(\\sum_{i=1}^{T}\\bar{\\phi}(\\omega_{i})^{\\prime}\\bar{\\phi}(\\omega_{i})^{\\sf H}\\right)\\otimes I_{n_{\\mathrm{x}}}\\right)\\otimes I_{n_{\\phi}}\\end{array}\\right]",
+    "pred_cdm_alt": "Z Z^{\\top}&\\stackrel{(1)}{=}T\\left[\\begin{array}{c c}D_{d e s}^{\\frac{1}{2}\\top}\\left(\\left(\\sum_{i=1}^{T}\\bar{x}(\\omega_{i})^{\\sf H}\\bar{x}(\\omega_{i})\\right)\\otimes I_{n_{\\phi}}\\right)D_{d e s}^{\\frac{1}{2}}&D_{d e s}^{\\frac{1}{2}\\top}\\left(\\sum_{i=1}^{T}\\bar{x}(\\omega_{i})^{\\top}\\left(\\bar{\\phi}(\\omega_{i})^{\\sf H}\\otimes I_{n_{x}}\\right)\\right)\\otimes I_{n_{\\phi}}\\\\\\left(\\sum_{i=1}^{T}\\bar{x}(\\omega_{i})^{\\top}\\left(\\bar{\\phi}(\\omega_{i})^{\\sf H}\\otimes I_{n_{x}}\\right)\\right)^{\\sf H}\\otimes I_{n_{\\phi}}D_{d e s}^{\\frac{1}{2}}&\\left(\\left(\\sum_{i=1}^{T}\\bar{\\phi}(\\omega_{i})^{\\prime}\\bar{\\phi}(\\omega_{i})^{\\sf H}\\right)\\otimes I_{n_{x}}\\right)\\otimes I_{n_{\\phi}}\\end{array}\\right]",
+    "selection_reason": "cdm_zero",
+    "failure_class": "pending"
+  },
+  {
+    "case_id": "cdm-0030",
+    "idx": 1,
+    "img_id": "page-404e0471-bd71-426a-8e5a-81b8327f88e5.png",
+    "image_name": "page-404e0471-bd71-426a-8e5a-81b8327f88e5.png",
+    "gt_idx": [
+      1
+    ],
+    "pred_idx": [
+      1
+    ],
+    "gt": "$$\\succeq T\\left\\lbrack  \\begin{array}{cc} {D}_{\\text{des }}^{\\frac{1}{2}\\top }\\left( {\\left( {\\mathop{\\sum }\\limits_{{i = 1}}^{L}\\bar{x}{\\left( {\\omega }_{i}\\right) }^{\\mathrm{H}}\\bar{x}\\left( {\\omega }_{i}\\right) }\\right)  \\otimes  {I}_{{n}_{\\phi }}}\\right) {D}_{\\text{des }}^{\\frac{1}{2} }{D}_{\\text{des }}^{\\frac{1}{2}\\top }\\left( {\\mathop{\\sum }\\limits_{{i = 1}}^{L}\\bar{x}{\\left( {\\omega }_{i}\\right) }^{\\top }\\left( {\\bar{\\phi }{\\left( {\\omega }_{i}\\right) }^{\\mathrm{H}} \\otimes  {I}_{{n}_{x}}}\\right) }\\right)  \\otimes  {I}_{{n}_{\\phi }} \\\\  {\\left( \\mathop{\\sum }\\limits_{{i = 1}}^{L}\\bar{x}{\\left( {\\omega }_{i}\\right) }^{\\top }\\left( \\bar{\\phi }{\\left( {\\omega }_{i}\\right) }^{\\mathrm{H}} \\otimes  {I}_{{n}_{x}}\\right) \\right) }^{\\mathrm{H}} \\otimes  {I}_{{n}_{\\phi }}{D}_{\\text{des }}^{\\frac{1}{2}}\\left( {\\left( {\\mathop{\\sum }\\limits_{{i = 1}}^{L}\\bar{\\phi }\\left( {\\omega }_{i}\\right) \\bar{\\phi }{\\left( {\\omega }_{i}\\right) }^{\\mathrm{H}}}\\right)  \\otimes  {I}_{{n}_{x}}}\\right)  \\otimes  {I}_{{n}_{\\phi }} \\end{array}\\right\\rbrack  \\tag{A.1}$$",
+    "pred": "\\[&\\succeq T\\left[\\begin{array}{c}D_{\\mathrm{d e s}}^{\\frac{1}{2}\\top}\\left(\\left(\\sum_{i=1}^{L}\\bar{x}(\\omega_{i})^{\\sf H}\\bar{x}(\\omega_{i})\\right)\\otimes I_{n_{\\phi}}\\right)D_{\\mathrm{d e s}}^{\\frac{1}{2}}&D_{\\mathrm{d e s}}^{\\frac{1}{2}\\top}\\left(\\sum_{i=1}^{L}\\bar{x}(\\omega_{i})^{\\top}\\left(\\bar{\\phi}(\\omega_{i})^{\\sf H}\\otimes I_{n_{\\mathrm{x}}}\\right)\\right)\\otimes I_{n_{\\phi}}\\\\ \\left(\\sum_{i=1}^{L}\\bar{x}(\\omega_{i})^{\\top}\\left(\\bar{\\phi}(\\omega_{i})^{\\sf H}\\otimes I_{n_{\\mathrm{x}}}\\right)\\right)^{\\sf H}\\otimes I_{n_{\\phi}}D_{\\mathrm{d e s}}^{\\frac{1}{2}}&\\left(\\left(\\sum_{i=1}^{L}\\bar{\\phi}(\\omega_{i})^{\\prime}\\bar{\\phi}(\\omega_{i})^{\\sf H}\\right)\\otimes I_{n_{\\mathrm{x}}}\\right)\\otimes I_{n_{\\phi}}\\end{array}\\right]\\]",
+    "edit": 0.29310344827586204,
+    "cdm": 0.0,
+    "gt_cdm": "\\succeq T\\left\\lbrack  \\begin{array}{cc} {D}_{\\text{des }}^{\\frac{1}{2}\\top }\\left( {\\left( {\\mathop{\\sum }\\limits_{{i = 1}}^{L}\\bar{x}{\\left( {\\omega }_{i}\\right) }^{\\mathrm{H}}\\bar{x}\\left( {\\omega }_{i}\\right) }\\right)  \\otimes  {I}_{{n}_{\\phi }}}\\right) {D}_{\\text{des }}^{\\frac{1}{2} }{D}_{\\text{des }}^{\\frac{1}{2}\\top }\\left( {\\mathop{\\sum }\\limits_{{i = 1}}^{L}\\bar{x}{\\left( {\\omega }_{i}\\right) }^{\\top }\\left( {\\bar{\\phi }{\\left( {\\omega }_{i}\\right) }^{\\mathrm{H}} \\otimes  {I}_{{n}_{x}}}\\right) }\\right)  \\otimes  {I}_{{n}_{\\phi }} \\\\  {\\left( \\mathop{\\sum }\\limits_{{i = 1}}^{L}\\bar{x}{\\left( {\\omega }_{i}\\right) }^{\\top }\\left( \\bar{\\phi }{\\left( {\\omega }_{i}\\right) }^{\\mathrm{H}} \\otimes  {I}_{{n}_{x}}\\right) \\right) }^{\\mathrm{H}} \\otimes  {I}_{{n}_{\\phi }}{D}_{\\text{des }}^{\\frac{1}{2}}\\left( {\\left( {\\mathop{\\sum }\\limits_{{i = 1}}^{L}\\bar{\\phi }\\left( {\\omega }_{i}\\right) \\bar{\\phi }{\\left( {\\omega }_{i}\\right) }^{\\mathrm{H}}}\\right)  \\otimes  {I}_{{n}_{x}}}\\right)  \\otimes  {I}_{{n}_{\\phi }} \\end{array}\\right\\rbrack",
+    "pred_cdm": "&\\succeq T\\left[\\begin{array}{c}D_{\\mathrm{d e s}}^{\\frac{1}{2}\\top}\\left(\\left(\\sum_{i=1}^{L}\\bar{x}(\\omega_{i})^{\\sf H}\\bar{x}(\\omega_{i})\\right)\\otimes I_{n_{\\phi}}\\right)D_{\\mathrm{d e s}}^{\\frac{1}{2}}&D_{\\mathrm{d e s}}^{\\frac{1}{2}\\top}\\left(\\sum_{i=1}^{L}\\bar{x}(\\omega_{i})^{\\top}\\left(\\bar{\\phi}(\\omega_{i})^{\\sf H}\\otimes I_{n_{\\mathrm{x}}}\\right)\\right)\\otimes I_{n_{\\phi}}\\\\ \\left(\\sum_{i=1}^{L}\\bar{x}(\\omega_{i})^{\\top}\\left(\\bar{\\phi}(\\omega_{i})^{\\sf H}\\otimes I_{n_{\\mathrm{x}}}\\right)\\right)^{\\sf H}\\otimes I_{n_{\\phi}}D_{\\mathrm{d e s}}^{\\frac{1}{2}}&\\left(\\left(\\sum_{i=1}^{L}\\bar{\\phi}(\\omega_{i})^{\\prime}\\bar{\\phi}(\\omega_{i})^{\\sf H}\\right)\\otimes I_{n_{\\mathrm{x}}}\\right)\\otimes I_{n_{\\phi}}\\end{array}\\right]",
+    "pred_cdm_alt": "&\\succeq T\\left[\\begin{array}{c}D_{d e s}^{\\frac{1}{2}\\top}\\left(\\left(\\sum_{i=1}^{L}\\bar{x}(\\omega_{i})^{\\sf H}\\bar{x}(\\omega_{i})\\right)\\otimes I_{n_{\\phi}}\\right)D_{d e s}^{\\frac{1}{2}}&D_{d e s}^{\\frac{1}{2}\\top}\\left(\\sum_{i=1}^{L}\\bar{x}(\\omega_{i})^{\\top}\\left(\\bar{\\phi}(\\omega_{i})^{\\sf H}\\otimes I_{n_{x}}\\right)\\right)\\otimes I_{n_{\\phi}}\\\\\\left(\\sum_{i=1}^{L}\\bar{x}(\\omega_{i})^{\\top}\\left(\\bar{\\phi}(\\omega_{i})^{\\sf H}\\otimes I_{n_{x}}\\right)\\right)^{\\sf H}\\otimes I_{n_{\\phi}}D_{d e s}^{\\frac{1}{2}}&\\left(\\left(\\sum_{i=1}^{L}\\bar{\\phi}(\\omega_{i})^{\\prime}\\bar{\\phi}(\\omega_{i})^{\\sf H}\\right)\\otimes I_{n_{x}}\\right)\\otimes I_{n_{\\phi}}\\end{array}\\right]",
+    "selection_reason": "cdm_zero",
+    "failure_class": "pending"
+  },
+  {
+    "case_id": "cdm-0031",
+    "idx": 15,
+    "img_id": "page-dad0f4e5-290f-496f-bbdd-099ad75c6ff0.png",
+    "image_name": "page-dad0f4e5-290f-496f-bbdd-099ad75c6ff0.png",
+    "gt_idx": [
+      15
+    ],
+    "pred_idx": [
+      13
+    ],
+    "gt": "$${G}^{\\mathbf{K}} = \\left\\{  { \\leftarrow   \\subseteq  G \\times  G : \\forall \\gtrdot   \\in  {\\mathbf{K}}_{H}^{G}\\left( { \\lessdot  \\circ   \\leftarrow   \\circ   \\gtrdot \\text{ subfactors into some }{ \\sqsupset  } ,\\exists  \\in  {\\mathbf{K}}_{I}^{H}}\\right) }\\right\\}  .$$",
+    "pred": "\\[ {G}^{\\mathbf{K}}= \\left\\{{ \\leftarrow \\subseteq G \\times G: \\forall \\gtrdot \\in  {\\mathbf{K}}_{H}^{G}\\ ( < \\circ \\leftarrow \\circ \\gtrdot \\mathrm{~subfactors~into~some~}{\\sqsupset}, \\exists \\in  {\\mathbf{K}}_{I}^{H})\\right\\}. \\]",
+    "edit": 0.08461538461538462,
+    "cdm": 0.0,
+    "gt_cdm": "{G}^{\\mathbf{K}} = \\left\\{  { \\leftarrow   \\subseteq  G \\times  G : \\forall \\gtrdot   \\in  {\\mathbf{K}}_{H}^{G}\\left( { \\lessdot  \\circ   \\leftarrow   \\circ   \\gtrdot \\text{ subfactors into some }{ \\sqsupset  } ,\\exists  \\in  {\\mathbf{K}}_{I}^{H}}\\right) }\\right\\}  .",
+    "pred_cdm": "{G}^{\\mathbf{K}}= \\left\\{{ \\leftarrow \\subseteq G \\times G: \\forall \\gtrdot \\in  {\\mathbf{K}}_{H}^{G}\\ ( < \\circ \\leftarrow \\circ \\gtrdot \\mathrm{~subfactors~into~some~}{\\sqsupset}, \\exists \\in  {\\mathbf{K}}_{I}^{H})\\right\\}.",
+    "pred_cdm_alt": null,
+    "selection_reason": "cdm_zero",
+    "failure_class": "pending"
+  },
+  {
+    "case_id": "cdm-0032",
+    "idx": 8,
+    "img_id": "page-bbe2b2d5-1e02-4d53-ba1c-158eaab2e6d5.png",
+    "image_name": "page-bbe2b2d5-1e02-4d53-ba1c-158eaab2e6d5.png",
+    "gt_idx": [
+      8
+    ],
+    "pred_idx": [
+      6
+    ],
+    "gt": "$$\\mathrm{Fil}_{\\ast}^{\\Lambda_{\\supsetneq S_{L^{\\prime}}}}\\mathscr{F}_{X_{\\mathrm{sm}}}^{p,w}|_{X_{\\mathrm{sm}}\\cap\\bigcap_{i=1}^{r(L^{\\prime})}W_{S_{L^{\\prime},i}}^{\\prime}}\\cong\\bigoplus_{b\\in\\mathbb{Z}^{\\left\\{S_{L^{\\prime},i}^{\\prime}\\right\\}_{i=1}^{r(L^{\\prime})}\\cup\\left\\{S_{L^{\\prime}}\\right\\}}}\\mathrm{Fil}_{\\ast}^{\\Lambda_{\\supsetneq S_{L^{\\prime}}}}\\mathrm{gr}_{b}\\mathscr{F}_{X_{\\mathrm{sm}}}^{p,w}|_{X_{\\mathrm{sm}}\\cap\\bigcap_{i=1}^{r(L^{\\prime})}W_{S_{L^{\\prime},i}^{\\prime}}^{\\prime}},$$",
+    "pred": "\\[ \\mathrm{F i l}_{*}^{\\Lambda_{\\supset2}S_{L^{\\prime}}}\\mathcal{F}_{X_{\\mathrm{s m}}}^{p,w}|_{X_{\\mathrm{s m}}\\cap\\bigcap_{i=1}^{r(L^{\\prime})}W_{S_{L^{\\prime},i}^{\\prime}}^{\\prime}}\\cong\\bigoplus_{b\\in\\mathbb{Z}^{\\left\\{S_{L^{\\prime},i}^{\\prime},i}\\right\\}_{i=1}^{r(L^{\\prime})}\\cup\\left\\{S_{L^{\\prime}}\\right\\}}}\\mathrm{F i l}_{*}^{\\Lambda_{\\supset2}S_{L^{\\prime}}}\\mathrm{g r}_{b}\\mathcal{F}_{X_{\\mathrm{s m}}}^{p,w}|_{X_{\\mathrm{s m}}\\cap\\bigcap_{i=1}^{r(L^{\\prime})}W_{S_{L^{\\prime},i}^{\\prime}}^{\\prime}}, \\]",
+    "edit": 0.07449856733524356,
+    "cdm": 0.018,
+    "gt_cdm": "\\mathrm{Fil}_{\\ast}^{\\Lambda_{\\supsetneq S_{L^{\\prime}}}}\\mathscr{F}_{X_{\\mathrm{sm}}}^{p,w}|_{X_{\\mathrm{sm}}\\cap\\bigcap_{i=1}^{r(L^{\\prime})}W_{S_{L^{\\prime},i}}^{\\prime}}\\cong\\bigoplus_{b\\in\\mathbb{Z}^{\\left\\{S_{L^{\\prime},i}^{\\prime}\\right\\}_{i=1}^{r(L^{\\prime})}\\cup\\left\\{S_{L^{\\prime}}\\right\\}}}\\mathrm{Fil}_{\\ast}^{\\Lambda_{\\supsetneq S_{L^{\\prime}}}}\\mathrm{gr}_{b}\\mathscr{F}_{X_{\\mathrm{sm}}}^{p,w}|_{X_{\\mathrm{sm}}\\cap\\bigcap_{i=1}^{r(L^{\\prime})}W_{S_{L^{\\prime},i}^{\\prime}}^{\\prime}},",
+    "pred_cdm": "\\mathrm{F i l}_{*}^{\\Lambda_{\\supset2}S_{L^{\\prime}}}\\mathcal{F}_{X_{\\mathrm{s m}}}^{p,w}|_{X_{\\mathrm{s m}}\\cap\\bigcap_{i=1}^{r(L^{\\prime})}W_{S_{L^{\\prime},i}^{\\prime}}^{\\prime}}\\cong\\bigoplus_{b\\in\\mathbb{Z}^{\\left\\{S_{L^{\\prime},i}^{\\prime},i}\\right\\}_{i=1}^{r(L^{\\prime})}\\cup\\left\\{S_{L^{\\prime}}\\right\\}}}\\mathrm{F i l}_{*}^{\\Lambda_{\\supset2}S_{L^{\\prime}}}\\mathrm{g r}_{b}\\mathcal{F}_{X_{\\mathrm{s m}}}^{p,w}|_{X_{\\mathrm{s m}}\\cap\\bigcap_{i=1}^{r(L^{\\prime})}W_{S_{L^{\\prime},i}^{\\prime}}^{\\prime}},",
+    "pred_cdm_alt": null,
+    "selection_reason": "cdm_low_edit_close",
+    "failure_class": "pending"
+  },
+  {
+    "case_id": "cdm-0033",
+    "idx": 5,
+    "img_id": "page-5b2f2dec-8e96-450f-aea0-b73d46eac172.png",
+    "image_name": "page-5b2f2dec-8e96-450f-aea0-b73d46eac172.png",
+    "gt_idx": [
+      5
+    ],
+    "pred_idx": [
+      6
+    ],
+    "gt": "$$\\leq  \\underset{{\\gamma }_{1}^{\\prime }}{\\underbrace{\\mathop{\\max }\\limits_{{j \\in  \\left\\lbrack  J\\right\\rbrack  }}\\left\\|{{\\mathbf{E}}_{ : ,j}^{\\top }\\left( {{\\mathbf{U}}^{( j) }{\\mathbf{U}}^{( j) ^{\\top }}{\\mathbf{U}}^{ * } - {\\mathbf{U}}^{ * }}\\right) }\\right\\|}} + \\underset{{\\gamma }_{2}^{\\prime }}{\\underbrace{\\mathop{\\max }\\limits_{{j \\in  [J] }}\\left\\|{{\\mathbf{E}}_{ : ,j}^{\\top }\\left( {\\mathbf{U}{\\mathbf{U}}^{\\top }{\\mathbf{U}}^{ * } - {\\mathbf{U}}^{( j) }{\\mathbf{U}}^{{( j)}^{\\top }}{\\mathbf{U}}^{ * }}\\right) }\\right\\|}} .\\tag{S.34}$$",
+    "pred": "\\[&\\leq\\underbrace{\\max_{j\\in[J]}\\left\\|\\mathbf{E}_{:,j}^{\\top}\\left(\\mathbf{U}^{(j)}\\mathbf{U}^{(j)\\top}\\mathbf{U}^{*}-\\mathbf{U}^{*}\\right)\\right\\|}_{\\gamma_{1}^{\\prime}}+\\underbrace{\\max_{j\\in[J]}\\left\\|\\mathbf{E}_{:,j}^{\\top}\\left(\\mathbf{U}\\mathbf{U}^{\\top}\\mathbf{U}^{*}-\\mathbf{U}^{(j)}\\mathbf{U}^{(j)\\top}\\mathbf{U}^{*}\\right)\\right\\|}_{\\gamma_{2}^{\\prime}}.\\]",
+    "edit": 0.44029850746268656,
+    "cdm": 0.0,
+    "gt_cdm": "\\leq  \\underset{{\\gamma }_{1}^{\\prime }}{\\underbrace{\\mathop{\\max }\\limits_{{j \\in  \\left\\lbrack  J\\right\\rbrack  }}\\left\\|{{\\mathbf{E}}_{ : ,j}^{\\top }\\left( {{\\mathbf{U}}^{( j) }{\\mathbf{U}}^{( j) ^{\\top }}{\\mathbf{U}}^{ * } - {\\mathbf{U}}^{ * }}\\right) }\\right\\|}} + \\underset{{\\gamma }_{2}^{\\prime }}{\\underbrace{\\mathop{\\max }\\limits_{{j \\in  [J] }}\\left\\|{{\\mathbf{E}}_{ : ,j}^{\\top }\\left( {\\mathbf{U}{\\mathbf{U}}^{\\top }{\\mathbf{U}}^{ * } - {\\mathbf{U}}^{( j) }{\\mathbf{U}}^{{( j)}^{\\top }}{\\mathbf{U}}^{ * }}\\right) }\\right\\|}} .",
+    "pred_cdm": "&\\leq\\underbrace{\\max_{j\\in[J]}\\left\\|\\mathbf{E}_{:,j}^{\\top}\\left(\\mathbf{U}^{(j)}\\mathbf{U}^{(j)\\top}\\mathbf{U}^{*}-\\mathbf{U}^{*}\\right)\\right\\|}_{\\gamma_{1}^{\\prime}}+\\underbrace{\\max_{j\\in[J]}\\left\\|\\mathbf{E}_{:,j}^{\\top}\\left(\\mathbf{U}\\mathbf{U}^{\\top}\\mathbf{U}^{*}-\\mathbf{U}^{(j)}\\mathbf{U}^{(j)\\top}\\mathbf{U}^{*}\\right)\\right\\|}_{\\gamma_{2}^{\\prime}}.",
+    "pred_cdm_alt": null,
+    "selection_reason": "cdm_zero",
+    "failure_class": "pending"
+  },
+  {
+    "case_id": "cdm-0034",
+    "idx": 11,
+    "img_id": "page-39f38730-0ae6-4cfe-8b99-c65d06d09544.png",
+    "image_name": "page-39f38730-0ae6-4cfe-8b99-c65d06d09544.png",
+    "gt_idx": [
+      11
+    ],
+    "pred_idx": [
+      45
+    ],
+    "gt": "$$+ \\frac{1}{{\\bar{C}}_{x}}\\frac{\\left| \\beta \\right|  + 2}{\\left| \\beta \\right|  + 1}\\left\\lbrack  {{24\\alpha }{B}_{z}\\varepsilon \\mathop{\\sum }\\limits_{\\substack{{{j}_{1} + {j}_{2} + {j}_{3} = \\left| \\beta \\right| } \\\\  {{j}_{1} \\geq  1} }}\\frac{\\left| \\beta \\right|  + 2}{{j}_{1}^{3}{\\left( {j}_{2} + 1\\right) }^{2}\\left( {{j}_{3} + 2}\\right) } + 2\\mathop{\\sum }\\limits_{{j = 0}}^{\\left| \\beta \\right| }\\frac{\\left| \\beta \\right|  + 2}{{\\left( j + 1\\right) }^{2}{\\left( \\left| \\beta \\right|  + 1 - j\\right) }^{2}} + \\frac{9}{2}{B}_{z}\\varepsilon \\mathop{\\sum }\\limits_{{{j}_{1} + {j}_{2} + {j}_{3} = \\left| \\beta \\right| }}\\frac{\\left| \\beta \\right|  + 2}{{\\left( {j}_{1} + 1\\right) }^{2}{\\left( {j}_{2} + 1\\right) }^{2}{\\left( {j}_{3} + 1\\right) }^{2}}}\\right\\rbrack$$",
+    "pred": "\\[&\\quad+\\frac{1}{\\overline{C}_{x}}\\frac{|\\beta|+2}{|\\beta|+1}\\Biggl[24\\alpha B_{z}\\varepsilon\\sum_{j_{1}+j_{2}+j_{3}=|\\beta|}\\frac{|\\beta|+2}{j_{1}^{3}(j_{2}+1)^{2}(j_{3}+2)}+2\\sum_{j=0}^{|\\beta|}\\frac{|\\beta|+2}{(j+1)^{2}(|\\beta|+1-j)^{2}}+\\frac{9}{2}B_{z}\\varepsilon\\sum_{j_{1}+j_{2}+j_{3}=|\\beta|}\\frac{|\\beta|+2}{(j+1)^{2}(j_{2}+1)^{2}(j_{3}+1)^{2}}\\Biggr]\\]",
+    "edit": 0.2714285714285714,
+    "cdm": 0.0,
+    "gt_cdm": "+ \\frac{1}{{\\bar{C}}_{x}}\\frac{\\left| \\beta \\right|  + 2}{\\left| \\beta \\right|  + 1}\\left\\lbrack  {{24\\alpha }{B}_{z}\\varepsilon \\mathop{\\sum }\\limits_{\\substack{{{j}_{1} + {j}_{2} + {j}_{3} = \\left| \\beta \\right| } \\\\  {{j}_{1} \\geq  1} }}\\frac{\\left| \\beta \\right|  + 2}{{j}_{1}^{3}{\\left( {j}_{2} + 1\\right) }^{2}\\left( {{j}_{3} + 2}\\right) } + 2\\mathop{\\sum }\\limits_{{j = 0}}^{\\left| \\beta \\right| }\\frac{\\left| \\beta \\right|  + 2}{{\\left( j + 1\\right) }^{2}{\\left( \\left| \\beta \\right|  + 1 - j\\right) }^{2}} + \\frac{9}{2}{B}_{z}\\varepsilon \\mathop{\\sum }\\limits_{{{j}_{1} + {j}_{2} + {j}_{3} = \\left| \\beta \\right| }}\\frac{\\left| \\beta \\right|  + 2}{{\\left( {j}_{1} + 1\\right) }^{2}{\\left( {j}_{2} + 1\\right) }^{2}{\\left( {j}_{3} + 1\\right) }^{2}}}\\right\\rbrack",
+    "pred_cdm": "&\\quad+\\frac{1}{\\overline{C}_{x}}\\frac{|\\beta|+2}{|\\beta|+1}\\Biggl[24\\alpha B_{z}\\varepsilon\\sum_{j_{1}+j_{2}+j_{3}=|\\beta|}\\frac{|\\beta|+2}{j_{1}^{3}(j_{2}+1)^{2}(j_{3}+2)}+2\\sum_{j=0}^{|\\beta|}\\frac{|\\beta|+2}{(j+1)^{2}(|\\beta|+1-j)^{2}}+\\frac{9}{2}B_{z}\\varepsilon\\sum_{j_{1}+j_{2}+j_{3}=|\\beta|}\\frac{|\\beta|+2}{(j+1)^{2}(j_{2}+1)^{2}(j_{3}+1)^{2}}\\Biggr]",
+    "pred_cdm_alt": null,
+    "selection_reason": "cdm_zero",
+    "failure_class": "pending"
+  },
+  {
+    "case_id": "cdm-0035",
+    "idx": 16,
+    "img_id": "page-8524b54d-6372-4f9e-a662-5254349cfda3.png",
+    "image_name": "page-8524b54d-6372-4f9e-a662-5254349cfda3.png",
+    "gt_idx": [
+      16
+    ],
+    "pred_idx": [
+      15
+    ],
+    "gt": "$$(\\mathscr{M})_{\\ell\\geq2,S^{\\prime},J^{\\prime(p)}}+((\\mathring{\\Delta}^{^{\\prime}}+2)\\Lambda)_{\\ell\\geq2,S^{\\prime},J^{{\\prime}(p)}}+\\mathcal{L}[\\mu](F,F,\\Lambda)=O\\left(\\frac{\\varepsilon_{0}}{u^{\\delta_{dec}}}\\right),$$",
+    "pred": "\\[+\\frac{3}{2}(\\mathcal{P}\\operatorname*{curl}^{\\circ}{^{\\prime}}F)_{\\ell=1,S^{\\prime},J^{\\prime(p)}}+\\mathcal{L}[\\operatorname{curl}\\beta](F,\\underline{F},\\Lambda)&=O\\left(\\frac{\\varepsilon_{0}}{u^{\\delta_{dec}}}\\right),\\ $ \\mathcal{M})_{\\ell\\geq2,S^{\\prime},J^{\\prime(p)}}+((\\mathring{ \\Delta}^{^{\\prime}}+ 2)\\Lambda)_{\\ell\\geq2,S^{\\prime},J^{\\prime(p)}}+\\mathcal{L}[\\mu](F,F,\\Lambda)&=O\\left(\\frac{\\varepsilon_{0}}{u^{\\delta_{dec}}}\\right),\\]",
+    "edit": 0.461038961038961,
+    "cdm": 0.0,
+    "gt_cdm": "(\\mathscr{M})_{\\ell\\geq2,S^{\\prime},J^{\\prime(p)}}+((\\mathring{\\Delta}^{^{\\prime}}+2)\\Lambda)_{\\ell\\geq2,S^{\\prime},J^{{\\prime}(p)}}+\\mathcal{L}[\\mu](F,F,\\Lambda)=O\\left(\\frac{\\varepsilon_{0}}{u^{\\delta_{dec}}}\\right),",
+    "pred_cdm": "+\\frac{3}{2}(\\mathcal{P}\\operatorname*{curl}^{\\circ}{^{\\prime}}F)_{\\ell=1,S^{\\prime},J^{\\prime(p)}}+\\mathcal{L}[\\operatorname{curl}\\beta](F,\\underline{F},\\Lambda)&=O\\left(\\frac{\\varepsilon_{0}}{u^{\\delta_{dec}}}\\right),\\ $ \\mathcal{M})_{\\ell\\geq2,S^{\\prime},J^{\\prime(p)}}+((\\mathring{ \\Delta}^{^{\\prime}}+ 2)\\Lambda)_{\\ell\\geq2,S^{\\prime},J^{\\prime(p)}}+\\mathcal{L}[\\mu](F,F,\\Lambda)&=O\\left(\\frac{\\varepsilon_{0}}{u^{\\delta_{dec}}}\\right),",
+    "pred_cdm_alt": null,
+    "selection_reason": "cdm_zero",
+    "failure_class": "pending"
+  },
+  {
+    "case_id": "cdm-0036",
+    "idx": 15,
+    "img_id": "page-4089ffa0-27f5-4a20-ba2f-c68e3ad46ce2.png",
+    "image_name": "page-4089ffa0-27f5-4a20-ba2f-c68e3ad46ce2.png",
+    "gt_idx": [
+      15
+    ],
+    "pred_idx": [
+      17
+    ],
+    "gt": "$${\\int }_{2}^{\\sqrt{t}}\\frac{u}{{\\left( \\log u\\right) }^{2}}\\frac{{D}^{\\left( 1\\right) }\\left( {t/u}\\right) }{{u}^{2}}{du} \\ll  {\\int }_{2}^{\\sqrt{t}}\\frac{{\\left( \\log \\log \\left( t/u\\right) \\right) }^{a - 1}}{u{\\left( \\log u\\right) }^{2}{\\log }^{b}\\left( {t/u}\\right) }{du} \\ll  \\frac{{\\left( \\log \\log t\\right) }^{a - 1}}{{\\left( \\log t\\right) }^{b}}{\\int }_{2}^{\\sqrt{t}}\\frac{du}{u{\\left( \\log u\\right) }^{2}}$$",
+    "pred": "\\[\\left|\\int_{2}^{\\sqrt{t}}\\frac{u}{(\\log u)^{2}}\\frac{D^{(1)}(t/u)}{u^{2}}du\\ll\\int_{2}^{\\sqrt{t}}\\frac{\\left(\\log\\log(t/u)\\right)^{a-1}}{u(\\log u)^{2}\\log^{b}(t/u)}du\\ll\\frac{(\\log\\log t)^{a-1}}{(\\log t)^{b}}\\int_{2}^{\\sqrt{t}}\\frac{du}{u(\\log u)^{2}}\\right|\\]",
+    "edit": 0.10552763819095477,
+    "cdm": 0.0,
+    "gt_cdm": "{\\int }_{2}^{\\sqrt{t}}\\frac{u}{{\\left( \\log u\\right) }^{2}}\\frac{{D}^{\\left( 1\\right) }\\left( {t/u}\\right) }{{u}^{2}}{du} \\ll  {\\int }_{2}^{\\sqrt{t}}\\frac{{\\left( \\log \\log \\left( t/u\\right) \\right) }^{a - 1}}{u{\\left( \\log u\\right) }^{2}{\\log }^{b}\\left( {t/u}\\right) }{du} \\ll  \\frac{{\\left( \\log \\log t\\right) }^{a - 1}}{{\\left( \\log t\\right) }^{b}}{\\int }_{2}^{\\sqrt{t}}\\frac{du}{u{\\left( \\log u\\right) }^{2}}",
+    "pred_cdm": "\\left|\\int_{2}^{\\sqrt{t}}\\frac{u}{(\\log u)^{2}}\\frac{D^{(1)}(t/u)}{u^{2}}du\\ll\\int_{2}^{\\sqrt{t}}\\frac{\\left(\\log\\log(t/u)\\right)^{a-1}}{u(\\log u)^{2}\\log^{b}(t/u)}du\\ll\\frac{(\\log\\log t)^{a-1}}{(\\log t)^{b}}\\int_{2}^{\\sqrt{t}}\\frac{du}{u(\\log u)^{2}}\\right|",
+    "pred_cdm_alt": null,
+    "selection_reason": "cdm_zero",
+    "failure_class": "pending"
+  },
+  {
+    "case_id": "cdm-0037",
+    "idx": 6,
+    "img_id": "page-268266af-56c0-4b3b-9d07-73c6e50feb58.png",
+    "image_name": "page-268266af-56c0-4b3b-9d07-73c6e50feb58.png",
+    "gt_idx": [
+      6
+    ],
+    "pred_idx": [
+      6
+    ],
+    "gt": "$$=  - {d}_{u}\\left\\lbrack  {\\mathop{\\operatorname{Res}}\\limits_{{\\widetilde{q} = {\\iota u}}}\\frac{d{z}_{1}d\\widetilde{q}}{{\\left( {z}_{1} - \\widetilde{q}\\right) }^{2}}\\mathop{\\sum }\\limits_{{s = 1}}^{\\left| I\\right| }\\mathop{\\sum }\\limits_{\\substack{{{I}_{1} \\sqcup  \\ldots  \\sqcup  {I}_{s} = I} \\\\  {{I}_{1},\\ldots ,{I}_{s} \\neq \\emptyset } }}\\frac{{\\omega }_{2}^{\\left( 0\\right) }\\left( {u,{z}_{2}}\\right) \\mathop{\\prod }\\limits_{{i = 1}}^{s}{\\omega }_{\\left| {I}_{i}\\right|  + 1}^{\\left( 0\\right) }\\left( {u,{I}_{i}}\\right) }{{\\left( \\left( y\\left( \\iota \\widetilde{q}\\right)  - y\\left( u\\right) \\right) dx\\left( u\\right) \\right) }^{s + 1}}}\\right\\rbrack   \\tag{a}$$",
+    "pred": "\\[ =-d_{u}\\Big[\\mathop{\\operatorname{Res}}\\limits_{\\tilde{q}=\\iota u}\\frac{dz_{1}d\\tilde{q}}{(z_{1}-\\tilde{q})^{2}}\\sum_{s=1}^{|I|}\\sum_{\\substack{I_{1}\\sqcup\\ldots\\sqcup I_{s}=I\\\\ I_{1},\\ldots,I_{s}\\neq\\emptyset}}\\frac{\\omega_{2}^{(0)}(u,z_{2})\\prod_{i=1}^{s}\\omega_{|I_{i}|+1}^{(0)}(u,I_{i})}{\\left((y(\\iota\\tilde{q})-y(u))dx(u)\\right)^{s+1}}\\Big] \\]",
+    "edit": 0.2537313432835821,
+    "cdm": 0.0,
+    "gt_cdm": "=  - {d}_{u}\\left\\lbrack  {\\mathop{\\operatorname{Res}}\\limits_{{\\widetilde{q} = {\\iota u}}}\\frac{d{z}_{1}d\\widetilde{q}}{{\\left( {z}_{1} - \\widetilde{q}\\right) }^{2}}\\mathop{\\sum }\\limits_{{s = 1}}^{\\left| I\\right| }\\mathop{\\sum }\\limits_{\\substack{{{I}_{1} \\sqcup  \\ldots  \\sqcup  {I}_{s} = I} \\\\  {{I}_{1},\\ldots ,{I}_{s} \\neq \\emptyset } }}\\frac{{\\omega }_{2}^{\\left( 0\\right) }\\left( {u,{z}_{2}}\\right) \\mathop{\\prod }\\limits_{{i = 1}}^{s}{\\omega }_{\\left| {I}_{i}\\right|  + 1}^{\\left( 0\\right) }\\left( {u,{I}_{i}}\\right) }{{\\left( \\left( y\\left( \\iota \\widetilde{q}\\right)  - y\\left( u\\right) \\right) dx\\left( u\\right) \\right) }^{s + 1}}}\\right\\rbrack",
+    "pred_cdm": "=-d_{u}\\Big[\\mathop{\\operatorname{Res}}\\limits_{\\tilde{q}=\\iota u}\\frac{dz_{1}d\\tilde{q}}{(z_{1}-\\tilde{q})^{2}}\\sum_{s=1}^{|I|}\\sum_{\\substack{I_{1}\\sqcup\\ldots\\sqcup I_{s}=I\\\\ I_{1},\\ldots,I_{s}\\neq\\emptyset}}\\frac{\\omega_{2}^{(0)}(u,z_{2})\\prod_{i=1}^{s}\\omega_{|I_{i}|+1}^{(0)}(u,I_{i})}{\\left((y(\\iota\\tilde{q})-y(u))dx(u)\\right)^{s+1}}\\Big]",
+    "pred_cdm_alt": null,
+    "selection_reason": "cdm_zero",
+    "failure_class": "pending"
+  },
+  {
+    "case_id": "cdm-0038",
+    "idx": 1,
+    "img_id": "page-961a543b-d09d-4fd8-944a-1a38d67bb3bc.png",
+    "image_name": "page-961a543b-d09d-4fd8-944a-1a38d67bb3bc.png",
+    "gt_idx": [
+      1
+    ],
+    "pred_idx": [
+      2
+    ],
+    "gt": "$$L\\left\\lbrack  \\underset{n}{\\underbrace{{\\int }_{0}^{t}\\ldots {\\int }_{0}^{t}f\\left( t\\right) {dt}\\ldots {dt}}}\\right\\rbrack   = \\frac{F\\left( s\\right) }{{s}^{n}} + \\frac{1}{{s}^{n}}{f}^{\\left( -1\\right) }\\left( 0\\right)  + \\ldots  + \\frac{1}{s}{f}^{\\left( -n\\right) }\\left( 0\\right)$$",
+    "pred": "\\[ L[\\underbrace{\\int_{0}^{t}...\\int_{0}^{t}f(t)dt...dt}_{n}]=\\frac{F(s)}{s^{n}}+\\frac{1}{s^{n}}f^{(-1)}(0)+...+\\frac{1}{s}f^{(-n)}(0) \\]",
+    "edit": 0.3582089552238806,
+    "cdm": 0.0,
+    "gt_cdm": "L\\left\\lbrack  \\underset{n}{\\underbrace{{\\int }_{0}^{t}\\ldots {\\int }_{0}^{t}f\\left( t\\right) {dt}\\ldots {dt}}}\\right\\rbrack   = \\frac{F\\left( s\\right) }{{s}^{n}} + \\frac{1}{{s}^{n}}{f}^{\\left( -1\\right) }\\left( 0\\right)  + \\ldots  + \\frac{1}{s}{f}^{\\left( -n\\right) }\\left( 0\\right)",
+    "pred_cdm": "L[\\underbrace{\\int_{0}^{t}...\\int_{0}^{t}f(t)dt...dt}_{n}]=\\frac{F(s)}{s^{n}}+\\frac{1}{s^{n}}f^{(-1)}(0)+...+\\frac{1}{s}f^{(-n)}(0)",
+    "pred_cdm_alt": null,
+    "selection_reason": "cdm_zero",
+    "failure_class": "pending"
+  },
+  {
+    "case_id": "cdm-0039",
+    "idx": 45,
+    "img_id": "jiaocai_71434495.pdf_0.jpg",
+    "image_name": "jiaocai_71434495.pdf_0.jpg",
+    "gt_idx": [
+      45
+    ],
+    "pred_idx": [
+      44
+    ],
+    "gt": "$$\n\\root n \\of{\\mathrm{e}}-1=\\frac{1} {n}+\\frac{1} {2 n^{2}}+o \\left( \\frac{1} {n^{2}} \\right),\n$$",
+    "pred": "\\[ \\sqrt[n]{\\mathrm{e}}-1=\\frac{1}{n}+\\frac{1}{2n^{2}}+o\\left(\\frac{1}{n^{2}}\\right), \\]",
+    "edit": 0.15555555555555556,
+    "cdm": 0.0,
+    "gt_cdm": "\\root n \\of{\\mathrm{e}}-1=\\frac{1} {n}+\\frac{1} {2 n^{2}}+o \\left( \\frac{1} {n^{2}} \\right),",
+    "pred_cdm": "\\sqrt[n]{\\mathrm{e}}-1=\\frac{1}{n}+\\frac{1}{2n^{2}}+o\\left(\\frac{1}{n^{2}}\\right),",
+    "pred_cdm_alt": null,
+    "selection_reason": "cdm_zero",
+    "failure_class": "pending"
+  },
+  {
+    "case_id": "cdm-0040",
+    "idx": 2,
+    "img_id": "notes_9e951846094758afac08c620144e3a76_14.jpg",
+    "image_name": "notes_9e951846094758afac08c620144e3a76_14.jpg",
+    "gt_idx": [
+      2
+    ],
+    "pred_idx": [
+      1
+    ],
+    "gt": "\\[& =9\\cdot\\text{高.①}\\]",
+    "pred": "\\[ S_{\\Delta MAD} = ? \\]",
+    "edit": 0.8,
+    "cdm": 0.0,
+    "gt_cdm": "& =9\\cdot\\text{高.①}",
+    "pred_cdm": "S_{\\Delta MAD} = ?",
+    "pred_cdm_alt": null,
+    "selection_reason": "cdm_zero",
+    "failure_class": "pending"
+  },
+  {
+    "case_id": "cdm-0041",
+    "idx": 7,
+    "img_id": "book_en_国外数学教材-数论-Melvyn B. Nathanson—Elementary Methods in Number Theory_0451.png",
+    "image_name": "book_en_国外数学教材-数论-Melvyn B. Nathanson—Elementary Methods in Number Theory_0451.png",
+    "gt_idx": [
+      7
+    ],
+    "pred_idx": [
+      7
+    ],
+    "gt": "$$\n\\begin{array} { r l r }&{  \\sum _ { u ^  2  + d \\delta = n \\atop \\delta \\equiv 1  { ~\\pmod  2  } }( - 1 ) ^ { ( \\delta - 1 ) / 2 } ( ( 3 \\delta ^ { 2 } u ^ { 2 } + 1 2 d^ { 2 } u ^ { 2 } ) ( n - 3 u ^ { 2 } ) + ( n - 3u^ { 2 } ) ^ { 3 } } \\\\  & - 1 2 u ^ { 2 } ( n - u ^ { 2} ) ( n - 3 u^ { 2 } ) ) = \\{ 4 n ^ { 3 } - 3 n ^ { 2 } \\} _ { n = \\ell ^ { 2 },}\\end{array}\n$$",
+    "pred": "\\[ \\begin{array}{r} \\displaystyle \\sum_{u^2 + d\\delta = n \\quad (m\\equiv 1 \\text{ or } d\\leq 1 \\text{)} - (1)(s - 1)(-1)^{2} + (3g^2u^2 + 12d^2u^2)(n - 3u^2) + (n - 3u^2)(-1) \\\\ \\displaystyle \\qquad -12u^2(n - u^2)(n - 3u^2) = (4n^3 - 3n^2)_{n = l^2}, \\quad (14.17) \\end{array} \\]",
+    "edit": 0.3576158940397351,
+    "cdm": 0.0,
+    "gt_cdm": "\\begin{array} { r l r }&{  \\sum _ { u ^  2  + d \\delta = n \\atop \\delta \\equiv 1  { ~\\pmod  2  } }( - 1 ) ^ { ( \\delta - 1 ) / 2 } ( ( 3 \\delta ^ { 2 } u ^ { 2 } + 1 2 d^ { 2 } u ^ { 2 } ) ( n - 3 u ^ { 2 } ) + ( n - 3u^ { 2 } ) ^ { 3 } } \\\\  & - 1 2 u ^ { 2 } ( n - u ^ { 2} ) ( n - 3 u^ { 2 } ) ) = \\{ 4 n ^ { 3 } - 3 n ^ { 2 } \\} _ { n = \\ell ^ { 2 },}\\end{array}",
+    "pred_cdm": "\\begin{array}{r} \\displaystyle \\sum_{u^2 + d\\delta = n \\quad (m\\equiv 1 \\text{ or } d\\leq 1 \\text{)} - (1)(s - 1)(-1)^{2} + (3g^2u^2 + 12d^2u^2)(n - 3u^2) + (n - 3u^2)(-1) \\\\ \\displaystyle \\qquad -12u^2(n - u^2)(n - 3u^2) = (4n^3 - 3n^2)_{n = l^2}, \\quad (14.17) \\end{array}",
+    "pred_cdm_alt": "\\begin{array}{r}\\displaystyle \\sum_{u^2 + d\\delta = n \\quad (m\\equiv 1 \\text{ or } d\\leq 1 \\text{)} - (1)(s - 1)(-1)^{2} + (3g^2u^2 + 12d^2u^2)(n - 3u^2) + (n - 3u^2)(-1) \\\\ \\displaystyle \\qquad -12u^2(n - u^2)(n - 3u^2) = (4n^3 - 3n^2)_{n = l^2}, \\quad (14.17)\\end{array}",
+    "selection_reason": "cdm_zero",
+    "failure_class": "pending"
+  },
+  {
+    "case_id": "cdm-0042",
+    "idx": 8,
+    "img_id": "book_en_国外数学教材-数论-Melvyn B. Nathanson—Elementary Methods in Number Theory_0451.png",
+    "image_name": "book_en_国外数学教材-数论-Melvyn B. Nathanson—Elementary Methods in Number Theory_0451.png",
+    "gt_idx": [
+      8
+    ],
+    "pred_idx": [
+      8
+    ],
+    "gt": "$$\n\\begin{array} { r l r }  &{  \\sum _ { u ^  2  + d \\delta = n \\atop \\delta \\equiv 1  { ~\\pmod  2  } }( - 1 ) ^ { ( \\delta - 1 ) / 2 } (d ^ { 4 } ( n - 1 1 u ^ { 2 } ) + 1 0 d ^ { 2 } u ^ { 2 } ( n - 3 u ^ { 2 } ) } \\\\  & { + u ^ { 4 } ( 5 n - 7 u ^ { 2 } ) ) = \\{ n^ { 3 } \\} _ { n = \\ell ^ { 2 } } .  } \\end{array}\n$$",
+    "pred": "\\[ \\begin{array}{r l r}{\\lefteqn{\\displaystyle\\sum_{u^{2}+d\\delta=n\\atop\\delta\\equiv1\\pmod2}(-1)^{(\\delta-1)/2}(d^{4}(n-11u^{2})+10d^{2}u^{2}(n-3u^{2})}\\\\ &{}&{+u^{4}(5n-7u^{2}))=\\{n^{3}\\}_{n=\\ell^{2}}.}\\end{array} \\]",
+    "edit": 0.056451612903225805,
+    "cdm": 0.0,
+    "gt_cdm": "\\begin{array} { r l r }  &{  \\sum _ { u ^  2  + d \\delta = n \\atop \\delta \\equiv 1  { ~\\pmod  2  } }( - 1 ) ^ { ( \\delta - 1 ) / 2 } (d ^ { 4 } ( n - 1 1 u ^ { 2 } ) + 1 0 d ^ { 2 } u ^ { 2 } ( n - 3 u ^ { 2 } ) } \\\\  & { + u ^ { 4 } ( 5 n - 7 u ^ { 2 } ) ) = \\{ n^ { 3 } \\} _ { n = \\ell ^ { 2 } } .  } \\end{array}",
+    "pred_cdm": "\\begin{array}{r l r}{\\lefteqn{\\displaystyle\\sum_{u^{2}+d\\delta=n\\atop\\delta\\equiv1\\pmod2}(-1)^{(\\delta-1)/2}(d^{4}(n-11u^{2})+10d^{2}u^{2}(n-3u^{2})}\\\\ &{}&{+u^{4}(5n-7u^{2}))=\\{n^{3}\\}_{n=\\ell^{2}}.}\\end{array}",
+    "pred_cdm_alt": null,
+    "selection_reason": "cdm_zero",
+    "failure_class": "pending"
+  },
+  {
+    "case_id": "cdm-0043",
+    "idx": 2,
+    "img_id": "book_en_国外数学教材-数论-Melvyn B. Nathanson—Elementary Methods in Number Theory_0242.png",
+    "image_name": "book_en_国外数学教材-数论-Melvyn B. Nathanson—Elementary Methods in Number Theory_0242.png",
+    "gt_idx": [
+      2
+    ],
+    "pred_idx": [
+      0
+    ],
+    "gt": "\\[= & 2x \\sum_{1 \\leq u \\leq \\sqrt{x}} \\frac{1}{u} - 2 \\sum_{1 \\leq u \\leq \\sqrt{x}} \\left\\{\\frac{x}{u}\\right\\} - x + O(\\sqrt{x})\\]",
+    "pred": "\\[ \\begin{aligned}&=\\left.\\begin{aligned}\\\\ &2\\sum_{1\\leq u\\leq\\sqrt{x}}\\left[\\frac{x}{u}\\right]-\\left[\\sqrt{x}\\right]^{2}\\\\&=2\\sum_{1\\leq u\\leq\\sqrt{x}}\\left(\\frac{x}{u}-\\left\\{\\frac{x}{u}\\right\\}\\right)-\\left(\\sqrt{x}-\\left\\{\\sqrt{x}\\right\\}\\right)^{2}\\\\&=2x\\sum_{1\\leq u\\leq\\sqrt{x}}\\frac{1}{u}-2\\sum_{1\\leq u\\leq\\sqrt{x}}\\left\\{\\frac{x}{u}\\right\\}-x+O(\\sqrt{x})\\\\&=2x\\left(\\log\\sqrt{x}+\\gamma+O\\left(\\frac{1}{\\sqrt{x}}\\right)\\right)-x+O(\\sqrt{x})\\\\&=x\\log x+(2\\gamma-1)x+O(\\sqrt{x}).\\\\ &\\end{aligned}\\right\\}\\\\ \\end{aligned} \\]",
+    "edit": 0.7288732394366197,
+    "cdm": 0.0,
+    "gt_cdm": "= & 2x \\sum_{1 \\leq u \\leq \\sqrt{x}} \\frac{1}{u} - 2 \\sum_{1 \\leq u \\leq \\sqrt{x}} \\left\\{\\frac{x}{u}\\right\\} - x + O(\\sqrt{x})",
+    "pred_cdm": "\\begin{aligned}&=\\left.\\begin{aligned}\\\\ &2\\sum_{1\\leq u\\leq\\sqrt{x}}\\left[\\frac{x}{u}\\right]-\\left[\\sqrt{x}\\right]^{2}\\\\&=2\\sum_{1\\leq u\\leq\\sqrt{x}}\\left(\\frac{x}{u}-\\left\\{\\frac{x}{u}\\right\\}\\right)-\\left(\\sqrt{x}-\\left\\{\\sqrt{x}\\right\\}\\right)^{2}\\\\&=2x\\sum_{1\\leq u\\leq\\sqrt{x}}\\frac{1}{u}-2\\sum_{1\\leq u\\leq\\sqrt{x}}\\left\\{\\frac{x}{u}\\right\\}-x+O(\\sqrt{x})\\\\&=2x\\left(\\log\\sqrt{x}+\\gamma+O\\left(\\frac{1}{\\sqrt{x}}\\right)\\right)-x+O(\\sqrt{x})\\\\&=x\\log x+(2\\gamma-1)x+O(\\sqrt{x}).\\\\ &\\end{aligned}\\right\\}\\\\ \\end{aligned}",
+    "pred_cdm_alt": null,
+    "selection_reason": "cdm_zero",
+    "failure_class": "pending"
+  },
+  {
+    "case_id": "cdm-0044",
+    "idx": 3,
+    "img_id": "book_en_国外数学教材-非数学专业教材-线性代数-Gilbert Strang—Linear Algebra and Its Applications 4e_0242.png",
+    "image_name": "book_en_国外数学教材-非数学专业教材-线性代数-Gilbert Strang—Linear Algebra and Its Applications 4e_0242.png",
+    "gt_idx": [
+      3
+    ],
+    "pred_idx": [
+      1
+    ],
+    "gt": "$$\nM = \\left[ { \\begin{array} { c c c c } { 0 } & { 0 } & { 0 } & { 2 } \\\\ { 0 } & { 0 } & { 2 } & { 6 } \\\\ { 0 } & { 1 } & { 2 } & { 2 } \\\\ { 4 } & { 4 } & { 8 } & { 8 } \\end{array} } \\right] .\n$$",
+    "pred": "\\[ \\begin{pmatrix}{{{M=\\left[\\begin{bmatrix}0}}}&{{{0}}}&{{{0}}}&{{{2}}} \\\\{{{0}}}&{{{0}}}&{{{2}}}&{{{6}}} \\\\{{{0}}}&{{{1}}}&{{{2}}}&{{{2}}} \\\\{{{4}}}&{{{4}}}&{{{8}}}&{{{8}}}\\end{bmatrix}.\\\\ \\end{pmatrix} \\]",
+    "edit": 0.23076923076923078,
+    "cdm": 0.0,
+    "gt_cdm": "M = \\left[ { \\begin{array} { c c c c } { 0 } & { 0 } & { 0 } & { 2 } \\\\ { 0 } & { 0 } & { 2 } & { 6 } \\\\ { 0 } & { 1 } & { 2 } & { 2 } \\\\ { 4 } & { 4 } & { 8 } & { 8 } \\end{array} } \\right] .",
+    "pred_cdm": "\\begin{pmatrix}{{{M=\\left[\\begin{bmatrix}0}}}&{{{0}}}&{{{0}}}&{{{2}}} \\\\{{{0}}}&{{{0}}}&{{{2}}}&{{{6}}} \\\\{{{0}}}&{{{1}}}&{{{2}}}&{{{2}}} \\\\{{{4}}}&{{{4}}}&{{{8}}}&{{{8}}}\\end{bmatrix}.\\\\ \\end{pmatrix}",
+    "pred_cdm_alt": "\\begin{pmatrix}{{{M=\\left[\\begin{bmatrix}0}}}&{{{0}}}&{{{0}}}&{{{2}}} \\\\{{{0}}}&{{{0}}}&{{{2}}}&{{{6}}} \\\\{{{0}}}&{{{1}}}&{{{2}}}&{{{2}}} \\\\{{{4}}}&{{{4}}}&{{{8}}}&{{{8}}}\\end{bmatrix}.\\end{pmatrix}",
+    "selection_reason": "cdm_zero",
+    "failure_class": "pending"
+  },
+  {
+    "case_id": "cdm-0045",
+    "idx": 4,
+    "img_id": "exam_paper_en-file-putnam-archive_2008_Solutions_2008s_page_004.png",
+    "image_name": "exam_paper_en-file-putnam-archive_2008_Solutions_2008s_page_004.png",
+    "gt_idx": [
+      4
+    ],
+    "pred_idx": [
+      3
+    ],
+    "gt": "$$\n0 = \\det \\left( \\begin{array}{cccc} x_{1}^{2} + y_{1}^{2} & x_{1} & y_{1} & 1 \\\\ x_{2}^{2} + y_{2}^{2} & x_{2} & y_{2} & 1 \\\\ x_{3}^{2} + y_{3}^{2} & x_{3} & y_{3} & 1 \\\\ x^{2} + y^{2} & x & y & 1 \\end{array} \\right)\n$$",
+    "pred": "\\[ \\begin{pmatrix}{{{0=\\det\\begin{pmatrix}x_{1}^{2}+y_{1}^{2}}}}&{{{x_{1}}}}&{{{y_{1}}}}&{{{1}}} \\\\{{{x_{2}^{2}+y_{2}^{2}}}}&{{{x_{2}}}}&{{{y_{2}}}}&{{{1}}} \\\\{{{x_{3}^{2}+y_{3}^{2}}}}&{{{x_{3}}}}&{{{y_{3}}}}&{{{1}}} \\\\{{{x^{2}+y^{2}\\quad x\\quad y\\quad1}}}\\end{pmatrix}\\end{pmatrix} \\]",
+    "edit": 0.0641025641025641,
+    "cdm": 0.0,
+    "gt_cdm": "0 = \\det \\left( \\begin{array}{cccc} x_{1}^{2} + y_{1}^{2} & x_{1} & y_{1} & 1 \\\\ x_{2}^{2} + y_{2}^{2} & x_{2} & y_{2} & 1 \\\\ x_{3}^{2} + y_{3}^{2} & x_{3} & y_{3} & 1 \\\\ x^{2} + y^{2} & x & y & 1 \\end{array} \\right)",
+    "pred_cdm": "\\begin{pmatrix}{{{0=\\det\\begin{pmatrix}x_{1}^{2}+y_{1}^{2}}}}&{{{x_{1}}}}&{{{y_{1}}}}&{{{1}}} \\\\{{{x_{2}^{2}+y_{2}^{2}}}}&{{{x_{2}}}}&{{{y_{2}}}}&{{{1}}} \\\\{{{x_{3}^{2}+y_{3}^{2}}}}&{{{x_{3}}}}&{{{y_{3}}}}&{{{1}}} \\\\{{{x^{2}+y^{2}\\quad x\\quad y\\quad1}}}\\end{pmatrix}\\end{pmatrix}",
+    "pred_cdm_alt": null,
+    "selection_reason": "cdm_zero",
+    "failure_class": "pending"
+  },
+  {
+    "case_id": "cdm-0046",
+    "idx": 9,
+    "img_id": "exam_paper_en-file-putnam-archive_2015_Solutions_2015s_page_006.png",
+    "image_name": "exam_paper_en-file-putnam-archive_2015_Solutions_2015s_page_006.png",
+    "gt_idx": [
+      9
+    ],
+    "pred_idx": [
+      8
+    ],
+    "gt": "$$\ns - a , s - b , s - c > 0 \\qquad s = \\frac { a + b + c } { 2 } ,\n$$",
+    "pred": "\\[ \\frac{s-a,s-b,s-c>0 貼 s=\\frac{a+b+c}{2}, \\]",
+    "edit": 0.20588235294117646,
+    "cdm": 0.0,
+    "gt_cdm": "s - a , s - b , s - c > 0 \\qquad s = \\frac { a + b + c } { 2 } ,",
+    "pred_cdm": "\\frac{s-a,s-b,s-c>0 貼 s=\\frac{a+b+c}{2},",
+    "pred_cdm_alt": null,
+    "selection_reason": "cdm_zero",
+    "failure_class": "pending"
+  }
+]

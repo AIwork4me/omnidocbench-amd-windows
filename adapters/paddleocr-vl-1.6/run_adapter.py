@@ -205,25 +205,39 @@ def run_lightweight_folder(
 
 
 def _official_result_to_markdown(result: object) -> str:
+    def markdown_from_mapping(value: dict) -> str | None:
+        for key in ("markdown_texts", "markdown", "md", "content", "markdown_text", "text"):
+            candidate = value.get(key)
+            if isinstance(candidate, str):
+                return candidate
+        return None
+
     if isinstance(result, str):
         return result
 
     markdown = getattr(result, "markdown", None)
     if isinstance(markdown, str):
         return markdown
+    if isinstance(markdown, dict):
+        mapped = markdown_from_mapping(markdown)
+        if mapped is not None:
+            return mapped
 
     if isinstance(result, dict):
-        for key in ("markdown", "md", "content", "markdown_text"):
-            value = result.get(key)
-            if isinstance(value, str):
-                return value
+        mapped = markdown_from_mapping(result)
+        if mapped is not None:
+            return mapped
 
     json_value = getattr(result, "json", None)
     if isinstance(json_value, dict):
-        for key in ("markdown", "md", "content", "markdown_text"):
-            value = json_value.get(key)
-            if isinstance(value, str):
-                return value
+        mapped = markdown_from_mapping(json_value)
+        if mapped is not None:
+            return mapped
+        res = json_value.get("res")
+        if isinstance(res, dict):
+            mapped = markdown_from_mapping(res)
+            if mapped is not None:
+                return mapped
 
     for method_name in ("to_markdown", "export_markdown"):
         method = getattr(result, method_name, None)
