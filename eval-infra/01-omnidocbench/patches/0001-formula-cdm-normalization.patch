@@ -1,8 +1,8 @@
-diff --git a/src/core/preprocess/formula_cdm.py b/src/core/preprocess/formula_cdm.py
-index 8973cc3..5c0fe83 100644
+﻿diff --git a/src/core/preprocess/formula_cdm.py b/src/core/preprocess/formula_cdm.py
+index 8973cc3..7c41aba 100644
 --- a/src/core/preprocess/formula_cdm.py
 +++ b/src/core/preprocess/formula_cdm.py
-@@ -37,6 +37,12 @@ _ALIGNED_MATRIX_RE = re.compile(
+@@ -37,6 +37,45 @@ _ALIGNED_MATRIX_RE = re.compile(
      r'\s*(?:\\\\\s*)?\\end\{aligned\*?\}\s*$',
      re.S,
  )
@@ -12,10 +12,43 @@ index 8973cc3..5c0fe83 100644
 +_ALIGNED_LEADING_LEFT_BAR_RE = re.compile(
 +    r'(\\begin\{aligned\*?\}\s*)\\left\|'
 +)
++_MATHOP_LIMITS_RE = re.compile(
++    r'\\mathop\s*\{\s*(\\(?:sum|prod|max|min|inf|sup|lim))\s*\}\s*\\limits'
++)
++_MATHOP_OPERATORNAME_LIMITS_RE = re.compile(
++    r'\\mathop\s*\{\s*(\\operatorname\s*\{[^{}]+\})\s*\}\s*\\limits'
++)
++_INLINE_MATH_MARKER_RE = re.compile(r'\\?\s*\$\s*')
++_DYNAMIC_DELIMITER_REPLACEMENTS = (
++    (r'\left\lbrack', r'\lbrack'),
++    (r'\right\rbrack', r'\rbrack'),
++    (r'\left\lbrace', r'\lbrace'),
++    (r'\right\rbrace', r'\rbrace'),
++    (r'\left\langle', r'\langle'),
++    (r'\right\rangle', r'\rangle'),
++    (r'\left\lvert', r'\lvert'),
++    (r'\right\rvert', r'\rvert'),
++    (r'\left\rvert', r'\rvert'),
++    (r'\right\lvert', r'\lvert'),
++    (r'\left\Vert', r'\Vert'),
++    (r'\right\Vert', r'\Vert'),
++    (r'\left\|', r'\|'),
++    (r'\right\|', r'\|'),
++    (r'\left\{', r'\{'),
++    (r'\right\}', r'\}'),
++    (r'\left|', '|'),
++    (r'\right|', '|'),
++    (r'\left(', '('),
++    (r'\right)', ')'),
++    (r'\left[', '['),
++    (r'\right]', ']'),
++    (r'\left.', ''),
++    (r'\right.', ''),
++)
  
  
  def _needs_gt_cdm_fix(text: str) -> bool:
-@@ -85,6 +91,34 @@ def _strip_outer_braces(text: str) -> str:
+@@ -85,6 +124,138 @@ def _strip_outer_braces(text: str) -> str:
      return stripped
  
  
@@ -40,17 +73,121 @@ index 8973cc3..5c0fe83 100644
 +    return formula.strip()
 +
 +
++def _read_balanced_group(text: str, start: int) -> tuple[str, int] | None:
++    if start >= len(text) or text[start] != '{':
++        return None
++    depth = 0
++    for idx in range(start, len(text)):
++        char = text[idx]
++        if char == '{':
++            depth += 1
++        elif char == '}':
++            depth -= 1
++            if depth == 0:
++                return text[start + 1:idx], idx + 1
++    return None
++
++
++def _read_root_degree(text: str, start: int) -> tuple[str, int] | None:
++    idx = start
++    while idx < len(text) and text[idx].isspace():
++        idx += 1
++    if idx >= len(text):
++        return None
++    if text[idx] == '{':
++        group = _read_balanced_group(text, idx)
++        if not group:
++            return None
++        return group
++    end = idx
++    while end < len(text) and not text[end].isspace():
++        if text.startswith(r'\of', end):
++            break
++        end += 1
++    degree = text[idx:end].strip()
++    if not degree:
++        return None
++    return degree, end
++
++
++def _read_root_radicand(text: str, start: int) -> tuple[str, int] | None:
++    idx = start
++    while idx < len(text) and text[idx].isspace():
++        idx += 1
++    if idx >= len(text):
++        return None
++    if text[idx] == '{':
++        return _read_balanced_group(text, idx)
++    if text[idx] == '\\':
++        match = re.match(r'\\[A-Za-z]+', text[idx:])
++        if match:
++            return match.group(0), idx + len(match.group(0))
++    return text[idx], idx + 1
++
++
++def _normalize_tex_root_primitive(text: str) -> str:
++    formula = str(text or '')
++    pieces = []
++    cursor = 0
++    while True:
++        root_idx = formula.find(r'\root', cursor)
++        if root_idx == -1:
++            pieces.append(formula[cursor:])
++            break
++        degree = _read_root_degree(formula, root_idx + len(r'\root'))
++        if not degree:
++            pieces.append(formula[cursor:root_idx + len(r'\root')])
++            cursor = root_idx + len(r'\root')
++            continue
++        degree_text, after_degree = degree
++        idx = after_degree
++        while idx < len(formula) and formula[idx].isspace():
++            idx += 1
++        if not formula.startswith(r'\of', idx):
++            pieces.append(formula[cursor:root_idx + len(r'\root')])
++            cursor = root_idx + len(r'\root')
++            continue
++        radicand = _read_root_radicand(formula, idx + len(r'\of'))
++        if not radicand:
++            pieces.append(formula[cursor:root_idx + len(r'\root')])
++            cursor = root_idx + len(r'\root')
++            continue
++        radicand_text, after_radicand = radicand
++        pieces.append(formula[cursor:root_idx])
++        pieces.append(rf'\sqrt[{degree_text}]{{{radicand_text}}}')
++        cursor = after_radicand
++    return ''.join(pieces)
++
++
++def _downgrade_dynamic_delimiters(text: str) -> str:
++    formula = str(text or '')
++    for source, replacement in _DYNAMIC_DELIMITER_REPLACEMENTS:
++        formula = formula.replace(source, replacement)
++    return formula
++
++
++def _normalize_mathop_limits(text: str) -> str:
++    formula = str(text or '')
++    formula = _MATHOP_OPERATORNAME_LIMITS_RE.sub(r'\1', formula)
++    formula = _MATHOP_LIMITS_RE.sub(r'\1', formula)
++    return formula
++
++
 +def _normalize_cdm_compatible_commands(text: str) -> str:
 +    formula = str(text or '')
++    formula = _INLINE_MATH_MARKER_RE.sub(' ', formula)
++    formula = _normalize_tex_root_primitive(formula)
 +    formula = formula.replace(r'\overrightarrow', r'\vec')
++    formula = _normalize_mathop_limits(formula)
 +    formula = _strip_unmatched_leading_left_bar(formula)
++    formula = _downgrade_dynamic_delimiters(formula)
 +    return formula.strip()
 +
 +
  def _split_latex_rows(body: str) -> list[str]:
      begin_token = '\\begin{'
      end_token = '\\end{'
-@@ -313,8 +347,13 @@ def sanitize_formula_for_cdm(text: str, gt_text: str = '') -> str:
+@@ -313,8 +484,13 @@ def sanitize_formula_for_cdm(text: str, gt_text: str = '') -> str:
      formula = strip_formula_tags(strip_formula_delimiters(str(text or '')).strip())
      if not formula:
          return ''
@@ -65,7 +202,7 @@ index 8973cc3..5c0fe83 100644
      if not matrix_context:
          return formula.strip()
  
-@@ -339,11 +378,14 @@ def build_matrix_cdm_variants(gt_text: str, pred_text: str) -> tuple[str, str]:
+@@ -339,11 +515,14 @@ def build_matrix_cdm_variants(gt_text: str, pred_text: str) -> tuple[str, str]:
  
      if not raw_gt and not raw_pred:
          return '', ''
@@ -87,10 +224,10 @@ index 8973cc3..5c0fe83 100644
      return gt_cdm or raw_gt, pred_cdm_alt
 diff --git a/tests/test_formula_cdm_normalization.py b/tests/test_formula_cdm_normalization.py
 new file mode 100644
-index 0000000..6fee231
+index 0000000..a0bf2f4
 --- /dev/null
 +++ b/tests/test_formula_cdm_normalization.py
-@@ -0,0 +1,59 @@
+@@ -0,0 +1,103 @@
 +from src.core.preprocess.formula_cdm import build_matrix_cdm_variants, sanitize_formula_for_cdm
 +
 +
@@ -137,7 +274,7 @@ index 0000000..6fee231
 +    gt_cdm, pred_cdm_alt = build_matrix_cdm_variants(gt, pred)
 +
 +    assert gt_cdm == gt
-+    assert pred_cdm_alt
++    assert pred_cdm_alt == ''
 +
 +
 +def test_sanitize_formula_fixes_empty_array_column_spec():
@@ -146,7 +283,51 @@ index 0000000..6fee231
 +    assert sanitize_formula_for_cdm(formula).startswith(r"\begin{array}{l}")
 +
 +
-+def test_sanitize_formula_preserves_balanced_absolute_value():
++def test_sanitize_formula_downgrades_balanced_absolute_value_delimiters():
 +    formula = r"\left|x+y\right| \leq \left|x\right|+\left|y\right|"
 +
-+    assert sanitize_formula_for_cdm(formula) == formula
++    assert sanitize_formula_for_cdm(formula) == r"|x+y| \leq |x|+|y|"
++
++
++def test_build_cdm_variant_normalizes_tex_root_primitive_for_gt():
++    gt = r"\root n \of{\mathrm{e}}-1=\frac{1}{n}"
++
++    gt_cdm, _ = build_matrix_cdm_variants(gt, gt)
++
++    assert r"\root" not in gt_cdm
++    assert r"\of" not in gt_cdm
++    assert r"\sqrt[n]{\mathrm{e}}" in gt_cdm
++
++
++def test_build_cdm_variant_downgrades_dynamic_delimiters_for_gt():
++    gt = (
++        r"\left\{\begin{array}{l}"
++        r"\mathop{\sum }\limits_{i=1}^{n}\left\|x_i\right\|"
++        r"\\ y\in\left\lbrack J\right\rbrack"
++        r"\end{array}\right."
++    )
++
++    gt_cdm, _ = build_matrix_cdm_variants(gt, gt)
++
++    assert r"\left" not in gt_cdm
++    assert r"\right" not in gt_cdm
++    assert r"\sum_{i=1}^{n}" in gt_cdm
++    assert r"\|" in gt_cdm
++    assert r"\lbrack J\rbrack" in gt_cdm
++
++
++def test_build_cdm_variant_strips_inline_math_marker_artifacts_from_pred():
++    gt = r"\begin{cases}a,&i=1\\ b,&i=2\end{cases}"
++    pred = r"\begin{cases}a,&i=1,\ $ \partial+b,&i=2\end{cases}"
++
++    _, pred_cdm_alt = build_matrix_cdm_variants(gt, pred)
++
++    assert pred_cdm_alt
++    assert "$" not in pred_cdm_alt
++    assert r"\partial" in pred_cdm_alt
++
++
++if __name__ == "__main__":
++    for name, func in sorted(globals().items()):
++        if name.startswith("test_") and callable(func):
++            func()

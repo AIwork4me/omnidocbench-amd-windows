@@ -216,6 +216,27 @@ def _formula_for_pred(case: dict[str, Any]) -> str:
     return str(case.get("pred_cdm_alt") or case.get("pred_cdm") or case.get("pred") or "")
 
 
+def _raw_formula_pair(case: dict[str, Any]) -> tuple[str, str]:
+    gt = str(case.get("gt") or case.get("gt_cdm") or "")
+    pred = str(case.get("pred") or case.get("pred_cdm") or case.get("pred_cdm_alt") or "")
+    return gt, pred
+
+
+def _build_current_cdm_variants(case: dict[str, Any]) -> tuple[str, str, str]:
+    raw_gt, raw_pred = _raw_formula_pair(case)
+    try:
+        from src.core.preprocess.formula_cdm import build_matrix_cdm_variants
+
+        gt_cdm, pred_cdm_alt = build_matrix_cdm_variants(raw_gt, raw_pred)
+    except Exception:  # noqa: BLE001 - diagnostics should still run with older checkouts.
+        gt_cdm = _formula_for_gt(case)
+        pred_cdm_alt = str(case.get("pred_cdm_alt") or "")
+
+    pred_cdm = str(case.get("pred_cdm") or raw_pred or "")
+    pred_probe = pred_cdm_alt or pred_cdm
+    return gt_cdm or raw_gt, pred_probe, pred_cdm_alt
+
+
 def _zero_cdm(error: Exception | None = None) -> dict[str, Any]:
     metrics: dict[str, Any] = {
         "recall": 0.0,
@@ -235,8 +256,7 @@ def run_pair_probe(cases: list[dict[str, Any]], tmp_dir: str | Path) -> list[dic
 
     results: list[dict[str, Any]] = []
     for case in cases:
-        gt = _formula_for_gt(case)
-        pred = _formula_for_pred(case)
+        gt, pred, pred_cdm_alt = _build_current_cdm_variants(case)
 
         def probe_one(left: str, right: str) -> dict[str, Any]:
             try:
@@ -253,6 +273,8 @@ def run_pair_probe(cases: list[dict[str, Any]], tmp_dir: str | Path) -> list[dic
         }
         failure_class = classify_probe(case, probe)
         updated = dict(case)
+        updated["gt_cdm"] = gt
+        updated["pred_cdm_alt"] = pred_cdm_alt
         updated["failure_class"] = failure_class
         updated.update(probe)
         results.append(updated)

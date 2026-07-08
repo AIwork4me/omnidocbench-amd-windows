@@ -14,34 +14,34 @@
     "pred": "\\[\\boldsymbol{A}\\boldsymbol{B}&=\\left[\\begin{array}{ccc}2&3\\\\1&4\\end{array}\\right]\\left[\\begin{array}{ccc}5&2&1\\\\3&8&6\\end{array}\\right]\\]",
     "edit": 0.0,
     "cdm": 1.0,
-    "gt_cdm": "AB = \n\\left[\\begin{array}{ccc}\n2 & 3 \\\\\n1 & 4\n\\end{array}\\right]\n\\left[\\begin{array}{ccc}\n5 & 2 & 1 \\\\\n3 & 8 & 6\n\\end{array}\\right]",
+    "gt_cdm": "AB = \n[\\begin{array}{ccc}\n2 & 3 \\\\\n1 & 4\n\\end{array}]\n[\\begin{array}{ccc}\n5 & 2 & 1 \\\\\n3 & 8 & 6\n\\end{array}]",
     "pred_cdm": "\\boldsymbol{A}\\boldsymbol{B}&=\\left[\\begin{array}{ccc}2&3\\\\1&4\\end{array}\\right]\\left[\\begin{array}{ccc}5&2&1\\\\3&8&6\\end{array}\\right]",
-    "pred_cdm_alt": "AB&=\\left[\\begin{array}{ccc}2&3\\\\1&4\\end{array}\\right]\\left[\\begin{array}{ccc}5&2&1\\\\3&8&6\\end{array}\\right]",
+    "pred_cdm_alt": "AB&=[\\begin{array}{ccc}2&3\\\\1&4\\end{array}][\\begin{array}{ccc}5&2&1\\\\3&8&6\\end{array}]",
     "selection_reason": "control_high_cdm",
     "failure_class": "pending",
     "gt_self": {
       "recall": 1.0,
       "precision": 1.0,
       "F1_score": 1.0,
-      "tp": 15,
-      "gt_tokens": 15,
-      "pred_tokens": 15
+      "tp": 17,
+      "gt_tokens": 17,
+      "pred_tokens": 17
     },
     "pred_self": {
       "recall": 1.0,
       "precision": 1.0,
       "F1_score": 1.0,
-      "tp": 15,
-      "gt_tokens": 15,
-      "pred_tokens": 15
+      "tp": 17,
+      "gt_tokens": 17,
+      "pred_tokens": 17
     },
     "gt_pred": {
       "recall": 1.0,
       "precision": 1.0,
       "F1_score": 1.0,
-      "tp": 15,
-      "gt_tokens": 15,
-      "pred_tokens": 15
+      "tp": 17,
+      "gt_tokens": 17,
+      "pred_tokens": 17
     }
   },
   {
@@ -59,34 +59,34 @@
     "pred": "\\[&=\\left[\\begin{array}{cccc}10+9&4+24&2&18\\\\5+12&2+32&1&24\\end{array}\\right]=\\left[\\begin{array}{ccc}19&20&16\\\\7&34&25\\end{array}\\right]=\\boldsymbol{C}.\\]",
     "edit": 0.0,
     "cdm": 1.0,
-    "gt_cdm": "=\\left[\\begin{array}{cccc}\n10 + 9 & 4 + 24 & 2&18 \\\\\n5 + 12 & 2 + 32 & 1  &24\n\\end{array}\\right]=\n\\left[\\begin{array}{ccc}\n19 & 20 & 16 \\\\\n7 & 34 & 25\n\\end{array}\\right]\n= C.",
+    "gt_cdm": "=[\\begin{array}{cccc}\n10 + 9 & 4 + 24 & 2&18 \\\\\n5 + 12 & 2 + 32 & 1  &24\n\\end{array}]=\n[\\begin{array}{ccc}\n19 & 20 & 16 \\\\\n7 & 34 & 25\n\\end{array}]\n= C.",
     "pred_cdm": "&=\\left[\\begin{array}{cccc}10+9&4+24&2&18\\\\5+12&2+32&1&24\\end{array}\\right]=\\left[\\begin{array}{ccc}19&20&16\\\\7&34&25\\end{array}\\right]=\\boldsymbol{C}.",
-    "pred_cdm_alt": "&=\\left[\\begin{array}{cccc}10+9&4+24&2&18\\\\5+12&2+32&1&24\\end{array}\\right]=\\left[\\begin{array}{ccc}19&20&16\\\\7&34&25\\end{array}\\right]=C.",
+    "pred_cdm_alt": "&=[\\begin{array}{cccc}10+9&4+24&2&18\\\\5+12&2+32&1&24\\end{array}]=[\\begin{array}{ccc}19&20&16\\\\7&34&25\\end{array}]=C.",
     "selection_reason": "control_high_cdm",
     "failure_class": "pending",
     "gt_self": {
       "recall": 1.0,
       "precision": 1.0,
       "F1_score": 1.0,
-      "tp": 40,
-      "gt_tokens": 40,
-      "pred_tokens": 40
+      "tp": 42,
+      "gt_tokens": 42,
+      "pred_tokens": 42
     },
     "pred_self": {
       "recall": 1.0,
       "precision": 1.0,
       "F1_score": 1.0,
-      "tp": 40,
-      "gt_tokens": 40,
-      "pred_tokens": 40
+      "tp": 42,
+      "gt_tokens": 42,
+      "pred_tokens": 42
     },
     "gt_pred": {
       "recall": 1.0,
       "precision": 1.0,
       "F1_score": 1.0,
-      "tp": 40,
-      "gt_tokens": 40,
-      "pred_tokens": 40
+      "tp": 42,
+      "gt_tokens": 42,
+      "pred_tokens": 42
     }
   },
   {
@@ -104,34 +104,34 @@
     "pred": "\\[ A X=\\left[\\begin{matrix}{a_{11}}&{a_{12}}&{\\cdots}&{a_{1j}}&{\\cdots}&{a_{1N}}\\\\ {a_{21}}&{a_{22}}&{\\cdots}&{a_{2j}}&{\\cdots}&{a_{2N}}\\\\ {\\vdots}&{\\vdots}&{}&{\\vdots}&{}&{\\vdots}\\\\ {a_{k1}}&{a_{k2}}&{\\cdots}&{a_{k j}}&{\\cdots}&{a_{k N}}\\\\ {\\vdots}&{\\vdots}&{}&{\\vdots}&{}&{\\vdots}\\\\ {a_{M1}}&{a_{M2}}&{\\cdots}&{a_{M j}}&{\\cdots}&{a_{M N}}\\\\ \\end{matrix}\\right]\\left[\\begin{matrix}{x_{1}}\\\\ {x_{2}}\\\\ {\\vdots}\\\\ {x_{j}}\\\\ {\\vdots}\\\\ {x_{N}}\\\\ \\end{matrix}\\right]=\\left[\\begin{matrix}{b_{1}}\\\\ {b_{2}}\\\\ {\\vdots}\\\\ {b_{j}}\\\\ {\\vdots}\\\\ {b_{M}}\\\\ \\end{matrix}\\right]=B. \\]",
     "edit": 0.2635135135135135,
     "cdm": 1.0,
-    "gt_cdm": "\\mathbf{A}\\mathbf{X} = \\left\\lbrack  \\begin{array}{cccccc} {a}_{11} & {a}_{12} & \\cdots & {a}_{1j} & \\cdots & {a}_{1N} \\\\  {a}_{21} & {a}_{22} & \\cdots & {a}_{2j} & \\cdots & {a}_{2N} \\\\  \\vdots & \\vdots & & \\vdots & & \\vdots \\\\  {a}_{k1} & {a}_{k2} & \\cdots & {a}_{kj} & \\cdots & {a}_{kN} \\\\  \\vdots & \\vdots & & \\vdots & & \\vdots \\\\  {a}_{M1} & {a}_{M2} & \\cdots & {a}_{Mj} & \\cdots & {a}_{MN} \\end{array}\\right\\rbrack  \\left\\lbrack  \\begin{array}{cccccc} {x}_{1} \\\\  {x}_{2} \\\\  \\vdots \\\\  {x}_{j} \\\\  \\vdots \\\\  {x}_{N} \\end{array}\\right\\rbrack   = \\left\\lbrack  \\begin{array}{cccccc} {b}_{1} \\\\  {b}_{2} \\\\  \\vdots \\\\  {b}_{j} \\\\  \\vdots \\\\  {b}_{M} \\end{array}\\right\\rbrack   = \\mathbf{B}.",
+    "gt_cdm": "\\mathbf{A}\\mathbf{X} = \\lbrack  \\begin{array}{cccccc} {a}_{11} & {a}_{12} & \\cdots & {a}_{1j} & \\cdots & {a}_{1N} \\\\  {a}_{21} & {a}_{22} & \\cdots & {a}_{2j} & \\cdots & {a}_{2N} \\\\  \\vdots & \\vdots & & \\vdots & & \\vdots \\\\  {a}_{k1} & {a}_{k2} & \\cdots & {a}_{kj} & \\cdots & {a}_{kN} \\\\  \\vdots & \\vdots & & \\vdots & & \\vdots \\\\  {a}_{M1} & {a}_{M2} & \\cdots & {a}_{Mj} & \\cdots & {a}_{MN} \\end{array}\\rbrack  \\lbrack  \\begin{array}{cccccc} {x}_{1} \\\\  {x}_{2} \\\\  \\vdots \\\\  {x}_{j} \\\\  \\vdots \\\\  {x}_{N} \\end{array}\\rbrack   = \\lbrack  \\begin{array}{cccccc} {b}_{1} \\\\  {b}_{2} \\\\  \\vdots \\\\  {b}_{j} \\\\  \\vdots \\\\  {b}_{M} \\end{array}\\rbrack   = \\mathbf{B}.",
     "pred_cdm": "A X=\\left[\\begin{matrix}{a_{11}}&{a_{12}}&{\\cdots}&{a_{1j}}&{\\cdots}&{a_{1N}}\\\\ {a_{21}}&{a_{22}}&{\\cdots}&{a_{2j}}&{\\cdots}&{a_{2N}}\\\\ {\\vdots}&{\\vdots}&{}&{\\vdots}&{}&{\\vdots}\\\\ {a_{k1}}&{a_{k2}}&{\\cdots}&{a_{k j}}&{\\cdots}&{a_{k N}}\\\\ {\\vdots}&{\\vdots}&{}&{\\vdots}&{}&{\\vdots}\\\\ {a_{M1}}&{a_{M2}}&{\\cdots}&{a_{M j}}&{\\cdots}&{a_{M N}}\\\\ \\end{matrix}\\right]\\left[\\begin{matrix}{x_{1}}\\\\ {x_{2}}\\\\ {\\vdots}\\\\ {x_{j}}\\\\ {\\vdots}\\\\ {x_{N}}\\\\ \\end{matrix}\\right]=\\left[\\begin{matrix}{b_{1}}\\\\ {b_{2}}\\\\ {\\vdots}\\\\ {b_{j}}\\\\ {\\vdots}\\\\ {b_{M}}\\\\ \\end{matrix}\\right]=B.",
-    "pred_cdm_alt": "A X=\\left[\\begin{matrix}a_{11}&a_{12}&\\cdots&a_{1j}&\\cdots&a_{1N}\\\\a_{21}&a_{22}&\\cdots&a_{2j}&\\cdots&a_{2N}\\\\\\vdots&\\vdots&{}&\\vdots&{}&\\vdots\\\\a_{k1}&a_{k2}&\\cdots&a_{k j}&\\cdots&a_{k N}\\\\\\vdots&\\vdots&{}&\\vdots&{}&\\vdots\\\\a_{M1}&a_{M2}&\\cdots&a_{M j}&\\cdots&a_{M N}\\end{matrix}\\right]\\left[\\begin{matrix}x_{1}\\\\x_{2}\\\\\\vdots\\\\x_{j}\\\\\\vdots\\\\x_{N}\\end{matrix}\\right]=\\left[\\begin{matrix}b_{1}\\\\b_{2}\\\\\\vdots\\\\b_{j}\\\\\\vdots\\\\b_{M}\\end{matrix}\\right]=B.",
+    "pred_cdm_alt": "A X=[\\begin{matrix}a_{11}&a_{12}&\\cdots&a_{1j}&\\cdots&a_{1N}\\\\a_{21}&a_{22}&\\cdots&a_{2j}&\\cdots&a_{2N}\\\\\\vdots&\\vdots&{}&\\vdots&{}&\\vdots\\\\a_{k1}&a_{k2}&\\cdots&a_{k j}&\\cdots&a_{k N}\\\\\\vdots&\\vdots&{}&\\vdots&{}&\\vdots\\\\a_{M1}&a_{M2}&\\cdots&a_{M j}&\\cdots&a_{M N}\\end{matrix}][\\begin{matrix}x_{1}\\\\x_{2}\\\\\\vdots\\\\x_{j}\\\\\\vdots\\\\x_{N}\\end{matrix}]=[\\begin{matrix}b_{1}\\\\b_{2}\\\\\\vdots\\\\b_{j}\\\\\\vdots\\\\b_{M}\\end{matrix}]=B.",
     "selection_reason": "control_high_cdm",
     "failure_class": "pending",
     "gt_self": {
       "recall": 1.0,
       "precision": 1.0,
       "F1_score": 1.0,
-      "tp": 110,
-      "gt_tokens": 110,
-      "pred_tokens": 110
+      "tp": 113,
+      "gt_tokens": 113,
+      "pred_tokens": 113
     },
     "pred_self": {
       "recall": 1.0,
       "precision": 1.0,
       "F1_score": 1.0,
-      "tp": 110,
-      "gt_tokens": 110,
-      "pred_tokens": 110
+      "tp": 113,
+      "gt_tokens": 113,
+      "pred_tokens": 113
     },
     "gt_pred": {
       "recall": 1.0,
       "precision": 1.0,
       "F1_score": 1.0,
-      "tp": 110,
-      "gt_tokens": 110,
-      "pred_tokens": 110
+      "tp": 113,
+      "gt_tokens": 113,
+      "pred_tokens": 113
     }
   },
   {
@@ -149,7 +149,7 @@
     "pred": "\\[ \\begin{bmatrix}0.125&0.200&0.400\\\\ 0.375&0.500&0.600\\\\ 0.500&0.300&0.000\\end{bmatrix}\\begin{bmatrix}x_{1}\\\\ x_{2}\\\\ x_{3}\\end{bmatrix}=\\begin{bmatrix}2.3\\\\ 4.8\\\\ 2.9\\end{bmatrix}. \\]",
     "edit": 0.07317073170731707,
     "cdm": 1.0,
-    "gt_cdm": "\\left[\\begin{array}{cccccc}\n0.125 & 0.200 & 0.400 \\\\\n0.375 & 0.500 & 0.600 \\\\\n0.500 & 0.300 & 0.000\\end{array}\\right]\n\\left[\\begin{array}{cccccc}\nx_1 \\\\\nx_2 \\\\\nx_3\\end{array}\\right]\n=\\left[\\begin{array}{cccccc}2.3 \\\\4.8 \\\\2.9\\end{array}\\right].",
+    "gt_cdm": "[\\begin{array}{cccccc}\n0.125 & 0.200 & 0.400 \\\\\n0.375 & 0.500 & 0.600 \\\\\n0.500 & 0.300 & 0.000\\end{array}]\n[\\begin{array}{cccccc}\nx_1 \\\\\nx_2 \\\\\nx_3\\end{array}]\n=[\\begin{array}{cccccc}2.3 \\\\4.8 \\\\2.9\\end{array}].",
     "pred_cdm": "\\begin{bmatrix}0.125&0.200&0.400\\\\ 0.375&0.500&0.600\\\\ 0.500&0.300&0.000\\end{bmatrix}\\begin{bmatrix}x_{1}\\\\ x_{2}\\\\ x_{3}\\end{bmatrix}=\\begin{bmatrix}2.3\\\\ 4.8\\\\ 2.9\\end{bmatrix}.",
     "pred_cdm_alt": "\\begin{bmatrix}0.125&0.200&0.400\\\\0.375&0.500&0.600\\\\0.500&0.300&0.000\\end{bmatrix}\\begin{bmatrix}x_{1}\\\\x_{2}\\\\x_{3}\\end{bmatrix}=\\begin{bmatrix}2.3\\\\4.8\\\\2.9\\end{bmatrix}.",
     "selection_reason": "control_high_cdm",
@@ -158,9 +158,9 @@
       "recall": 1.0,
       "precision": 1.0,
       "F1_score": 1.0,
-      "tp": 65,
-      "gt_tokens": 65,
-      "pred_tokens": 65
+      "tp": 68,
+      "gt_tokens": 68,
+      "pred_tokens": 68
     },
     "pred_self": {
       "recall": 1.0,
@@ -171,11 +171,11 @@
       "pred_tokens": 65
     },
     "gt_pred": {
-      "recall": 1.0,
+      "recall": 0.956,
       "precision": 1.0,
-      "F1_score": 1.0,
+      "F1_score": 0.977,
       "tp": 65,
-      "gt_tokens": 65,
+      "gt_tokens": 68,
       "pred_tokens": 65
     }
   },
@@ -196,7 +196,7 @@
     "cdm": 1.0,
     "gt_cdm": "\\therefore 3m+1 = 1, 5, -1, -5.",
     "pred_cdm": "\\therefore3m+1=1,5,-1,-5.",
-    "pred_cdm_alt": null,
+    "pred_cdm_alt": "",
     "selection_reason": "control_high_cdm",
     "failure_class": "pending",
     "gt_self": {
@@ -242,18 +242,18 @@
     "pred": "\\begin{array}{l} {\\tan\\frac{x}{2}=t\\Rightarrow\\begin{cases}\\sin x=\\dfrac{2t}{1+t^2}\\\\ \\cos x=\\dfrac{1-t^2}{1+t^2}\\neq\\dfrac{2}{3}\\end{cases}\\Rightarrow\\dfrac{1-\\sin x}{2-3\\cos x}=\\dfrac{1-\\dfrac{2t}{1+t^2}}{2-3\\cdot\\dfrac{1-t^2}{1+t^2}}=\\dfrac{1+t^2-2}{5^2-1}t,} \\\\ {\\vec{5}t\\neq0} \\\\ {\\dfrac{1+t^2-2t}{5t^2-1}=y\\Rightarrow\\begin{cases}(5y-1)t^2+2t-y-1=0\\\\ \\text{判别式法}\\end{cases}} \\\\ {\\Rightarrow\\begin{cases}5y-1=0\\text{时},&t=\\dfrac{3}{5}\\text{符合题意}\\\\5y-1\\neq0\\text{时},&\\Delta=4+4(5y-1)(y+1)\\geq0\\end{cases}\\Rightarrow y\\geq0\\text{或}y\\leq\\dfrac{4}{5}} \\end{array}",
     "edit": 0.1293800539083558,
     "cdm": 0.0,
-    "gt_cdm": "\\left\\{\\begin{array}{l}\\left(1\\right)\\text{ 令 }\\tan\\frac{x}{2}=t\\Rightarrow\\left\\{{\\begin{array}{l}\\sin x=\\frac{2t}{1 + {t}^{2}}\\\\ \\cos x=\\frac{1 - {t}^{2}}{1 + {t}^{2}}\\neq\\frac{2}{3}\\end{array}\\Rightarrow\\frac{1 - \\sin x}{2 - 3\\cos x}=\\frac{1-\\frac{2t}{1 + {t}^{2}}}{2-3 \\cdot \\frac{1 - {t}^{2}}{1 + {t}^{2}}}=\\frac{1 + t^2 - {2t}}{5{t}^{2} - 1}\\left({5{t}^{2} \\neq1}\\right)}\\right.\\\\ \\left(2\\right)\\text{ 令 }\\frac{1+{t}^{2} - {2t}}{5{t}^{2} - 1}=y\\Rightarrow\\left\\{\\begin{array}{l}\\left({{5y} - 1}\\right){t}^2+{2t}-y-1=0\\\\ \\text{ 判别式法 }\\end{array}\\right.\\\\ \\Rightarrow\\left\\{{\\begin{array}{l} {5y} - 1 - 0\\text{ 时,}t = \\frac{3}{5}\\text{ 符合题意 } \\\\ 5y - 1 \\neq0\\text{ 时,}\\Delta= 4 + 4\\left( {{5y} - 1}\\right) \\left( {y + 1}\\right) \\geq0 \\end{array} \\Rightarrow y \\geq0\\text{ 或 }y \\leq\\frac{4}{5}}\\right.\\end{array}\\right.",
+    "gt_cdm": "\\{\\begin{array}{l}(1)\\text{ 令 }\\tan\\frac{x}{2}=t\\Rightarrow\\{{\\begin{array}{l}\\sin x=\\frac{2t}{1 + {t}^{2}}\\\\ \\cos x=\\frac{1 - {t}^{2}}{1 + {t}^{2}}\\neq\\frac{2}{3}\\end{array}\\Rightarrow\\frac{1 - \\sin x}{2 - 3\\cos x}=\\frac{1-\\frac{2t}{1 + {t}^{2}}}{2-3 \\cdot \\frac{1 - {t}^{2}}{1 + {t}^{2}}}=\\frac{1 + t^2 - {2t}}{5{t}^{2} - 1}({5{t}^{2} \\neq1})}\\\\ (2)\\text{ 令 }\\frac{1+{t}^{2} - {2t}}{5{t}^{2} - 1}=y\\Rightarrow\\{\\begin{array}{l}({{5y} - 1}){t}^2+{2t}-y-1=0\\\\ \\text{ 判别式法 }\\end{array}\\\\ \\Rightarrow\\{{\\begin{array}{l} {5y} - 1 - 0\\text{ 时,}t = \\frac{3}{5}\\text{ 符合题意 } \\\\ 5y - 1 \\neq0\\text{ 时,}\\Delta= 4 + 4( {{5y} - 1}) ( {y + 1}) \\geq0 \\end{array} \\Rightarrow y \\geq0\\text{ 或 }y \\leq\\frac{4}{5}}\\end{array}",
     "pred_cdm": "\\begin{array}{l} {\\tan\\frac{x}{2}=t\\Rightarrow\\begin{cases}\\sin x=\\dfrac{2t}{1+t^2}\\\\ \\cos x=\\dfrac{1-t^2}{1+t^2}\\neq\\dfrac{2}{3}\\end{cases}\\Rightarrow\\dfrac{1-\\sin x}{2-3\\cos x}=\\dfrac{1-\\dfrac{2t}{1+t^2}}{2-3\\cdot\\dfrac{1-t^2}{1+t^2}}=\\dfrac{1+t^2-2}{5^2-1}t,} \\\\ {\\vec{5}t\\neq0} \\\\ {\\dfrac{1+t^2-2t}{5t^2-1}=y\\Rightarrow\\begin{cases}(5y-1)t^2+2t-y-1=0\\\\ \\text{判别式法}\\end{cases}} \\\\ {\\Rightarrow\\begin{cases}5y-1=0\\text{时},&t=\\dfrac{3}{5}\\text{符合题意}\\\\5y-1\\neq0\\text{时},&\\Delta=4+4(5y-1)(y+1)\\geq0\\end{cases}\\Rightarrow y\\geq0\\text{或}y\\leq\\dfrac{4}{5}} \\end{array}",
     "pred_cdm_alt": "\\begin{array}{l}\\tan\\frac{x}{2}=t\\Rightarrow\\begin{cases}\\sin x=\\frac{2t}{1+t^2}\\\\ \\cos x=\\frac{1-t^2}{1+t^2}\\neq\\frac{2}{3}\\end{cases}\\Rightarrow\\frac{1-\\sin x}{2-3\\cos x}=\\frac{1-\\frac{2t}{1+t^2}}{2-3\\cdot\\frac{1-t^2}{1+t^2}}=\\frac{1+t^2-2}{5^2-1}t,\\\\\\vec{5}t\\neq0\\\\\\frac{1+t^2-2t}{5t^2-1}=y\\Rightarrow\\begin{cases}(5y-1)t^2+2t-y-1=0\\\\ \\text{判别式法}\\end{cases}\\\\\\Rightarrow\\begin{cases}5y-1=0\\text{时},&t=\\frac{3}{5}\\text{符合题意}\\\\5y-1\\neq0\\text{时},&\\Delta=4+4(5y-1)(y+1)\\geq0\\end{cases}\\Rightarrow y\\geq0\\text{或}y\\leq\\frac{4}{5}\\end{array}",
     "selection_reason": "cdm_zero",
-    "failure_class": "evaluator_gt_compat",
+    "failure_class": "pending",
     "gt_self": {
-      "recall": 0.0,
-      "precision": 0.0,
-      "F1_score": 0.0,
-      "tp": 0,
-      "gt_tokens": 0,
-      "pred_tokens": 0
+      "recall": 1.0,
+      "precision": 1.0,
+      "F1_score": 1.0,
+      "tp": 202,
+      "gt_tokens": 202,
+      "pred_tokens": 202
     },
     "pred_self": {
       "recall": 1.0,
@@ -264,12 +264,12 @@
       "pred_tokens": 191
     },
     "gt_pred": {
-      "recall": 0.0,
-      "precision": 0.0,
-      "F1_score": 0.0,
-      "tp": 0,
-      "gt_tokens": 0,
-      "pred_tokens": 0
+      "recall": 0.777,
+      "precision": 0.822,
+      "F1_score": 0.799,
+      "tp": 157,
+      "gt_tokens": 202,
+      "pred_tokens": 191
     }
   },
   {
@@ -287,18 +287,18 @@
     "pred": "\\[ \\min \\left\\{ \\begin{array}{l} \\mathop{\\sum}\\limits_{i=1}^{N}\\mathop{\\sum}\\limits_{t={t}_{start}}^{T}\\left\\lbrack {C}_{i,t}({P}_{i,t}){d}_{t}\\right\\rbrack+\\mathop{\\sum}\\limits_{i=1}^{n}\\mathop{\\sum}\\limits_{t={t}_{start}}^{T} {P}_{gwf}\\left\\lbrack {P}_{L,i,t} {d}_{t}\\right\\rbrack+\\mathop{\\sum}\\limits_{l=1}^{N}\\mathop{\\sum}\\limits_{t={t}_{start}}^{T} {M}_{1}\\lbrack S{L}_{l}^{+}+S{L}_{l}^{-}\\rbrack+\\mathop{\\sum}\\limits_{s=1}^{N}\\mathop{\\sum}\\limits_{t={t}_{start}}^{T} {M}_{1}\\lbrack S{L}_{s}^{+}} + \\\\ +\\mathop{\\sum}\\limits_{r=1}^{N}\\mathop{\\sum}\\limits_{t=1}^{T} {M}_{2} {P}_{r,t}^{d}+\\mathop{\\sum}\\limits_{i=1}^{N}\\mathop{\\sum}\\limits_{t=1}^{T} {M}_{3} {P}_{i,t}^{d}+\\mathop{\\sum}\\limits_{k \\in {\\Phi}_{a}}^{T}\\mathop{\\sum}\\limits_{t=1}^{T} {M}_{4}\\left\\lbrack S{L}_{k}^{-}\\right\\rbrack+\\mathop{\\sum}\\limits_{e=1}^{E}\\mathop{\\sum}\\limits_{t=1}^{T} \\lbrack {{{\\lambda}_{es}}^{dis} {P}_{es,t}^{dis}} + {{{\\lambda}_{es}}^{ch} {P}_{es,t}^{ch}} \\rbrack \\end{array} \\right. \\]",
     "edit": 0.038135593220338986,
     "cdm": 0.036,
-    "gt_cdm": "\\min \\left\\{  \\begin{array}{l} \\mathop{\\sum }\\limits_{{i = 1}}^{N}\\mathop{\\sum }\\limits_{{t = {t}_{start}}}^{T}\\left\\lbrack  {{C}_{i,t}\\left( {P}_{i,t}\\right) {d}_{t}}\\right\\rbrack   + \\mathop{\\sum }\\limits_{{i = 1}}^{n}\\mathop{\\sum }\\limits_{{t = {t}_{\\text {start}}}}^{T}{P}_{gwf}\\left\\lbrack  {{P}_{L,i,t}{d}_{t}}\\right\\rbrack   + \\mathop{\\sum }\\limits_{{l = 1}}^{{NL}}\\mathop{\\sum }\\limits_{{t = {t}_{\\text {start}}}}^{T}{M}_{1}\\left\\lbrack  {S{L}_{t}^{ + } + S{L}_{t}^{ - }}\\right\\rbrack   + \\mathop{\\sum }\\limits_{{s = 1}}^{{NS}}\\mathop{\\sum }\\limits_{{t = {t}_{\\text {start}}}}^{T}{M}_{1}\\left\\lbrack  {S{L}_{s}^{ + }}+\\right. \\\\  \\left. {+\\mathop{\\sum }\\limits_{{r = 1}}^{{NR}}\\mathop{\\sum }\\limits_{{t = 1}}^{T}{M}_{2}{P}_{r,t}^{d} + \\mathop{\\sum }\\limits_{{i = 1}}^{{NH}}\\mathop{\\sum }\\limits_{{t = 1}}^{T}{M}_{3}{P}_{i,t}^{d} + \\mathop{\\sum }\\limits_{{k \\in  {\\Phi }_{n}}}\\mathop{\\sum }\\limits_{{t = 1}}^{T}{M}_{4}\\left\\lbrack  {S{L}_{k}^{ - }}\\right\\rbrack   + \\mathop{\\sum }\\limits_{{es = 1}}^{{ES}}\\mathop{\\sum }\\limits_{{t = 1}}^{T}\\left\\lbrack  {{\\lambda }_{es}^{dis}{P}_{es,t}^{dis} + {\\lambda }_{es}^{ch}{P}_{es,t}^{ch}}\\right\\rbrack  }\\right.  \\end{array}\\right.",
+    "gt_cdm": "\\min \\{  \\begin{array}{l} \\sum_{{i = 1}}^{N}\\sum_{{t = {t}_{start}}}^{T}\\lbrack  {{C}_{i,t}( {P}_{i,t}) {d}_{t}}\\rbrack   + \\sum_{{i = 1}}^{n}\\sum_{{t = {t}_{\\text {start}}}}^{T}{P}_{gwf}\\lbrack  {{P}_{L,i,t}{d}_{t}}\\rbrack   + \\sum_{{l = 1}}^{{NL}}\\sum_{{t = {t}_{\\text {start}}}}^{T}{M}_{1}\\lbrack  {S{L}_{t}^{ + } + S{L}_{t}^{ - }}\\rbrack   + \\sum_{{s = 1}}^{{NS}}\\sum_{{t = {t}_{\\text {start}}}}^{T}{M}_{1}\\lbrack  {S{L}_{s}^{ + }}+ \\\\   {+\\sum_{{r = 1}}^{{NR}}\\sum_{{t = 1}}^{T}{M}_{2}{P}_{r,t}^{d} + \\sum_{{i = 1}}^{{NH}}\\sum_{{t = 1}}^{T}{M}_{3}{P}_{i,t}^{d} + \\sum_{{k \\in  {\\Phi }_{n}}}\\sum_{{t = 1}}^{T}{M}_{4}\\lbrack  {S{L}_{k}^{ - }}\\rbrack   + \\sum_{{es = 1}}^{{ES}}\\sum_{{t = 1}}^{T}\\lbrack  {{\\lambda }_{es}^{dis}{P}_{es,t}^{dis} + {\\lambda }_{es}^{ch}{P}_{es,t}^{ch}}\\rbrack  }  \\end{array}",
     "pred_cdm": "\\min \\left\\{ \\begin{array}{l} \\mathop{\\sum}\\limits_{i=1}^{N}\\mathop{\\sum}\\limits_{t={t}_{start}}^{T}\\left\\lbrack {C}_{i,t}({P}_{i,t}){d}_{t}\\right\\rbrack+\\mathop{\\sum}\\limits_{i=1}^{n}\\mathop{\\sum}\\limits_{t={t}_{start}}^{T} {P}_{gwf}\\left\\lbrack {P}_{L,i,t} {d}_{t}\\right\\rbrack+\\mathop{\\sum}\\limits_{l=1}^{N}\\mathop{\\sum}\\limits_{t={t}_{start}}^{T} {M}_{1}\\lbrack S{L}_{l}^{+}+S{L}_{l}^{-}\\rbrack+\\mathop{\\sum}\\limits_{s=1}^{N}\\mathop{\\sum}\\limits_{t={t}_{start}}^{T} {M}_{1}\\lbrack S{L}_{s}^{+}} + \\\\ +\\mathop{\\sum}\\limits_{r=1}^{N}\\mathop{\\sum}\\limits_{t=1}^{T} {M}_{2} {P}_{r,t}^{d}+\\mathop{\\sum}\\limits_{i=1}^{N}\\mathop{\\sum}\\limits_{t=1}^{T} {M}_{3} {P}_{i,t}^{d}+\\mathop{\\sum}\\limits_{k \\in {\\Phi}_{a}}^{T}\\mathop{\\sum}\\limits_{t=1}^{T} {M}_{4}\\left\\lbrack S{L}_{k}^{-}\\right\\rbrack+\\mathop{\\sum}\\limits_{e=1}^{E}\\mathop{\\sum}\\limits_{t=1}^{T} \\lbrack {{{\\lambda}_{es}}^{dis} {P}_{es,t}^{dis}} + {{{\\lambda}_{es}}^{ch} {P}_{es,t}^{ch}} \\rbrack \\end{array} \\right.",
-    "pred_cdm_alt": null,
+    "pred_cdm_alt": "\\min \\{ \\begin{array}{l} \\sum_{i=1}^{N}\\sum_{t={t}_{start}}^{T}\\lbrack {C}_{i,t}({P}_{i,t}){d}_{t}\\rbrack+\\sum_{i=1}^{n}\\sum_{t={t}_{start}}^{T} {P}_{gwf}\\lbrack {P}_{L,i,t} {d}_{t}\\rbrack+\\sum_{l=1}^{N}\\sum_{t={t}_{start}}^{T} {M}_{1}\\lbrack S{L}_{l}^{+}+S{L}_{l}^{-}\\rbrack+\\sum_{s=1}^{N}\\sum_{t={t}_{start}}^{T} {M}_{1}\\lbrack S{L}_{s}^{+}} + \\\\ +\\sum_{r=1}^{N}\\sum_{t=1}^{T} {M}_{2} {P}_{r,t}^{d}+\\sum_{i=1}^{N}\\sum_{t=1}^{T} {M}_{3} {P}_{i,t}^{d}+\\sum_{k \\in {\\Phi}_{a}}^{T}\\sum_{t=1}^{T} {M}_{4}\\lbrack S{L}_{k}^{-}\\rbrack+\\sum_{e=1}^{E}\\sum_{t=1}^{T} \\lbrack {{{\\lambda}_{es}}^{dis} {P}_{es,t}^{dis}} + {{{\\lambda}_{es}}^{ch} {P}_{es,t}^{ch}} \\rbrack \\end{array}",
     "selection_reason": "cdm_low_edit_close",
     "failure_class": "normalization_or_matching",
     "gt_self": {
       "recall": 1.0,
       "precision": 1.0,
       "F1_score": 1.0,
-      "tp": 211,
-      "gt_tokens": 211,
-      "pred_tokens": 211
+      "tp": 217,
+      "gt_tokens": 217,
+      "pred_tokens": 217
     },
     "pred_self": {
       "recall": 1.0,
@@ -309,11 +309,11 @@
       "pred_tokens": 14
     },
     "gt_pred": {
-      "recall": 0.019,
-      "precision": 0.286,
-      "F1_score": 0.036,
-      "tp": 4,
-      "gt_tokens": 211,
+      "recall": 0.032,
+      "precision": 0.5,
+      "F1_score": 0.061,
+      "tp": 7,
+      "gt_tokens": 217,
       "pred_tokens": 14
     }
   },
@@ -337,18 +337,18 @@
     "pred": "\\begin{array}{l} {\\left\\{\\begin{array}{l} y = \\sin(wx + \\varphi) \\\\ k \\in \\mathbb{Z}, \\ w > 0, |\\varphi| < \\frac{\\pi}{2} \\end{array}\\right.} \\\\ {(a, b)} \\\\ {\\uparrow} \\\\ {(a, b)} \\\\ {-\\frac{\\pi}{2}} \\\\ {< bw + \\varphi} \\end{array}",
     "edit": 0.6300813008130082,
     "cdm": 0.0,
-    "gt_cdm": "\\left\\{  \\begin{array}{l} y = \\sin \\left( {{wx} + \\varphi }\\right) \\\\  k \\in  Z,w > 0,\\left| \\varphi \\right|  < \\frac{\\pi }{2} \\end{array}\\right. \\left\\{  \\begin{array}{l} \\left( {a,b}\\right) \\text{ 单调}\\uparrow\\longrightarrow   - \\frac{\\pi }{2} \\leq  {aw} + \\varphi  < {bw} + \\varphi  \\leq  \\frac{\\pi }{2},\\left| {b - a}\\right|  \\leq  \\frac{T}{2} \\\\  \\left( {a,b}\\right) \\text{ 不单调 } \\longrightarrow   {aw} + \\varphi  < \\frac{\\pi }{2}\\left( {\\text{ 或 } - \\frac{\\pi }{2}}\\right)  < {bw} + \\varphi \\left( \\text{ 视情况具体分析 }\\right)  \\end{array}\\right.",
+    "gt_cdm": "\\{  \\begin{array}{l} y = \\sin ( {{wx} + \\varphi }) \\\\  k \\in  Z,w > 0,| \\varphi |  < \\frac{\\pi }{2} \\end{array} \\{  \\begin{array}{l} ( {a,b}) \\text{ 单调}\\uparrow\\longrightarrow   - \\frac{\\pi }{2} \\leq  {aw} + \\varphi  < {bw} + \\varphi  \\leq  \\frac{\\pi }{2},| {b - a}|  \\leq  \\frac{T}{2} \\\\  ( {a,b}) \\text{ 不单调 } \\longrightarrow   {aw} + \\varphi  < \\frac{\\pi }{2}( {\\text{ 或 } - \\frac{\\pi }{2}})  < {bw} + \\varphi ( \\text{ 视情况具体分析 })  \\end{array}",
     "pred_cdm": "\\begin{array}{l} {\\left\\{\\begin{array}{l} y = \\sin(wx + \\varphi) \\\\ k \\in \\mathbb{Z}, \\ w > 0, |\\varphi| < \\frac{\\pi}{2} \\end{array}\\right.} \\\\ {(a, b)} \\\\ {\\uparrow} \\\\ {(a, b)} \\\\ {-\\frac{\\pi}{2}} \\\\ {< bw + \\varphi} \\end{array}",
-    "pred_cdm_alt": null,
+    "pred_cdm_alt": "\\begin{array}{l} {\\{\\begin{array}{l} y = \\sin(wx + \\varphi) \\\\ k \\in \\mathbb{Z}, \\ w > 0, |\\varphi| < \\frac{\\pi}{2} \\end{array}} \\\\ {(a, b)} \\\\ {\\uparrow} \\\\ {(a, b)} \\\\ {-\\frac{\\pi}{2}} \\\\ {< bw + \\varphi} \\end{array}",
     "selection_reason": "cdm_zero",
-    "failure_class": "evaluator_gt_compat",
+    "failure_class": "pending",
     "gt_self": {
-      "recall": 0.0,
-      "precision": 0.0,
-      "F1_score": 0.0,
-      "tp": 0,
-      "gt_tokens": 0,
-      "pred_tokens": 0
+      "recall": 1.0,
+      "precision": 1.0,
+      "F1_score": 1.0,
+      "tp": 103,
+      "gt_tokens": 103,
+      "pred_tokens": 103
     },
     "pred_self": {
       "recall": 1.0,
@@ -359,12 +359,12 @@
       "pred_tokens": 47
     },
     "gt_pred": {
-      "recall": 0.0,
-      "precision": 0.0,
-      "F1_score": 0.0,
-      "tp": 0,
-      "gt_tokens": 0,
-      "pred_tokens": 0
+      "recall": 0.417,
+      "precision": 0.915,
+      "F1_score": 0.573,
+      "tp": 43,
+      "gt_tokens": 103,
+      "pred_tokens": 47
     }
   },
   {
@@ -382,7 +382,7 @@
     "pred": "\\[\\begin{vmatrix}{{{\\binom{r}{r-1}}}}&{{{\\binom{r}{r}}}}&{{{0}}}&{{{\\cdots}}}&{{{0}}}&{{{0}}} \\\\{{{\\binom{r+1}{r-1}}}}&{{{\\binom{r+1}{r}}}}&{{{\\binom{r+1}{r+1}}}}&{{{\\cdots}}}&{{{0}}}&{{{0}}} \\\\{{{\\vdots}}}&{{{\\vdots}}}&{{{\\vdots}}}&{{{\\vdots}}}&{{{\\vdots}}} \\\\{{{\\binom{n-3}{r-1}}}}&{{{\\binom{n-3}{r}}}}&{{{\\binom{n-3}{r+1}}}}&{{{\\cdots}}}&{{{\\binom{n-3}{n-3}}}}&{{{0}}} \\\\{{{\\binom{n-2}{r-1}}}}&{{{\\binom{n-2}{r}}}}&{{{\\binom{n-2}{r+1}}}}&{{{\\cdots}}}&{{{\\binom{n-2}{n-3}}}}&{{{\\binom{n-2}{n-2}}}} \\\\{{{\\binom{n-1}{r-1}}}}&{{{\\binom{n-1}{r}}}}&{{{\\binom{n-1}{r+1}}}}&{{{\\cdots}}}&{{{\\binom{n-1}{n-3}}}}&{{{\\binom{n-1}{n-2}}}}\\end{vmatrix}+\\begin{vmatrix}{{{\\binom{r}{r}}}}&{{{0}}}&{{{0}}}&{{{\\cdots}}}&{{{0}}}&{{{0}}} \\\\{{{\\binom{r+1}{r-1}}}}&{{{\\binom{r+1}{r}}}}&{{{\\binom{r+1}{r+1}}}}&{{{\\cdots}}}&{{{0}}}&{{{0}}} \\\\{{{\\vdots}}}&{{{\\vdots}}}&{{{\\vdots}}}&{{{\\vdots}}}&{{{\\vdots}}} \\\\{{{\\binom{n-3}{r-1}}}}&{{{\\binom{n-3}{r}}}}&{{{\\binom{n-3}{r+1}}}}&{{{\\cdots}}}&{{{\\binom{n-3}{n-3}}}}&{{{0}}} \\\\{{{\\binom{n-2}{r-1}}}}&{{{\\binom{n-2}{r}}}}&{{{\\binom{n-2}{r+1}}}}&{{{\\cdots}}}&{{{\\binom{n-2}{n-3}}}}&{{{\\binom{n-2}{n-2}}}} \\\\{{{\\binom{n-1}{r-1}}}}&{{{\\binom{n-1}{r}}}}&{{{\\binom{n-1}{r+1}}}}&{{{\\cdots}}}&{{{\\binom{n-1}{n-3}}}}&{{{\\binom{n-1}{n-2}}}}\\end{vmatrix}\\]",
     "edit": 0.0893760539629005,
     "cdm": 0.394,
-    "gt_cdm": "\\left| \\begin{array}{c}\n\\binom{r}{r-1} & \\binom{r}{r} & 0 & \\cdots & 0 & 0 \\\\\n\\binom{r+1}{r-1} & \\binom{r+1}{r} & \\binom{r+1}{r+1} & \\cdots & 0 & 0 \\\\\n\\vdots & \\vdots & \\vdots & & \\vdots & \\vdots \\\\\n\\binom{n-3}{r-1} & \\binom{n-3}{r} & \\binom{n-3}{r+1} & \\cdots & \\binom{n-3}{n-3} & 0 \\\\\n\\binom{n-2}{r-1} & \\binom{n-2}{r} & \\binom{n-2}{r+1} & \\cdots & \\binom{n-2}{n-3} & \\binom{n-2}{n-2} \\\\\n\\binom{n-1}{r-1} & \\binom{n-1}{r} & \\binom{n-1}{r+1} & \\cdots & \\binom{n-1}{n-3} & \\binom{n-1}{n-2} \n\\end{array}\\right|+\n\\left| \\begin{array}{c}\n\\binom{r}{r} & 0 & 0 & \\cdots & 0 & 0 \\\\\n\\binom{r+1}{r-1} & \\binom{r+1}{r} & \\binom{r+1}{r+1} & \\cdots & 0 & 0 \\\\\n\\vdots & \\vdots & \\vdots &  & \\vdots & \\vdots \\\\\n\\binom{n-3}{r-1} & \\binom{n-3}{r} & \\binom{n-3}{r+1} & \\cdots & \\binom{n-3}{n-3} & 0 \\\\\n\\binom{n-2}{r-1} & \\binom{n-2}{r} & \\binom{n-2}{r+1} & \\cdots & \\binom{n-2}{n-3} & \\binom{n-2}{n-2}\\\\\n\\binom{n-1}{r-1} & \\binom{n-1}{r} & \\binom{n-1}{r+1} & \\cdots & \\binom{n-1}{n-3} & \\binom{n-1}{n-2}\n\\end{array}\\right|",
+    "gt_cdm": "| \\begin{array}{c}\n\\binom{r}{r-1} & \\binom{r}{r} & 0 & \\cdots & 0 & 0 \\\\\n\\binom{r+1}{r-1} & \\binom{r+1}{r} & \\binom{r+1}{r+1} & \\cdots & 0 & 0 \\\\\n\\vdots & \\vdots & \\vdots & & \\vdots & \\vdots \\\\\n\\binom{n-3}{r-1} & \\binom{n-3}{r} & \\binom{n-3}{r+1} & \\cdots & \\binom{n-3}{n-3} & 0 \\\\\n\\binom{n-2}{r-1} & \\binom{n-2}{r} & \\binom{n-2}{r+1} & \\cdots & \\binom{n-2}{n-3} & \\binom{n-2}{n-2} \\\\\n\\binom{n-1}{r-1} & \\binom{n-1}{r} & \\binom{n-1}{r+1} & \\cdots & \\binom{n-1}{n-3} & \\binom{n-1}{n-2} \n\\end{array}|+\n| \\begin{array}{c}\n\\binom{r}{r} & 0 & 0 & \\cdots & 0 & 0 \\\\\n\\binom{r+1}{r-1} & \\binom{r+1}{r} & \\binom{r+1}{r+1} & \\cdots & 0 & 0 \\\\\n\\vdots & \\vdots & \\vdots &  & \\vdots & \\vdots \\\\\n\\binom{n-3}{r-1} & \\binom{n-3}{r} & \\binom{n-3}{r+1} & \\cdots & \\binom{n-3}{n-3} & 0 \\\\\n\\binom{n-2}{r-1} & \\binom{n-2}{r} & \\binom{n-2}{r+1} & \\cdots & \\binom{n-2}{n-3} & \\binom{n-2}{n-2}\\\\\n\\binom{n-1}{r-1} & \\binom{n-1}{r} & \\binom{n-1}{r+1} & \\cdots & \\binom{n-1}{n-3} & \\binom{n-1}{n-2}\n\\end{array}|",
     "pred_cdm": "\\begin{vmatrix}\\binom{r}{r-1}&\\binom{r}{r}&0&\\cdots&0&0\\\\\\binom{r+1}{r-1}&\\binom{r+1}{r}&\\binom{r+1}{r+1}&\\cdots&0&0\\\\\\vdots&\\vdots&\\vdots&\\vdots&\\vdots\\\\\\binom{n-3}{r-1}&\\binom{n-3}{r}&\\binom{n-3}{r+1}&\\cdots&\\binom{n-3}{n-3}&0\\\\\\binom{n-2}{r-1}&\\binom{n-2}{r}&\\binom{n-2}{r+1}&\\cdots&\\binom{n-2}{n-3}&\\binom{n-2}{n-2}\\\\\\binom{n-1}{r-1}&\\binom{n-1}{r}&\\binom{n-1}{r+1}&\\cdots&\\binom{n-1}{n-3}&\\binom{n-1}{n-2}\\end{vmatrix}+\\begin{vmatrix}\\binom{r}{r}&0&0&\\cdots&0&0\\\\\\binom{r+1}{r-1}&\\binom{r+1}{r}&\\binom{r+1}{r+1}&\\cdots&0&0\\\\\\vdots&\\vdots&\\vdots&\\vdots&\\vdots\\\\\\binom{n-3}{r-1}&\\binom{n-3}{r}&\\binom{n-3}{r+1}&\\cdots&\\binom{n-3}{n-3}&0\\\\\\binom{n-2}{r-1}&\\binom{n-2}{r}&\\binom{n-2}{r+1}&\\cdots&\\binom{n-2}{n-3}&\\binom{n-2}{n-2}\\\\\\binom{n-1}{r-1}&\\binom{n-1}{r}&\\binom{n-1}{r+1}&\\cdots&\\binom{n-1}{n-3}&\\binom{n-1}{n-2}\\end{vmatrix}",
     "pred_cdm_alt": "\\begin{vmatrix}\\binom{r}{r-1}&\\binom{r}{r}&0&\\cdots&0&0\\\\\\binom{r+1}{r-1}&\\binom{r+1}{r}&\\binom{r+1}{r+1}&\\cdots&0&0\\\\\\vdots&\\vdots&\\vdots&\\vdots&\\vdots\\\\\\binom{n-3}{r-1}&\\binom{n-3}{r}&\\binom{n-3}{r+1}&\\cdots&\\binom{n-3}{n-3}&0\\\\\\binom{n-2}{r-1}&\\binom{n-2}{r}&\\binom{n-2}{r+1}&\\cdots&\\binom{n-2}{n-3}&\\binom{n-2}{n-2}\\\\\\binom{n-1}{r-1}&\\binom{n-1}{r}&\\binom{n-1}{r+1}&\\cdots&\\binom{n-1}{n-3}&\\binom{n-1}{n-2}\\end{vmatrix}+\\begin{vmatrix}\\binom{r}{r}&0&0&\\cdots&0&0\\\\\\binom{r+1}{r-1}&\\binom{r+1}{r}&\\binom{r+1}{r+1}&\\cdots&0&0\\\\\\vdots&\\vdots&\\vdots&\\vdots&\\vdots\\\\\\binom{n-3}{r-1}&\\binom{n-3}{r}&\\binom{n-3}{r+1}&\\cdots&\\binom{n-3}{n-3}&0\\\\\\binom{n-2}{r-1}&\\binom{n-2}{r}&\\binom{n-2}{r+1}&\\cdots&\\binom{n-2}{n-3}&\\binom{n-2}{n-2}\\\\\\binom{n-1}{r-1}&\\binom{n-1}{r}&\\binom{n-1}{r+1}&\\cdots&\\binom{n-1}{n-3}&\\binom{n-1}{n-2}\\end{vmatrix}",
     "selection_reason": "cdm_low_edit_close",
@@ -391,9 +391,9 @@
       "recall": 1.0,
       "precision": 1.0,
       "F1_score": 1.0,
-      "tp": 289,
-      "gt_tokens": 289,
-      "pred_tokens": 289
+      "tp": 291,
+      "gt_tokens": 291,
+      "pred_tokens": 291
     },
     "pred_self": {
       "recall": 1.0,
@@ -404,11 +404,11 @@
       "pred_tokens": 289
     },
     "gt_pred": {
-      "recall": 0.394,
-      "precision": 0.394,
-      "F1_score": 0.394,
-      "tp": 114,
-      "gt_tokens": 289,
+      "recall": 0.237,
+      "precision": 0.239,
+      "F1_score": 0.238,
+      "tp": 69,
+      "gt_tokens": 291,
       "pred_tokens": 289
     }
   },
@@ -429,9 +429,9 @@
     "cdm": 0.0,
     "gt_cdm": "[M]_{p_{2},T_{2}}-[M]_{p_{1},T_{1}}=[\\underbrace {M]_{p_2,~T_2}^{*}-[M}_{\\mathbf {A}}]_{p_1,~T_1}^{*}\\underbrace {+[M_{1r}]}_{\\mathbf {B}}-\\underbrace {[M_{2r}}_{\\mathbf {C}}]",
     "pred_cdm": "\\frac{\\left[M\\right]_{p_{2},r_{2}}-\\left[M\\right]_{p_{1},r_{1}}=\\underbrace{[\\underbrace{M}_{p_{2},r_{2}}]}^{*,\\underbrace{r_{2}-\\left[M\\right]}_{p_{1},r_{1}}}_{\\mathbf{A}},\\underbrace{\\frac{1}{r}\\left[\\underbrace{M}_{p_{1},r_{1}}]}_{B}-\\underbrace{\\left[\\underbrace{M}_{2r}\\right]}_{C}}{}",
-    "pred_cdm_alt": null,
+    "pred_cdm_alt": "\\frac{[M]_{p_{2},r_{2}}-[M]_{p_{1},r_{1}}=\\underbrace{[\\underbrace{M}_{p_{2},r_{2}}]}^{*,\\underbrace{r_{2}-[M]}_{p_{1},r_{1}}}_{\\mathbf{A}},\\underbrace{\\frac{1}{r}[\\underbrace{M}_{p_{1},r_{1}}]}_{B}-\\underbrace{[\\underbrace{M}_{2r}]}_{C}}{}",
     "selection_reason": "cdm_zero",
-    "failure_class": "model_or_dataset_gap",
+    "failure_class": "pending",
     "gt_self": {
       "recall": 1.0,
       "precision": 1.0,
@@ -444,17 +444,17 @@
       "recall": 1.0,
       "precision": 1.0,
       "F1_score": 1.0,
-      "tp": 1,
-      "gt_tokens": 1,
-      "pred_tokens": 1
+      "tp": 68,
+      "gt_tokens": 68,
+      "pred_tokens": 68
     },
     "gt_pred": {
-      "recall": 0.0,
-      "precision": 0.0,
-      "F1_score": 0.0,
-      "tp": 0,
+      "recall": 0.833,
+      "precision": 0.662,
+      "F1_score": 0.738,
+      "tp": 45,
       "gt_tokens": 54,
-      "pred_tokens": 1
+      "pred_tokens": 68
     }
   },
   {
@@ -474,7 +474,7 @@
     "cdm": 0.0,
     "gt_cdm": "Q_{\\mu \\nu}(\\nabla^{(m)} h, \\nabla^{(m)} h)",
     "pred_cdm": "",
-    "pred_cdm_alt": null,
+    "pred_cdm_alt": "",
     "selection_reason": "prediction_empty",
     "failure_class": "extraction_or_matching",
     "gt_self": {
@@ -519,7 +519,7 @@
     "cdm": 0.0,
     "gt_cdm": "+ \\frac{1}{2} m^{\\alpha {\\alpha}^{\\prime}} m^{\\beta {\\beta}^{\\prime}} (\\nabla^{(m)}{}_{{\\beta}^{\\prime}} h_{\\alpha {\\alpha}^{\\prime}} \\, \\nabla^{(m)}{}_\\mu h_{\\beta \\nu} - \\nabla^{(m)}{}_\\mu h_{\\alpha {\\alpha}^{\\prime}} \\, \\nabla^{(m)}{}_{{\\beta}^{\\prime}} h_{\\beta \\nu})",
     "pred_cdm": "",
-    "pred_cdm_alt": null,
+    "pred_cdm_alt": "",
     "selection_reason": "prediction_empty",
     "failure_class": "extraction_or_matching",
     "gt_self": {
@@ -564,7 +564,7 @@
     "cdm": 0.0,
     "gt_cdm": "+ \\frac{1}{2} m^{\\alpha {\\alpha}^{\\prime}} m^{\\beta {\\beta}^{\\prime}} (\\nabla^{(m)}{}_{{\\beta}^{\\prime}} h_{\\alpha {\\alpha}^{\\prime}} \\, \\nabla^{(m)}{}_\\nu h_{\\beta \\mu} - \\nabla^{(m)}{}_\\nu h_{\\alpha {\\alpha}^{\\prime}} \\, \\nabla^{(m)}{}_{{\\beta}^{\\prime}} h_{\\beta \\mu}).",
     "pred_cdm": "",
-    "pred_cdm_alt": null,
+    "pred_cdm_alt": "",
     "selection_reason": "prediction_empty",
     "failure_class": "extraction_or_matching",
     "gt_self": {
@@ -607,34 +607,34 @@
     "pred": "\\[&=\\begin{cases}-\\lambda_{i}f_{\\lambda_{1},\\lambda_{2},\\cdots,\\lambda_{n-1}}(p_{1},p_{2},\\cdots,p_{n}),&i=1,\\cdots,n-1,\\ $ \\partial+\\lambda_{1}+\\lambda_{2}+\\cdots+\\lambda_{n-1})f_{\\lambda_{1},\\lambda_{2},\\cdots,\\lambda_{n-1}}(p_{1},p_{2},\\cdots,p_{n}),&i=n.\\end{cases}\\]",
     "edit": 0.1277533039647577,
     "cdm": 0.0,
-    "gt_cdm": "= \\left\\{  \\begin{array}{ll}  - {\\lambda }_{i}{f}_{{\\lambda }_{1},{\\lambda }_{2},\\cdots ,{\\lambda }_{n - 1}}\\left( {{p}_{1},{p}_{2},\\cdots ,{p}_{n}}\\right) , & i = 1,\\cdots n-1,\\\\  \\left( {\\partial  + {\\lambda }_{1} + {\\lambda }_{2} + \\cdots  + {\\lambda }_{n - 1}}\\right) {f}_{{\\lambda }_{1},{\\lambda }_{2},\\cdots ,{\\lambda }_{n - 1}}\\left( {{p}_{1},{p}_{2},\\cdots ,{p}_{n}}\\right) , & i = n. \\end{array}\\right.",
+    "gt_cdm": "= \\{  \\begin{array}{ll}  - {\\lambda }_{i}{f}_{{\\lambda }_{1},{\\lambda }_{2},\\cdots ,{\\lambda }_{n - 1}}( {{p}_{1},{p}_{2},\\cdots ,{p}_{n}}) , & i = 1,\\cdots n-1,\\\\  ( {\\partial  + {\\lambda }_{1} + {\\lambda }_{2} + \\cdots  + {\\lambda }_{n - 1}}) {f}_{{\\lambda }_{1},{\\lambda }_{2},\\cdots ,{\\lambda }_{n - 1}}( {{p}_{1},{p}_{2},\\cdots ,{p}_{n}}) , & i = n. \\end{array}",
     "pred_cdm": "&=\\begin{cases}-\\lambda_{i}f_{\\lambda_{1},\\lambda_{2},\\cdots,\\lambda_{n-1}}(p_{1},p_{2},\\cdots,p_{n}),&i=1,\\cdots,n-1,\\ $ \\partial+\\lambda_{1}+\\lambda_{2}+\\cdots+\\lambda_{n-1})f_{\\lambda_{1},\\lambda_{2},\\cdots,\\lambda_{n-1}}(p_{1},p_{2},\\cdots,p_{n}),&i=n.\\end{cases}",
-    "pred_cdm_alt": null,
+    "pred_cdm_alt": "&=\\begin{cases}-\\lambda_{i}f_{\\lambda_{1},\\lambda_{2},\\cdots,\\lambda_{n-1}}(p_{1},p_{2},\\cdots,p_{n}),&i=1,\\cdots,n-1, \\partial+\\lambda_{1}+\\lambda_{2}+\\cdots+\\lambda_{n-1})f_{\\lambda_{1},\\lambda_{2},\\cdots,\\lambda_{n-1}}(p_{1},p_{2},\\cdots,p_{n}),&i=n.\\end{cases}",
     "selection_reason": "cdm_zero",
-    "failure_class": "pred_latex_unrenderable",
+    "failure_class": "pending",
     "gt_self": {
       "recall": 1.0,
       "precision": 1.0,
       "F1_score": 1.0,
-      "tp": 95,
-      "gt_tokens": 95,
-      "pred_tokens": 95
+      "tp": 98,
+      "gt_tokens": 98,
+      "pred_tokens": 98
     },
     "pred_self": {
-      "recall": 0.0,
-      "precision": 0.0,
-      "F1_score": 0.0,
-      "tp": 0,
-      "gt_tokens": 0,
-      "pred_tokens": 0
+      "recall": 1.0,
+      "precision": 1.0,
+      "F1_score": 1.0,
+      "tp": 98,
+      "gt_tokens": 98,
+      "pred_tokens": 98
     },
     "gt_pred": {
-      "recall": 0.0,
-      "precision": 0.0,
-      "F1_score": 0.0,
-      "tp": 0,
-      "gt_tokens": 95,
-      "pred_tokens": 0
+      "recall": 0.99,
+      "precision": 0.99,
+      "F1_score": 0.99,
+      "tp": 97,
+      "gt_tokens": 98,
+      "pred_tokens": 98
     }
   },
   {
@@ -654,7 +654,7 @@
     "cdm": 0.0,
     "gt_cdm": "= \\sum_{i=1}^{n} (-1)^{i+1} [\\alpha^{n-1}(p_i)_{\\lambda_i} f_{\\lambda_1, \\cdots, \\hat{\\lambda}_i, \\cdots, \\lambda_n}(p_1, \\cdots, \\hat{p}_i, \\cdots, p_{n+1})]",
     "pred_cdm": "=&\\sum_{i=1}^{n}(-1)^{i+1}[\\alpha^{n-1}(p_{i})_{\\lambda_{i}}f_{\\lambda_{1},\\cdots,\\hat{\\lambda_{i}}},\\cdots,\\lambda_{n}}(p_{1},\\cdots,\\hat{p_{i}},\\cdots,p_{n+1})]",
-    "pred_cdm_alt": null,
+    "pred_cdm_alt": "",
     "selection_reason": "cdm_zero",
     "failure_class": "normalization_or_matching",
     "gt_self": {
@@ -697,34 +697,34 @@
     "pred": "\\[&=\\frac{\\zeta_{\\mathfrak{q}}(2)^{2}\\chi(\\mathfrak{l})\\deg(\\mathrm{T}_{\\mathfrak{l}})}{\\zeta_{\\mathfrak{q}}(1)^{2}V_{F}}\\cdot\\left|\\frac{1}{q^{1/2}}\\left(\\langle\\varphi_{1}\\cdot(\\mathrm{T}_{\\mathfrak{q}}\\varphi_{2}),\\varphi_{\\chi}\\rangle-\\frac{1}{q_{1}}\\cdot\\left\\langle\\varphi_{1}\\cdot(\\mathrm{T}_{\\mathfrak{q}_{1}^{m-2}}\\varphi_{2}),\\varphi_{\\chi}\\right\\rangle\\right)\\right|^{2}\\]",
     "edit": 0.09210526315789473,
     "cdm": 0.0,
-    "gt_cdm": "= \\frac{{\\zeta }_{\\mathfrak{q}}{\\left( 2\\right) }^{2}\\chi \\left( \\mathfrak{l}\\right) \\deg \\left( {\\mathrm{T}}_{\\mathrm{\\mathfrak{l}}}\\right) }{{\\zeta }_{\\mathfrak{q}}{\\left( 1\\right) }^{2}{V}_{F}} \\cdot  {\\left| \\frac{1}{{q}^{1/2}}\\left( \\left\\langle  {\\varphi }_{1} \\cdot  \\left( {\\mathrm{T}}_{\\mathfrak{q}}{\\varphi }_{2}\\right) ,{\\varphi }_{\\chi }\\right\\rangle   - \\frac{1}{{q}_{1}} \\cdot  \\left\\langle  {\\varphi }_{1} \\cdot  \\left( {\\mathrm{T}}_{{\\mathfrak{q}}_{1}^{m - 2}}{\\varphi }_{2}\\right) ,{\\varphi }_{\\chi }\\right\\rangle  \\right) \\right| }^{2}",
+    "gt_cdm": "= \\frac{{\\zeta }_{\\mathfrak{q}}{( 2) }^{2}\\chi ( \\mathfrak{l}) \\deg ( {\\mathrm{T}}_{\\mathrm{\\mathfrak{l}}}) }{{\\zeta }_{\\mathfrak{q}}{( 1) }^{2}{V}_{F}} \\cdot  {| \\frac{1}{{q}^{1/2}}( \\langle  {\\varphi }_{1} \\cdot  ( {\\mathrm{T}}_{\\mathfrak{q}}{\\varphi }_{2}) ,{\\varphi }_{\\chi }\\rangle   - \\frac{1}{{q}_{1}} \\cdot  \\langle  {\\varphi }_{1} \\cdot  ( {\\mathrm{T}}_{{\\mathfrak{q}}_{1}^{m - 2}}{\\varphi }_{2}) ,{\\varphi }_{\\chi }\\rangle  ) | }^{2}",
     "pred_cdm": "&=\\frac{\\zeta_{\\mathfrak{q}}(2)^{2}\\chi(\\mathfrak{l})\\deg(\\mathrm{T}_{\\mathfrak{l}})}{\\zeta_{\\mathfrak{q}}(1)^{2}V_{F}}\\cdot\\left|\\frac{1}{q^{1/2}}\\left(\\langle\\varphi_{1}\\cdot(\\mathrm{T}_{\\mathfrak{q}}\\varphi_{2}),\\varphi_{\\chi}\\rangle-\\frac{1}{q_{1}}\\cdot\\left\\langle\\varphi_{1}\\cdot(\\mathrm{T}_{\\mathfrak{q}_{1}^{m-2}}\\varphi_{2}),\\varphi_{\\chi}\\right\\rangle\\right)\\right|^{2}",
-    "pred_cdm_alt": null,
+    "pred_cdm_alt": "&=\\frac{\\zeta_{\\mathfrak{q}}(2)^{2}\\chi(\\mathfrak{l})\\deg(\\mathrm{T}_{\\mathfrak{l}})}{\\zeta_{\\mathfrak{q}}(1)^{2}V_{F}}\\cdot|\\frac{1}{q^{1/2}}(\\langle\\varphi_{1}\\cdot(\\mathrm{T}_{\\mathfrak{q}}\\varphi_{2}),\\varphi_{\\chi}\\rangle-\\frac{1}{q_{1}}\\cdot\\langle\\varphi_{1}\\cdot(\\mathrm{T}_{\\mathfrak{q}_{1}^{m-2}}\\varphi_{2}),\\varphi_{\\chi}\\rangle)|^{2}",
     "selection_reason": "cdm_zero",
-    "failure_class": "evaluator_gt_compat",
+    "failure_class": "pending",
     "gt_self": {
-      "recall": 0.0,
-      "precision": 0.0,
-      "F1_score": 0.0,
-      "tp": 0,
-      "gt_tokens": 0,
-      "pred_tokens": 0
+      "recall": 1.0,
+      "precision": 1.0,
+      "F1_score": 1.0,
+      "tp": 77,
+      "gt_tokens": 77,
+      "pred_tokens": 77
     },
     "pred_self": {
       "recall": 1.0,
       "precision": 1.0,
       "F1_score": 1.0,
-      "tp": 74,
-      "gt_tokens": 74,
-      "pred_tokens": 74
+      "tp": 77,
+      "gt_tokens": 77,
+      "pred_tokens": 77
     },
     "gt_pred": {
-      "recall": 0.0,
-      "precision": 0.0,
-      "F1_score": 0.0,
-      "tp": 0,
-      "gt_tokens": 0,
-      "pred_tokens": 0
+      "recall": 1.0,
+      "precision": 1.0,
+      "F1_score": 1.0,
+      "tp": 77,
+      "gt_tokens": 77,
+      "pred_tokens": 77
     }
   },
   {
@@ -742,18 +742,18 @@
     "pred": "\\[ \\int_{Q}|g\\lambda|\\prod_{i\\in\\tau}\\Big(\\sum_{P\\in\\tilde{\\mathcal{S}},P\\subseteq Q}\\eta_{i,P}\\chi_{P}(x)\\Big)^{k_{i}-t_{i}}\\lesssim\\int_{Q}A_{\\tilde{\\mathcal{S}},\\eta_{\\tau(1)}}^{k_{\\tau(1)}-t_{\\tau(1)}}\\big(A_{\\tilde{\\mathcal{S}},\\eta_{\\tau(2)}}^{k_{\\tau(2)}-t_{\\tau(2)}}\\big(A_{\\tilde{\\mathcal{S}},\\eta_{\\tau(3)}}^{k_{\\tau(3)}-t_{\\tau(3)}}|g\\lambda|\\big)\\Big). \\]",
     "edit": 0.24104234527687296,
     "cdm": 0.0,
-    "gt_cdm": "{\\int }_{Q}\\left| {g\\lambda }\\right| \\mathop{\\prod }\\limits_{{i \\in  \\tau }}{\\left( \\mathop{\\sum }\\limits_{{P \\in  \\tilde{\\mathcal{S}},P \\subseteq  Q}}{\\eta }_{i,P}{\\chi }_{P}\\left( x\\right) \\right) }^{{k}_{i} - {t}_{i}} \\lesssim  {\\int }_{Q}{A}_{\\tilde{\\mathcal{S}},{\\eta }_{\\tau \\left( 1\\right) }}^{{k}_{\\tau \\left( 1\\right) } - {t}_{\\tau \\left( 1\\right) }}\\left( {{A}_{\\tilde{\\mathcal{S}},{\\eta }_{\\tau \\left( 2\\right) }}^{{k}_{\\tau \\left( 2\\right) } - {t}_{\\tau \\left( 2\\right) }}\\left( {{A}_{\\tilde{\\mathcal{S}},{\\eta }_{\\tau \\left( 3\\right) }}^{{k}_{\\tau \\left( 3\\right) } - {t}_{\\tau \\left( 3\\right) }}\\left| {g\\lambda }\\right| }\\right) }\\right) .",
+    "gt_cdm": "{\\int }_{Q}| {g\\lambda }| \\prod_{{i \\in  \\tau }}{( \\sum_{{P \\in  \\tilde{\\mathcal{S}},P \\subseteq  Q}}{\\eta }_{i,P}{\\chi }_{P}( x) ) }^{{k}_{i} - {t}_{i}} \\lesssim  {\\int }_{Q}{A}_{\\tilde{\\mathcal{S}},{\\eta }_{\\tau ( 1) }}^{{k}_{\\tau ( 1) } - {t}_{\\tau ( 1) }}( {{A}_{\\tilde{\\mathcal{S}},{\\eta }_{\\tau ( 2) }}^{{k}_{\\tau ( 2) } - {t}_{\\tau ( 2) }}( {{A}_{\\tilde{\\mathcal{S}},{\\eta }_{\\tau ( 3) }}^{{k}_{\\tau ( 3) } - {t}_{\\tau ( 3) }}| {g\\lambda }| }) }) .",
     "pred_cdm": "\\int_{Q}|g\\lambda|\\prod_{i\\in\\tau}\\Big(\\sum_{P\\in\\tilde{\\mathcal{S}},P\\subseteq Q}\\eta_{i,P}\\chi_{P}(x)\\Big)^{k_{i}-t_{i}}\\lesssim\\int_{Q}A_{\\tilde{\\mathcal{S}},\\eta_{\\tau(1)}}^{k_{\\tau(1)}-t_{\\tau(1)}}\\big(A_{\\tilde{\\mathcal{S}},\\eta_{\\tau(2)}}^{k_{\\tau(2)}-t_{\\tau(2)}}\\big(A_{\\tilde{\\mathcal{S}},\\eta_{\\tau(3)}}^{k_{\\tau(3)}-t_{\\tau(3)}}|g\\lambda|\\big)\\Big).",
-    "pred_cdm_alt": null,
+    "pred_cdm_alt": "",
     "selection_reason": "cdm_zero",
-    "failure_class": "evaluator_gt_compat",
+    "failure_class": "pending",
     "gt_self": {
-      "recall": 0.0,
-      "precision": 0.0,
-      "F1_score": 0.0,
-      "tp": 0,
-      "gt_tokens": 0,
-      "pred_tokens": 0
+      "recall": 1.0,
+      "precision": 1.0,
+      "F1_score": 1.0,
+      "tp": 107,
+      "gt_tokens": 107,
+      "pred_tokens": 107
     },
     "pred_self": {
       "recall": 1.0,
@@ -764,12 +764,12 @@
       "pred_tokens": 107
     },
     "gt_pred": {
-      "recall": 0.0,
-      "precision": 0.0,
-      "F1_score": 0.0,
-      "tp": 0,
-      "gt_tokens": 0,
-      "pred_tokens": 0
+      "recall": 1.0,
+      "precision": 1.0,
+      "F1_score": 1.0,
+      "tp": 107,
+      "gt_tokens": 107,
+      "pred_tokens": 107
     }
   },
   {
@@ -787,34 +787,34 @@
     "pred": "\\[=&\\prod_{i\\in\\tau}\\|b_{i}\\|_{\\mathrm{BMO}_{\\eta_{i}}}^{k_{i}}\\int_{X}A_{\\tilde{\\mathcal{S}}}\\left(A_{\\tilde{\\mathcal{S}},\\eta_{\\tau(3)}}^{k_{\\tau(3)}-t_{\\tau(3)}}\\left(A_{\\tilde{\\mathcal{S}},\\eta_{\\tau(2)}}^{k_{\\tau(2)}-t_{\\tau(2)}}\\left(A_{\\tilde{\\mathcal{S}},\\eta_{\\tau(1)}}^{k_{\\tau(1)}-t_{\\tau(1)}-1}\\left(\\mathcal{A}_{\\eta,\\tilde{\\mathcal{S}},\\eta_{\\tau(1)}}(\\overrightarrow{\\mathbf{A}})\\right)\\right)\\right)\\right)|g\\lambda|,\\]",
     "edit": 0.175,
     "cdm": 0.0,
-    "gt_cdm": "= \\mathop{\\prod }\\limits_{{i \\in  \\tau }}{\\|{b}_{i}\\|}_{{\\mathrm{{BMO}}}_{{\\eta }_{i}}}^{{k}_{i}}{\\int }_{X}{A}_{\\tilde{\\mathcal{S}}}\\left( {{A}_{\\tilde{\\mathcal{S}},{\\eta }_{\\tau \\left( 3\\right) }}^{{k}_{\\tau \\left( 3\\right) } - {t}_{\\tau \\left( 3\\right) }}\\left( {{A}_{\\tilde{\\mathcal{S}},{\\eta }_{\\tau \\left( 2\\right) }}^{{k}_{\\tau \\left( 2\\right) } - {t}_{\\tau \\left( 2\\right) }}\\left( {{A}_{\\tilde{\\mathcal{S}},{\\eta }_{\\tau \\left( 1\\right) }}^{{k}_{\\tau \\left( 1\\right) } - {t}_{\\tau \\left( 1\\right) } - 1}\\left( {{\\mathcal{A}}_{\\eta ,\\tilde{\\mathcal{S}},{\\eta }_{\\tau \\left( 1\\right) }}\\left( \\vec{\\mathbf{A}}\\right) }\\right) }\\right) }\\right) }\\right) \\left| {g\\lambda }\\right| ,",
+    "gt_cdm": "= \\prod_{{i \\in  \\tau }}{\\|{b}_{i}\\|}_{{\\mathrm{{BMO}}}_{{\\eta }_{i}}}^{{k}_{i}}{\\int }_{X}{A}_{\\tilde{\\mathcal{S}}}( {{A}_{\\tilde{\\mathcal{S}},{\\eta }_{\\tau ( 3) }}^{{k}_{\\tau ( 3) } - {t}_{\\tau ( 3) }}( {{A}_{\\tilde{\\mathcal{S}},{\\eta }_{\\tau ( 2) }}^{{k}_{\\tau ( 2) } - {t}_{\\tau ( 2) }}( {{A}_{\\tilde{\\mathcal{S}},{\\eta }_{\\tau ( 1) }}^{{k}_{\\tau ( 1) } - {t}_{\\tau ( 1) } - 1}( {{\\mathcal{A}}_{\\eta ,\\tilde{\\mathcal{S}},{\\eta }_{\\tau ( 1) }}( \\vec{\\mathbf{A}}) }) }) }) }) | {g\\lambda }| ,",
     "pred_cdm": "=&\\prod_{i\\in\\tau}\\|b_{i}\\|_{\\mathrm{BMO}_{\\eta_{i}}}^{k_{i}}\\int_{X}A_{\\tilde{\\mathcal{S}}}\\left(A_{\\tilde{\\mathcal{S}},\\eta_{\\tau(3)}}^{k_{\\tau(3)}-t_{\\tau(3)}}\\left(A_{\\tilde{\\mathcal{S}},\\eta_{\\tau(2)}}^{k_{\\tau(2)}-t_{\\tau(2)}}\\left(A_{\\tilde{\\mathcal{S}},\\eta_{\\tau(1)}}^{k_{\\tau(1)}-t_{\\tau(1)}-1}\\left(\\mathcal{A}_{\\eta,\\tilde{\\mathcal{S}},\\eta_{\\tau(1)}}(\\overrightarrow{\\mathbf{A}})\\right)\\right)\\right)\\right)|g\\lambda|,",
-    "pred_cdm_alt": "=&\\prod_{i\\in\\tau}\\|b_{i}\\|_{\\mathrm{BMO}_{\\eta_{i}}}^{k_{i}}\\int_{X}A_{\\tilde{\\mathcal{S}}}\\left(A_{\\tilde{\\mathcal{S}},\\eta_{\\tau(3)}}^{k_{\\tau(3)}-t_{\\tau(3)}}\\left(A_{\\tilde{\\mathcal{S}},\\eta_{\\tau(2)}}^{k_{\\tau(2)}-t_{\\tau(2)}}\\left(A_{\\tilde{\\mathcal{S}},\\eta_{\\tau(1)}}^{k_{\\tau(1)}-t_{\\tau(1)}-1}\\left(\\mathcal{A}_{\\eta,\\tilde{\\mathcal{S}},\\eta_{\\tau(1)}}(\\vec{\\mathbf{A}})\\right)\\right)\\right)\\right)|g\\lambda|,",
+    "pred_cdm_alt": "=&\\prod_{i\\in\\tau}\\|b_{i}\\|_{\\mathrm{BMO}_{\\eta_{i}}}^{k_{i}}\\int_{X}A_{\\tilde{\\mathcal{S}}}(A_{\\tilde{\\mathcal{S}},\\eta_{\\tau(3)}}^{k_{\\tau(3)}-t_{\\tau(3)}}(A_{\\tilde{\\mathcal{S}},\\eta_{\\tau(2)}}^{k_{\\tau(2)}-t_{\\tau(2)}}(A_{\\tilde{\\mathcal{S}},\\eta_{\\tau(1)}}^{k_{\\tau(1)}-t_{\\tau(1)}-1}(\\mathcal{A}_{\\eta,\\tilde{\\mathcal{S}},\\eta_{\\tau(1)}}(\\vec{\\mathbf{A}})))))|g\\lambda|,",
     "selection_reason": "cdm_zero",
-    "failure_class": "evaluator_gt_compat",
+    "failure_class": "pending",
     "gt_self": {
-      "recall": 0.0,
-      "precision": 0.0,
-      "F1_score": 0.0,
-      "tp": 0,
-      "gt_tokens": 0,
-      "pred_tokens": 0
+      "recall": 1.0,
+      "precision": 1.0,
+      "F1_score": 1.0,
+      "tp": 111,
+      "gt_tokens": 111,
+      "pred_tokens": 111
     },
     "pred_self": {
       "recall": 1.0,
       "precision": 1.0,
       "F1_score": 1.0,
-      "tp": 107,
-      "gt_tokens": 107,
-      "pred_tokens": 107
+      "tp": 111,
+      "gt_tokens": 111,
+      "pred_tokens": 111
     },
     "gt_pred": {
-      "recall": 0.0,
-      "precision": 0.0,
-      "F1_score": 0.0,
-      "tp": 0,
-      "gt_tokens": 0,
-      "pred_tokens": 0
+      "recall": 1.0,
+      "precision": 1.0,
+      "F1_score": 1.0,
+      "tp": 111,
+      "gt_tokens": 111,
+      "pred_tokens": 111
     }
   },
   {
@@ -832,34 +832,34 @@
     "pred": "\\[ \\begin{array}{r}{\\vec{\\mathbf{A}}=\\left(A_{\\tilde{\\mathcal{S}},\\eta_{\\tau(1)}}^{t_{\\tau(1)}}(|f_{\\tau(1)}|),A_{\\tilde{\\mathcal{S}},\\eta_{\\tau(2)}}^{t_{\\tau(2)}}(|f_{\\tau(2)}|),A_{\\tilde{\\mathcal{S}},\\eta_{\\tau(3)}}^{t_{\\tau(3)}}(|f_{\\tau(3)}|),f_{\\tau(4)}\\right).}\\end{array} \\]",
     "edit": 0.05952380952380952,
     "cdm": 0.0,
-    "gt_cdm": "\\vec{\\mathbf{A}} = \\left( {{A}_{\\tilde{\\mathcal{S}},{\\eta }_{\\tau \\left( 1\\right) }}^{{t}_{\\tau \\left( 1\\right) }}\\left( \\left| {f}_{\\tau \\left( 1\\right) }\\right| \\right) ,{A}_{\\tilde{\\mathcal{S}},{\\eta }_{\\tau \\left( 2\\right) }}^{{t}_{\\tau \\left( 2\\right) }}\\left( \\left| {f}_{\\tau \\left( 2\\right) }\\right| \\right) ,{A}_{\\tilde{\\mathcal{S}},{\\eta }_{\\tau \\left( 3\\right) }}^{{t}_{\\tau \\left( 3\\right) }}\\left( \\left| {f}_{\\tau \\left( 3\\right) }\\right| \\right) ,{f}_{\\tau \\left( 4\\right) }}\\right) .",
+    "gt_cdm": "\\vec{\\mathbf{A}} = ( {{A}_{\\tilde{\\mathcal{S}},{\\eta }_{\\tau ( 1) }}^{{t}_{\\tau ( 1) }}( | {f}_{\\tau ( 1) }| ) ,{A}_{\\tilde{\\mathcal{S}},{\\eta }_{\\tau ( 2) }}^{{t}_{\\tau ( 2) }}( | {f}_{\\tau ( 2) }| ) ,{A}_{\\tilde{\\mathcal{S}},{\\eta }_{\\tau ( 3) }}^{{t}_{\\tau ( 3) }}( | {f}_{\\tau ( 3) }| ) ,{f}_{\\tau ( 4) }}) .",
     "pred_cdm": "\\begin{array}{r}{\\vec{\\mathbf{A}}=\\left(A_{\\tilde{\\mathcal{S}},\\eta_{\\tau(1)}}^{t_{\\tau(1)}}(|f_{\\tau(1)}|),A_{\\tilde{\\mathcal{S}},\\eta_{\\tau(2)}}^{t_{\\tau(2)}}(|f_{\\tau(2)}|),A_{\\tilde{\\mathcal{S}},\\eta_{\\tau(3)}}^{t_{\\tau(3)}}(|f_{\\tau(3)}|),f_{\\tau(4)}\\right).}\\end{array}",
-    "pred_cdm_alt": null,
+    "pred_cdm_alt": "\\begin{array}{r}{\\vec{\\mathbf{A}}=(A_{\\tilde{\\mathcal{S}},\\eta_{\\tau(1)}}^{t_{\\tau(1)}}(|f_{\\tau(1)}|),A_{\\tilde{\\mathcal{S}},\\eta_{\\tau(2)}}^{t_{\\tau(2)}}(|f_{\\tau(2)}|),A_{\\tilde{\\mathcal{S}},\\eta_{\\tau(3)}}^{t_{\\tau(3)}}(|f_{\\tau(3)}|),f_{\\tau(4)}).}\\end{array}",
     "selection_reason": "cdm_zero",
-    "failure_class": "evaluator_gt_compat",
+    "failure_class": "pending",
     "gt_self": {
-      "recall": 0.0,
-      "precision": 0.0,
-      "F1_score": 0.0,
-      "tp": 0,
-      "gt_tokens": 0,
-      "pred_tokens": 0
+      "recall": 1.0,
+      "precision": 1.0,
+      "F1_score": 1.0,
+      "tp": 83,
+      "gt_tokens": 83,
+      "pred_tokens": 83
     },
     "pred_self": {
       "recall": 1.0,
       "precision": 1.0,
       "F1_score": 1.0,
-      "tp": 82,
-      "gt_tokens": 82,
-      "pred_tokens": 82
+      "tp": 83,
+      "gt_tokens": 83,
+      "pred_tokens": 83
     },
     "gt_pred": {
-      "recall": 0.0,
-      "precision": 0.0,
-      "F1_score": 0.0,
-      "tp": 0,
-      "gt_tokens": 0,
-      "pred_tokens": 0
+      "recall": 1.0,
+      "precision": 1.0,
+      "F1_score": 1.0,
+      "tp": 83,
+      "gt_tokens": 83,
+      "pred_tokens": 83
     }
   },
   {
@@ -877,34 +877,34 @@
     "pred": "\\[\\max_{j\\in[J]}\\left\\|\\mathcal{P}_{:,S_{l_{j}}}(\\mathbf{E})\\mathbf{V}^{(j)}\\right\\|_{F}=&\\max_{j\\in[J]}\\left\\|\\mathbf{E}_{:,S_{l_{j}}}\\mathbf{V}_{S_{l_{j}},:}^{(j)}\\right\\|_{F}\\leq2\\max_{j\\in[J]}\\left\\|\\mathbf{E}_{:,S_{l_{j}}}\\mathbf{V}_{S_{l_{j}},:}^{(j)}\\mathbf{V}^{(j)\\top}\\mathbf{V}^{*}\\right\\|_{F}\\]",
     "edit": 0.47555555555555556,
     "cdm": 0.0,
-    "gt_cdm": "\\mathop{\\max }\\limits_{{j \\in  \\left\\lbrack  J\\right\\rbrack  }}{\\|{\\mathcal{P}}_{ : ,{S}_{{l}_{j}}}\\left( \\mathbf{E}\\right) {\\mathbf{V}}^{\\left( j\\right) }\\|}_{F} = \\mathop{\\max }\\limits_{{j \\in  \\left\\lbrack  J\\right\\rbrack  }}{\\|{\\mathbf{E}}_{ : ,{S}_{{l}_{j}}}{\\mathbf{V}}_{{S}_{{l}_{j}}, : }^{\\left( j\\right) }\\|}_{F} \\leq  2\\mathop{\\max }\\limits_{{j \\in  \\left\\lbrack  J\\right\\rbrack  }}{\\|{\\mathbf{E}}_{ : ,{S}_{{l}_{j}}}{\\mathbf{V}}_{{S}_{{l}_{j}}, : }^{\\left( j\\right) }{\\mathbf{V}}^{\\left( j\\right) \\top }{\\mathbf{V}}^{ * }\\|}_{F}",
+    "gt_cdm": "\\max_{{j \\in  \\lbrack  J\\rbrack  }}{\\|{\\mathcal{P}}_{ : ,{S}_{{l}_{j}}}( \\mathbf{E}) {\\mathbf{V}}^{( j) }\\|}_{F} = \\max_{{j \\in  \\lbrack  J\\rbrack  }}{\\|{\\mathbf{E}}_{ : ,{S}_{{l}_{j}}}{\\mathbf{V}}_{{S}_{{l}_{j}}, : }^{( j) }\\|}_{F} \\leq  2\\max_{{j \\in  \\lbrack  J\\rbrack  }}{\\|{\\mathbf{E}}_{ : ,{S}_{{l}_{j}}}{\\mathbf{V}}_{{S}_{{l}_{j}}, : }^{( j) }{\\mathbf{V}}^{( j) \\top }{\\mathbf{V}}^{ * }\\|}_{F}",
     "pred_cdm": "\\max_{j\\in[J]}\\left\\|\\mathcal{P}_{:,S_{l_{j}}}(\\mathbf{E})\\mathbf{V}^{(j)}\\right\\|_{F}=&\\max_{j\\in[J]}\\left\\|\\mathbf{E}_{:,S_{l_{j}}}\\mathbf{V}_{S_{l_{j}},:}^{(j)}\\right\\|_{F}\\leq2\\max_{j\\in[J]}\\left\\|\\mathbf{E}_{:,S_{l_{j}}}\\mathbf{V}_{S_{l_{j}},:}^{(j)}\\mathbf{V}^{(j)\\top}\\mathbf{V}^{*}\\right\\|_{F}",
-    "pred_cdm_alt": null,
+    "pred_cdm_alt": "\\max_{j\\in[J]}\\|\\mathcal{P}_{:,S_{l_{j}}}(\\mathbf{E})\\mathbf{V}^{(j)}\\|_{F}=&\\max_{j\\in[J]}\\|\\mathbf{E}_{:,S_{l_{j}}}\\mathbf{V}_{S_{l_{j}},:}^{(j)}\\|_{F}\\leq2\\max_{j\\in[J]}\\|\\mathbf{E}_{:,S_{l_{j}}}\\mathbf{V}_{S_{l_{j}},:}^{(j)}\\mathbf{V}^{(j)\\top}\\mathbf{V}^{*}\\|_{F}",
     "selection_reason": "cdm_zero",
-    "failure_class": "evaluator_gt_compat",
+    "failure_class": "pending",
     "gt_self": {
-      "recall": 0.0,
-      "precision": 0.0,
-      "F1_score": 0.0,
-      "tp": 0,
-      "gt_tokens": 0,
-      "pred_tokens": 0
+      "recall": 1.0,
+      "precision": 1.0,
+      "F1_score": 1.0,
+      "tp": 86,
+      "gt_tokens": 86,
+      "pred_tokens": 86
     },
     "pred_self": {
       "recall": 1.0,
       "precision": 1.0,
       "F1_score": 1.0,
-      "tp": 83,
-      "gt_tokens": 83,
-      "pred_tokens": 83
+      "tp": 86,
+      "gt_tokens": 86,
+      "pred_tokens": 86
     },
     "gt_pred": {
-      "recall": 0.0,
-      "precision": 0.0,
-      "F1_score": 0.0,
-      "tp": 0,
-      "gt_tokens": 0,
-      "pred_tokens": 0
+      "recall": 1.0,
+      "precision": 1.0,
+      "F1_score": 1.0,
+      "tp": 86,
+      "gt_tokens": 86,
+      "pred_tokens": 86
     }
   },
   {
@@ -922,18 +922,18 @@
     "pred": "",
     "edit": 1.0,
     "cdm": 0.0,
-    "gt_cdm": "\\mathop{\\lim }\\limits_{{\\varepsilon  \\rightarrow  0}}{\\int }_{\\left\\{  \\parallel \\pmb x{\\parallel }_{\\mathbb{V}} \\geq  {\\varepsilon }^{-1}\\right\\}  }{e}^{\\kappa \\parallel \\pmb x{\\parallel }_{\\mathbb{H}}^{2}}\\parallel \\mathcal{C}\\left( \\pmb x\\right) {\\parallel }_{\\mathbb{H}}^{2}\\eta \\left( {\\mathrm{d}\\pmb x}\\right)  = 0.",
+    "gt_cdm": "\\lim_{{\\varepsilon  \\rightarrow  0}}{\\int }_{\\{  \\parallel \\pmb x{\\parallel }_{\\mathbb{V}} \\geq  {\\varepsilon }^{-1}\\}  }{e}^{\\kappa \\parallel \\pmb x{\\parallel }_{\\mathbb{H}}^{2}}\\parallel \\mathcal{C}( \\pmb x) {\\parallel }_{\\mathbb{H}}^{2}\\eta ( {\\mathrm{d}\\pmb x})  = 0.",
     "pred_cdm": "",
-    "pred_cdm_alt": null,
+    "pred_cdm_alt": "",
     "selection_reason": "prediction_empty",
     "failure_class": "extraction_or_matching",
     "gt_self": {
       "recall": 1.0,
       "precision": 1.0,
       "F1_score": 1.0,
-      "tp": 37,
-      "gt_tokens": 37,
-      "pred_tokens": 37
+      "tp": 40,
+      "gt_tokens": 40,
+      "pred_tokens": 40
     },
     "pred_self": {
       "recall": 0.0,
@@ -969,7 +969,7 @@
     "cdm": 0.0,
     "gt_cdm": "\\leq C \\int_{\\{\\|\\pmb x\\|_\\mathbb{V} \\geq \\varepsilon^{-1}\\}} e^{\\kappa \\|\\pmb x\\|_\\mathbb{H}^2} \\|\\pmb x\\|_\\mathbb{V}^4 \\|\\pmb x\\|_\\mathbb{H}^2 \\eta(d\\pmb x)",
     "pred_cdm": "",
-    "pred_cdm_alt": null,
+    "pred_cdm_alt": "",
     "selection_reason": "prediction_empty",
     "failure_class": "extraction_or_matching",
     "gt_self": {
@@ -1012,18 +1012,18 @@
     "pred": "\\[ \\begin{align*}&\\int_{\\{\\|\\pmb x\\|_{\\mathbb{V}\\geq\\varepsilon^{-1}\\}\\}}e^{\\kappa\\|\\pmb x\\|_{\\mathbb{H}}^{2}}\\|\\mathcal{C}(\\pmb x)\\|_{\\mathbb{H}}^{2}\\eta(\\mathrm{d}\\pmb x)\\\\&\\leq C\\int_{\\{\\|\\pmb x\\|_{\\mathbb{V}\\geq\\varepsilon^{-1}\\}\\}}e^{\\kappa\\|\\pmb x\\|_{\\mathbb{H}}^{2}}\\|\\pmb x\\|_{\\mathbb{V}}^{4}\\|\\pmb x\\|_{\\mathbb{H}}^{2}\\eta(\\mathrm{d}\\pmb x)\\\\&\\leq\\frac{C}{\\lambda_{1}^{2\\delta}}\\int_{\\{\\|\\pmb x\\|_{\\mathbb{V}\\geq\\varepsilon^{-1}\\}\\}}e^{\\kappa\\|\\pmb x\\|_{\\mathbb{H}}^{2}}\\|\\mathrm{A}^{\\delta}\\pmb x\\|_{\\mathbb{H}}^{8\\delta}\\|\\mathrm{A}^{\\delta+\\frac{1}{2}}\\pmb x\\|_{\\mathbb{H}}^{4-8\\delta}\\|\\mathrm{A}^{\\delta}\\pmb x\\|_{\\mathbb{H}}^{2}\\eta(\\mathrm{d}\\pmb x)\\\\&\\leq\\frac{C}{\\lambda_{1}^{2\\delta}}\\int_{\\{\\|\\pmb x\\|_{\\mathbb{V}\\geq\\varepsilon^{-1}\\}\\}}e^{\\kappa\\|\\pmb x\\|_{\\mathbb{H}}^{2}}\\|\\mathrm{A}^{\\delta}\\pmb x\\|_{\\mathbb{H}}^{8\\delta+2}\\frac{\\|\\mathrm{A}^{\\delta+\\frac{1}{2}}\\pmb x\\|_{\\mathbb{H}}^{2}}{\\|\\mathrm{A}^{\\delta+\\frac{1}{2}}\\pmb x\\|_{\\mathbb{H}}^{8\\delta-2}}\\eta(\\mathrm{d}\\pmb x)\\\\&\\leq C\\lambda_{1}^{\\delta(2-8\\delta)}\\int_{\\{\\|\\pmb x\\|_{\\mathbb{V}\\geq\\varepsilon^{-1}\\}\\}}e^{\\kappa\\|\\pmb x\\|_{\\mathbb{H}}^{2}}\\|\\mathrm{A}^{\\delta}\\pmb x\\|_{\\mathbb{H}}^{8\\delta+2}\\frac{\\|\\mathrm{A}^{\\delta+\\frac{1}{2}}\\pmb x\\|_{\\mathbb{H}}^{2}}{\\|\\pmb x\\|_{\\mathbb{V}}^{8\\delta-2}}\\eta(\\mathrm{d}\\pmb x)\\\\&\\leq C\\lambda_{1}^{\\delta(2-8\\delta)}\\varepsilon^{8\\delta-2}\\int_{\\mathbb{H}}e^{\\kappa\\|\\pmb x\\|_{\\mathbb{H}}^{2}}\\|\\mathrm{A}^{\\delta}\\pmb x\\|_{\\mathbb{H}}^{8\\delta+2}\\|\\mathrm{A}^{\\delta+\\frac{1}{2}}\\pmb x\\|_{\\mathbb{H}}^{2}\\eta(\\mathrm{d}\\pmb x)\\\\&\\leq C\\varepsilon^{8\\delta-2},\\end{align*} \\]",
     "edit": 0.7878787878787878,
     "cdm": 0.0,
-    "gt_cdm": "\\leq  \\frac{C}{{\\lambda }_{1}^{2\\delta }}{\\int }_{\\left\\{  \\parallel \\pmb x {\\parallel }_{\\mathbb{V}} \\geq  {\\varepsilon }^{-1}\\right\\}  }{e}^{\\kappa \\parallel \\pmb x {\\parallel }_{\\mathbb{H}}^{2}}{\\|{\\mathrm{A}}^{\\delta } \\pmb x \\|}_{\\mathbb{H}}^{8\\delta }{\\|{\\mathrm{A}}^{\\delta  + \\frac{1}{2}}\\pmb x \\|}_{\\mathbb{H}}^{4 - {8\\delta }}{\\|{\\mathrm{A}}^{\\delta }\\pmb x \\|}_{\\mathbb{H}}^{2}\\eta \\left( {\\mathrm{d}\\pmb x }\\right)",
+    "gt_cdm": "\\leq  \\frac{C}{{\\lambda }_{1}^{2\\delta }}{\\int }_{\\{  \\parallel \\pmb x {\\parallel }_{\\mathbb{V}} \\geq  {\\varepsilon }^{-1}\\}  }{e}^{\\kappa \\parallel \\pmb x {\\parallel }_{\\mathbb{H}}^{2}}{\\|{\\mathrm{A}}^{\\delta } \\pmb x \\|}_{\\mathbb{H}}^{8\\delta }{\\|{\\mathrm{A}}^{\\delta  + \\frac{1}{2}}\\pmb x \\|}_{\\mathbb{H}}^{4 - {8\\delta }}{\\|{\\mathrm{A}}^{\\delta }\\pmb x \\|}_{\\mathbb{H}}^{2}\\eta ( {\\mathrm{d}\\pmb x })",
     "pred_cdm": "\\begin{align*}&\\int_{\\{\\|\\pmb x\\|_{\\mathbb{V}\\geq\\varepsilon^{-1}\\}\\}}e^{\\kappa\\|\\pmb x\\|_{\\mathbb{H}}^{2}}\\|\\mathcal{C}(\\pmb x)\\|_{\\mathbb{H}}^{2}\\eta(\\mathrm{d}\\pmb x)\\\\&\\leq C\\int_{\\{\\|\\pmb x\\|_{\\mathbb{V}\\geq\\varepsilon^{-1}\\}\\}}e^{\\kappa\\|\\pmb x\\|_{\\mathbb{H}}^{2}}\\|\\pmb x\\|_{\\mathbb{V}}^{4}\\|\\pmb x\\|_{\\mathbb{H}}^{2}\\eta(\\mathrm{d}\\pmb x)\\\\&\\leq\\frac{C}{\\lambda_{1}^{2\\delta}}\\int_{\\{\\|\\pmb x\\|_{\\mathbb{V}\\geq\\varepsilon^{-1}\\}\\}}e^{\\kappa\\|\\pmb x\\|_{\\mathbb{H}}^{2}}\\|\\mathrm{A}^{\\delta}\\pmb x\\|_{\\mathbb{H}}^{8\\delta}\\|\\mathrm{A}^{\\delta+\\frac{1}{2}}\\pmb x\\|_{\\mathbb{H}}^{4-8\\delta}\\|\\mathrm{A}^{\\delta}\\pmb x\\|_{\\mathbb{H}}^{2}\\eta(\\mathrm{d}\\pmb x)\\\\&\\leq\\frac{C}{\\lambda_{1}^{2\\delta}}\\int_{\\{\\|\\pmb x\\|_{\\mathbb{V}\\geq\\varepsilon^{-1}\\}\\}}e^{\\kappa\\|\\pmb x\\|_{\\mathbb{H}}^{2}}\\|\\mathrm{A}^{\\delta}\\pmb x\\|_{\\mathbb{H}}^{8\\delta+2}\\frac{\\|\\mathrm{A}^{\\delta+\\frac{1}{2}}\\pmb x\\|_{\\mathbb{H}}^{2}}{\\|\\mathrm{A}^{\\delta+\\frac{1}{2}}\\pmb x\\|_{\\mathbb{H}}^{8\\delta-2}}\\eta(\\mathrm{d}\\pmb x)\\\\&\\leq C\\lambda_{1}^{\\delta(2-8\\delta)}\\int_{\\{\\|\\pmb x\\|_{\\mathbb{V}\\geq\\varepsilon^{-1}\\}\\}}e^{\\kappa\\|\\pmb x\\|_{\\mathbb{H}}^{2}}\\|\\mathrm{A}^{\\delta}\\pmb x\\|_{\\mathbb{H}}^{8\\delta+2}\\frac{\\|\\mathrm{A}^{\\delta+\\frac{1}{2}}\\pmb x\\|_{\\mathbb{H}}^{2}}{\\|\\pmb x\\|_{\\mathbb{V}}^{8\\delta-2}}\\eta(\\mathrm{d}\\pmb x)\\\\&\\leq C\\lambda_{1}^{\\delta(2-8\\delta)}\\varepsilon^{8\\delta-2}\\int_{\\mathbb{H}}e^{\\kappa\\|\\pmb x\\|_{\\mathbb{H}}^{2}}\\|\\mathrm{A}^{\\delta}\\pmb x\\|_{\\mathbb{H}}^{8\\delta+2}\\|\\mathrm{A}^{\\delta+\\frac{1}{2}}\\pmb x\\|_{\\mathbb{H}}^{2}\\eta(\\mathrm{d}\\pmb x)\\\\&\\leq C\\varepsilon^{8\\delta-2},\\end{align*}",
-    "pred_cdm_alt": null,
+    "pred_cdm_alt": "",
     "selection_reason": "cdm_zero",
     "failure_class": "pred_latex_unrenderable",
     "gt_self": {
       "recall": 1.0,
       "precision": 1.0,
       "F1_score": 1.0,
-      "tp": 57,
-      "gt_tokens": 57,
-      "pred_tokens": 57
+      "tp": 59,
+      "gt_tokens": 59,
+      "pred_tokens": 59
     },
     "pred_self": {
       "recall": 0.0,
@@ -1038,7 +1038,7 @@
       "precision": 0.0,
       "F1_score": 0.0,
       "tp": 0,
-      "gt_tokens": 57,
+      "gt_tokens": 59,
       "pred_tokens": 0
     }
   },
@@ -1059,7 +1059,7 @@
     "cdm": 0.0,
     "gt_cdm": "\\leq \\frac{C}{\\lambda_1^{2\\delta}} \\int_{\\{\\|\\pmb x\\|_\\mathbb{V} \\geq \\varepsilon^{-1}\\}} e^{\\kappa \\|\\pmb x\\|_\\mathbb{H}^2} \\|A^{\\delta} \\pmb x\\|_{\\mathbb{H}}^{8\\delta + 2}  \\frac{\\|A^{\\delta + \\frac{1}{2}} \\pmb x\\|_{\\mathbb{H}}^2}{\\|A^{\\delta + \\frac{1}{2}} \\pmb x\\|_{\\mathbb{H}}^{8\\delta - 2}}  \\eta(d\\pmb x)",
     "pred_cdm": "",
-    "pred_cdm_alt": null,
+    "pred_cdm_alt": "",
     "selection_reason": "prediction_empty",
     "failure_class": "extraction_or_matching",
     "gt_self": {
@@ -1104,7 +1104,7 @@
     "cdm": 0.0,
     "gt_cdm": "\\le C \\lambda _ { 1 } ^ { \\delta ( 2 - 8 \\delta ) }  \\int _ { \\{ \\| { \\pmb x } \\| _ { \\mathbb { V } } \\geq \\varepsilon ^ { - 1 } \\} } e ^ { \\kappa \\| { \\pmb x } \\| _ { \\mathbb { H } } ^ { 2 } } \\| \\mathrm { A } ^ { \\delta } { \\pmb x } \\| _ { \\mathbb { H } } ^ { 8 \\delta+2} \\frac { \\| \\mathrm { A } ^ { \\delta + \\frac { 1 } { 2 } } { \\pmb x } \\| _ { \\mathbb { H } } ^ { 2 } } { \\| { \\pmb x } \\| _ { \\mathbb { V } } ^ { 8 \\delta - 2 } } \\eta ( \\mathrm { d } { \\pmb x } )",
     "pred_cdm": "",
-    "pred_cdm_alt": null,
+    "pred_cdm_alt": "",
     "selection_reason": "prediction_empty",
     "failure_class": "extraction_or_matching",
     "gt_self": {
@@ -1147,34 +1147,34 @@
     "pred": "\\[ \\mathcal{W}(p,t,\\geq\\epsilon):=\\left\\{\\underline{{y}}\\in\\mathcal{W}(p,t)\\colon\\left|\\frac{n(\\underline{{y}})}{t}-t_{m}\\right|\\geq\\epsilon\\right\\}\\quad\\mathrm{a n d}\\quad\\mathcal{W}(p,t,<\\epsilon):=\\left\\{\\underline{{y}}\\in\\mathcal{W}(p,t)\\colon\\left|\\frac{n(\\underline{{y}})}{t}-t_{m}\\right|<\\epsilon\\right\\} \\]",
     "edit": 0.21621621621621623,
     "cdm": 0.0,
-    "gt_cdm": "\\mathcal{W}\\left( {p,t, \\geq  \\epsilon }\\right)  \\mathrel{\\text{:=}} \\left\\{  {\\underline{y} \\in  \\mathcal{W}\\left( {p,t}\\right)  : \\left| {\\frac{n\\left( \\underline{y}\\right) }{t} - {t}_{m}}\\right|  \\geq  \\epsilon }\\right\\}  \\;\\text{ and }\\;\\mathcal{W}\\left( {p,t, < \\epsilon }\\right)  \\mathrel{\\text{:=}} \\left\\{  {\\underline{y} \\in  \\mathcal{W}\\left( {p,t}\\right)  : \\left| {\\frac{n\\left( \\underline{y}\\right) }{t} - {t}_{m}}\\right|  < \\epsilon }\\right\\}",
+    "gt_cdm": "\\mathcal{W}( {p,t, \\geq  \\epsilon })  \\mathrel{\\text{:=}} \\{  {\\underline{y} \\in  \\mathcal{W}( {p,t})  : | {\\frac{n( \\underline{y}) }{t} - {t}_{m}}|  \\geq  \\epsilon }\\}  \\;\\text{ and }\\;\\mathcal{W}( {p,t, < \\epsilon })  \\mathrel{\\text{:=}} \\{  {\\underline{y} \\in  \\mathcal{W}( {p,t})  : | {\\frac{n( \\underline{y}) }{t} - {t}_{m}}|  < \\epsilon }\\}",
     "pred_cdm": "\\mathcal{W}(p,t,\\geq\\epsilon):=\\left\\{\\underline{{y}}\\in\\mathcal{W}(p,t)\\colon\\left|\\frac{n(\\underline{{y}})}{t}-t_{m}\\right|\\geq\\epsilon\\right\\}\\quad\\mathrm{a n d}\\quad\\mathcal{W}(p,t,<\\epsilon):=\\left\\{\\underline{{y}}\\in\\mathcal{W}(p,t)\\colon\\left|\\frac{n(\\underline{{y}})}{t}-t_{m}\\right|<\\epsilon\\right\\}",
-    "pred_cdm_alt": null,
+    "pred_cdm_alt": "\\mathcal{W}(p,t,\\geq\\epsilon):=\\{\\underline{{y}}\\in\\mathcal{W}(p,t)\\colon|\\frac{n(\\underline{{y}})}{t}-t_{m}|\\geq\\epsilon\\}\\quad\\mathrm{a n d}\\quad\\mathcal{W}(p,t,<\\epsilon):=\\{\\underline{{y}}\\in\\mathcal{W}(p,t)\\colon|\\frac{n(\\underline{{y}})}{t}-t_{m}|<\\epsilon\\}",
     "selection_reason": "cdm_zero",
-    "failure_class": "evaluator_gt_compat",
+    "failure_class": "pending",
     "gt_self": {
-      "recall": 0.0,
-      "precision": 0.0,
-      "F1_score": 0.0,
-      "tp": 0,
-      "gt_tokens": 0,
-      "pred_tokens": 0
+      "recall": 1.0,
+      "precision": 1.0,
+      "F1_score": 1.0,
+      "tp": 77,
+      "gt_tokens": 77,
+      "pred_tokens": 77
     },
     "pred_self": {
       "recall": 1.0,
       "precision": 1.0,
       "F1_score": 1.0,
-      "tp": 73,
-      "gt_tokens": 73,
-      "pred_tokens": 73
+      "tp": 77,
+      "gt_tokens": 77,
+      "pred_tokens": 77
     },
     "gt_pred": {
-      "recall": 0.0,
-      "precision": 0.0,
-      "F1_score": 0.0,
-      "tp": 0,
-      "gt_tokens": 0,
-      "pred_tokens": 0
+      "recall": 1.0,
+      "precision": 1.0,
+      "F1_score": 1.0,
+      "tp": 77,
+      "gt_tokens": 77,
+      "pred_tokens": 77
     }
   },
   {
@@ -1192,34 +1192,34 @@
     "pred": "\\[ h(t)=\\left\\{\\begin{aligned}&-\\frac{1}{\\pi t f_{\\mu\\boxtimes\\nu}(t)}\\int_{\\mathbb{R}_{+}}f(s)\\operatorname{I m}\\left(\\frac{1}{1-\\omega(1/t)s}\\right)d\\mu(s)&\\quad&if t\\in\\operatorname{supp}(\\mu\\boxtimes\\nu)^{ac}\\setminus E,\\\\ &f\\left(\\frac{1}{\\omega(1/t)}\\right)&\\quad&if t>0~is~an~atom~of\\mu\\boxtimes\\nu,\\\\ &\\frac{1}{\\nu(\\{0\\})}\\int_{\\mathbb{R}_{+}}\\frac{f(s)}{1-s\\psi_{\\mu}^{-1}(\\nu(\\{0\\})-1)}d\\mu(s)&\\quad&if t=0~and~\\mu(\\{0\\})<\\nu(\\{0\\}),\\\\ &f(0)&\\quad&if t=0~and~\\mu(\\{0\\})\\geq\\nu(\\{0\\}).\\end{aligned}\\right. \\]",
     "edit": 0.07210031347962383,
     "cdm": 0.0,
-    "gt_cdm": "h\\left(t\\right)=\\left\\{\\begin{array}{ll}-\\frac{1}{{\\pi t}{f}_{\\mu\\boxtimes\\nu}\\left( t\\right) }{\\int}_{{\\mathbb{R}}_{+}}f\\left(s\\right)\\operatorname{Im}\\left(\\frac{1}{1 - \\omega\\left( {1/{t}}\\right)s }\\right){d\\mu}\\left(s\\right) & \\text{ if }t\\in\\operatorname{supp}\\left({\\mu\\boxtimes\\nu}\\right)^{ac} \\setminus  E,\\\\ f\\left(\\frac{1}{\\omega\\left( {1/t}\\right) }\\right) & \\text{ if }t>0\\text{ is an atom of }\\mu\\boxtimes\\nu,\\\\ \\frac{1}{\\nu\\left( {\\{ 0\\} }\\right) }{\\int}_{{\\mathbb{R}}_{+}}\\frac{f\\left( s\\right) }{1 - s{\\psi}_{\\mu}^{-1}\\left( {\\nu\\left( {\\{ 0\\} }\\right) - 1}\\right) }{d\\mu}\\left(s\\right) & \\text{ if }t=0\\text{ and }\\mu\\left({\\{ 0\\} }\\right)<\\nu\\left({\\{ 0\\} }\\right),\\\\ f\\left(0\\right) & \\text{ if }t=0\\text{ and }\\mu\\left({\\{ 0\\} }\\right)\\geq\\nu\\left({\\{ 0\\} }\\right).\\end{array}\\right.",
+    "gt_cdm": "h(t)=\\{\\begin{array}{ll}-\\frac{1}{{\\pi t}{f}_{\\mu\\boxtimes\\nu}( t) }{\\int}_{{\\mathbb{R}}_{+}}f(s)\\operatorname{Im}(\\frac{1}{1 - \\omega( {1/{t}})s }){d\\mu}(s) & \\text{ if }t\\in\\operatorname{supp}({\\mu\\boxtimes\\nu})^{ac} \\setminus  E,\\\\ f(\\frac{1}{\\omega( {1/t}) }) & \\text{ if }t>0\\text{ is an atom of }\\mu\\boxtimes\\nu,\\\\ \\frac{1}{\\nu( {\\{ 0\\} }) }{\\int}_{{\\mathbb{R}}_{+}}\\frac{f( s) }{1 - s{\\psi}_{\\mu}^{-1}( {\\nu( {\\{ 0\\} }) - 1}) }{d\\mu}(s) & \\text{ if }t=0\\text{ and }\\mu({\\{ 0\\} })<\\nu({\\{ 0\\} }),\\\\ f(0) & \\text{ if }t=0\\text{ and }\\mu({\\{ 0\\} })\\geq\\nu({\\{ 0\\} }).\\end{array}",
     "pred_cdm": "h(t)=\\left\\{\\begin{aligned}&-\\frac{1}{\\pi t f_{\\mu\\boxtimes\\nu}(t)}\\int_{\\mathbb{R}_{+}}f(s)\\operatorname{I m}\\left(\\frac{1}{1-\\omega(1/t)s}\\right)d\\mu(s)&\\quad&if t\\in\\operatorname{supp}(\\mu\\boxtimes\\nu)^{ac}\\setminus E,\\\\ &f\\left(\\frac{1}{\\omega(1/t)}\\right)&\\quad&if t>0~is~an~atom~of\\mu\\boxtimes\\nu,\\\\ &\\frac{1}{\\nu(\\{0\\})}\\int_{\\mathbb{R}_{+}}\\frac{f(s)}{1-s\\psi_{\\mu}^{-1}(\\nu(\\{0\\})-1)}d\\mu(s)&\\quad&if t=0~and~\\mu(\\{0\\})<\\nu(\\{0\\}),\\\\ &f(0)&\\quad&if t=0~and~\\mu(\\{0\\})\\geq\\nu(\\{0\\}).\\end{aligned}\\right.",
-    "pred_cdm_alt": null,
+    "pred_cdm_alt": "h(t)=\\{\\begin{aligned}&-\\frac{1}{\\pi t f_{\\mu\\boxtimes\\nu}(t)}\\int_{\\mathbb{R}_{+}}f(s)\\operatorname{I m}(\\frac{1}{1-\\omega(1/t)s})d\\mu(s)&\\quad&if t\\in\\operatorname{supp}(\\mu\\boxtimes\\nu)^{ac}\\setminus E,\\\\ &f(\\frac{1}{\\omega(1/t)})&\\quad&if t>0~is~an~atom~of\\mu\\boxtimes\\nu,\\\\ &\\frac{1}{\\nu(\\{0\\})}\\int_{\\mathbb{R}_{+}}\\frac{f(s)}{1-s\\psi_{\\mu}^{-1}(\\nu(\\{0\\})-1)}d\\mu(s)&\\quad&if t=0~and~\\mu(\\{0\\})<\\nu(\\{0\\}),\\\\ &f(0)&\\quad&if t=0~and~\\mu(\\{0\\})\\geq\\nu(\\{0\\}).\\end{aligned}",
     "selection_reason": "cdm_zero",
-    "failure_class": "evaluator_gt_compat",
+    "failure_class": "pending",
     "gt_self": {
-      "recall": 0.0,
-      "precision": 0.0,
-      "F1_score": 0.0,
-      "tp": 0,
-      "gt_tokens": 0,
-      "pred_tokens": 0
+      "recall": 1.0,
+      "precision": 1.0,
+      "F1_score": 1.0,
+      "tp": 179,
+      "gt_tokens": 179,
+      "pred_tokens": 179
     },
     "pred_self": {
       "recall": 1.0,
       "precision": 1.0,
       "F1_score": 1.0,
-      "tp": 177,
-      "gt_tokens": 177,
-      "pred_tokens": 177
+      "tp": 179,
+      "gt_tokens": 179,
+      "pred_tokens": 179
     },
     "gt_pred": {
-      "recall": 0.0,
-      "precision": 0.0,
-      "F1_score": 0.0,
-      "tp": 0,
-      "gt_tokens": 0,
-      "pred_tokens": 0
+      "recall": 1.0,
+      "precision": 1.0,
+      "F1_score": 1.0,
+      "tp": 179,
+      "gt_tokens": 179,
+      "pred_tokens": 179
     }
   },
   {
@@ -1237,18 +1237,18 @@
     "pred": "\\[ \\left[\\begin{matrix}{h(t)=\\left\\{\\begin{matrix}{-\\frac{1}{\\pi t f_{\\mu\\boxtimes\\nu}(t)}\\operatorname{I m}\\left(\\frac{1}{\\omega(1/t)}\\psi_{\\mu\\boxtimes\\nu}\\left(\\frac{1}{t}\\right)\\right)}&{\\qquad{i f~}t\\in\\operatorname{s u p p}(\\mu\\boxtimes\\nu)^{{a c}}\\setminus E,}\\\\ {\\frac{1}{\\omega(1/t)}}&{\\qquad{i f~}t>0{~i s~a n~a t o m~o f~}\\mu\\boxtimes\\nu,}\\\\ {\\frac{\\nu(\\{0\\})-1}{\\nu(\\{0\\})\\psi_{\\mu}^{-1}(\\nu(\\{0\\})-1)}}&{\\qquad{i f~}t=0{~a n d~}\\mu(\\{0\\})<\\nu(\\{0\\}),}\\\\ {0}&{\\qquad{i f~}t=0{~a n d~}\\mu(\\{0\\})\\geq\\nu(\\{0\\}).}\\\\ \\end{matrix}\\right. \\]",
     "edit": 0.04844290657439446,
     "cdm": 0.0,
-    "gt_cdm": "h(t) = \n\\left\\{\\begin{array}{lll}\n-\\frac{1}{\\pi t f_{\\mu \\boxtimes \\nu}(t)} \\operatorname{Im} \\left( \\frac{1}{\\omega(1/t)} \\psi_{\\mu \\boxtimes \\nu} \\left( \\frac{1}{t} \\right) \\right) & \\text{if } t \\in \\operatorname{supp}(\\mu \\boxtimes \\nu)^{ac} \\setminus E, \\\\\n\\frac{1}{\\omega(1/t)} & \\text{if } t > 0 \\text{ is an atom of } \\mu \\boxtimes \\nu, \\\\\n\\frac{\\nu(\\{0\\}) - 1}{\\nu(\\{0\\}) \\psi_\\mu^{-1}(\\nu(\\{0\\}) - 1)} & \\text{if } t = 0 \\text{ and } \\mu(\\{0\\}) < \\nu(\\{0\\}), \\\\\n0 & \\text{if } t = 0 \\text{ and } \\mu(\\{0\\}) \\geq \\nu(\\{0\\}).\n\\end{array}\\right.",
+    "gt_cdm": "h(t) = \n\\{\\begin{array}{lll}\n-\\frac{1}{\\pi t f_{\\mu \\boxtimes \\nu}(t)} \\operatorname{Im} ( \\frac{1}{\\omega(1/t)} \\psi_{\\mu \\boxtimes \\nu} ( \\frac{1}{t} ) ) & \\text{if } t \\in \\operatorname{supp}(\\mu \\boxtimes \\nu)^{ac} \\setminus E, \\\\\n\\frac{1}{\\omega(1/t)} & \\text{if } t > 0 \\text{ is an atom of } \\mu \\boxtimes \\nu, \\\\\n\\frac{\\nu(\\{0\\}) - 1}{\\nu(\\{0\\}) \\psi_\\mu^{-1}(\\nu(\\{0\\}) - 1)} & \\text{if } t = 0 \\text{ and } \\mu(\\{0\\}) < \\nu(\\{0\\}), \\\\\n0 & \\text{if } t = 0 \\text{ and } \\mu(\\{0\\}) \\geq \\nu(\\{0\\}).\n\\end{array}",
     "pred_cdm": "\\left[\\begin{matrix}{h(t)=\\left\\{\\begin{matrix}{-\\frac{1}{\\pi t f_{\\mu\\boxtimes\\nu}(t)}\\operatorname{I m}\\left(\\frac{1}{\\omega(1/t)}\\psi_{\\mu\\boxtimes\\nu}\\left(\\frac{1}{t}\\right)\\right)}&{\\qquad{i f~}t\\in\\operatorname{s u p p}(\\mu\\boxtimes\\nu)^{{a c}}\\setminus E,}\\\\ {\\frac{1}{\\omega(1/t)}}&{\\qquad{i f~}t>0{~i s~a n~a t o m~o f~}\\mu\\boxtimes\\nu,}\\\\ {\\frac{\\nu(\\{0\\})-1}{\\nu(\\{0\\})\\psi_{\\mu}^{-1}(\\nu(\\{0\\})-1)}}&{\\qquad{i f~}t=0{~a n d~}\\mu(\\{0\\})<\\nu(\\{0\\}),}\\\\ {0}&{\\qquad{i f~}t=0{~a n d~}\\mu(\\{0\\})\\geq\\nu(\\{0\\}).}\\\\ \\end{matrix}\\right.",
-    "pred_cdm_alt": "\\left[\\begin{matrix}{h(t)=\\left\\{\\begin{matrix}{-\\frac{1}{\\pi t f_{\\mu\\boxtimes\\nu}(t)}\\operatorname{I m}\\left(\\frac{1}{\\omega(1/t)}\\psi_{\\mu\\boxtimes\\nu}\\left(\\frac{1}{t}\\right)\\right)}&{\\qquad{i f~}t\\in\\operatorname{s u p p}(\\mu\\boxtimes\\nu)^{{a c}}\\setminus E,}\\\\ {\\frac{1}{\\omega(1/t)}}&{\\qquad{i f~}t>0{~i s~a n~a t o m~o f~}\\mu\\boxtimes\\nu,}\\\\ {\\frac{\\nu(\\{0\\})-1}{\\nu(\\{0\\})\\psi_{\\mu}^{-1}(\\nu(\\{0\\})-1)}}&{\\qquad{i f~}t=0{~a n d~}\\mu(\\{0\\})<\\nu(\\{0\\}),}\\\\ {0}&{\\qquad{i f~}t=0{~a n d~}\\mu(\\{0\\})\\geq\\nu(\\{0\\}).}\\end{matrix}\\right.",
+    "pred_cdm_alt": "[\\begin{matrix}{h(t)=\\{\\begin{matrix}{-\\frac{1}{\\pi t f_{\\mu\\boxtimes\\nu}(t)}\\operatorname{I m}(\\frac{1}{\\omega(1/t)}\\psi_{\\mu\\boxtimes\\nu}(\\frac{1}{t}))}&{\\qquad{i f~}t\\in\\operatorname{s u p p}(\\mu\\boxtimes\\nu)^{{a c}}\\setminus E,}\\\\ {\\frac{1}{\\omega(1/t)}}&{\\qquad{i f~}t>0{~i s~a n~a t o m~o f~}\\mu\\boxtimes\\nu,}\\\\ {\\frac{\\nu(\\{0\\})-1}{\\nu(\\{0\\})\\psi_{\\mu}^{-1}(\\nu(\\{0\\})-1)}}&{\\qquad{i f~}t=0{~a n d~}\\mu(\\{0\\})<\\nu(\\{0\\}),}\\\\ {0}&{\\qquad{i f~}t=0{~a n d~}\\mu(\\{0\\})\\geq\\nu(\\{0\\}).}\\end{matrix}",
     "selection_reason": "cdm_zero",
     "failure_class": "pred_latex_unrenderable",
     "gt_self": {
       "recall": 1.0,
       "precision": 1.0,
       "F1_score": 1.0,
-      "tp": 156,
-      "gt_tokens": 156,
-      "pred_tokens": 156
+      "tp": 158,
+      "gt_tokens": 158,
+      "pred_tokens": 158
     },
     "pred_self": {
       "recall": 0.0,
@@ -1263,7 +1263,7 @@
       "precision": 0.0,
       "F1_score": 0.0,
       "tp": 0,
-      "gt_tokens": 156,
+      "gt_tokens": 158,
       "pred_tokens": 0
     }
   },
@@ -1282,34 +1282,34 @@
     "pred": "\\[Z Z^{\\top}&\\stackrel{(1)}{=}T\\left[\\begin{array}{c c}D_{\\mathrm{d e s}}^{\\frac{1}{2}\\top}\\left(\\left(\\sum_{i=1}^{T}\\bar{x}(\\omega_{i})^{\\sf H}\\bar{x}(\\omega_{i})\\right)\\otimes I_{n_{\\phi}}\\right)D_{\\mathrm{d e s}}^{\\frac{1}{2}}&D_{\\mathrm{d e s}}^{\\frac{1}{2}\\top}\\left(\\sum_{i=1}^{T}\\bar{x}(\\omega_{i})^{\\top}\\left(\\bar{\\phi}(\\omega_{i})^{\\sf H}\\otimes I_{n_{\\mathrm{x}}}\\right)\\right)\\otimes I_{n_{\\phi}}\\\\ \\left(\\sum_{i=1}^{T}\\bar{x}(\\omega_{i})^{\\top}\\left(\\bar{\\phi}(\\omega_{i})^{\\sf H}\\otimes I_{n_{\\mathrm{x}}}\\right)\\right)^{\\sf H}\\otimes I_{n_{\\phi}}D_{\\mathrm{d e s}}^{\\frac{1}{2}}&\\left(\\left(\\sum_{i=1}^{T}\\bar{\\phi}(\\omega_{i})^{\\prime}\\bar{\\phi}(\\omega_{i})^{\\sf H}\\right)\\otimes I_{n_{\\mathrm{x}}}\\right)\\otimes I_{n_{\\phi}}\\end{array}\\right]\\]",
     "edit": 0.2902033271719039,
     "cdm": 0.0,
-    "gt_cdm": "Z{Z}^{\\top }\\stackrel{\\left( 1\\right) }{ = }T\\left\\lbrack  \\begin{array}{cc} {D}_{\\text{des }}^{\\frac{1}{2}\\top }\\left( {\\left( {\\mathop{\\sum }\\limits_{{i = 1}}^{T}\\bar{x}{\\left( {\\omega }_{i}\\right) }^{\\mathrm{H}}\\bar{x}\\left( {\\omega }_{i}\\right) }\\right)  \\otimes  {I}_{{n}_{\\phi }}}\\right) {D}_{\\text{des }}^{\\frac{1}{2}\\top }{D}_{\\text{des }}^{\\frac{1}{2}\\top }\\left( {\\mathop{\\sum }\\limits_{{i = 1}}^{T}\\bar{x}{\\left( {\\omega }_{i}\\right) }^{\\top }\\left( {\\bar{\\phi }{\\left( {\\omega }_{i}\\right) }^{\\mathrm{H}} \\otimes  {I}_{{n}_{x}}}\\right) }\\right)  \\otimes  {I}_{{n}_{\\phi }} \\\\  {\\left( \\mathop{\\sum }\\limits_{{i = 1}}^{T}\\bar{x}{\\left( {\\omega }_{i}\\right) }^{\\top }\\left( \\bar{\\phi }{\\left( {\\omega }_{i}\\right) }^{\\mathrm{H}} \\otimes  {I}_{{n}_{x}}\\right) \\right) }^{\\mathrm{H}} \\otimes  {I}_{{n}_{\\phi }}{D}_{\\text{des }}^{\\frac{1}{2}}\\left( {\\left( {\\mathop{\\sum }\\limits_{{i = 1}}^{T}\\bar{\\phi }\\left( {\\omega }_{i}\\right) \\bar{\\phi }{\\left( {\\omega }_{i}\\right) }^{\\mathrm{H}}}\\right)  \\otimes  {I}_{{n}_{x}}}\\right)  \\otimes  {I}_{{n}_{\\phi }} \\end{array}\\right\\rbrack",
+    "gt_cdm": "Z{Z}^{\\top }\\stackrel{( 1) }{ = }T\\lbrack  \\begin{array}{cc} {D}_{\\text{des }}^{\\frac{1}{2}\\top }( {( {\\sum_{{i = 1}}^{T}\\bar{x}{( {\\omega }_{i}) }^{\\mathrm{H}}\\bar{x}( {\\omega }_{i}) })  \\otimes  {I}_{{n}_{\\phi }}}) {D}_{\\text{des }}^{\\frac{1}{2}\\top }{D}_{\\text{des }}^{\\frac{1}{2}\\top }( {\\sum_{{i = 1}}^{T}\\bar{x}{( {\\omega }_{i}) }^{\\top }( {\\bar{\\phi }{( {\\omega }_{i}) }^{\\mathrm{H}} \\otimes  {I}_{{n}_{x}}}) })  \\otimes  {I}_{{n}_{\\phi }} \\\\  {( \\sum_{{i = 1}}^{T}\\bar{x}{( {\\omega }_{i}) }^{\\top }( \\bar{\\phi }{( {\\omega }_{i}) }^{\\mathrm{H}} \\otimes  {I}_{{n}_{x}}) ) }^{\\mathrm{H}} \\otimes  {I}_{{n}_{\\phi }}{D}_{\\text{des }}^{\\frac{1}{2}}( {( {\\sum_{{i = 1}}^{T}\\bar{\\phi }( {\\omega }_{i}) \\bar{\\phi }{( {\\omega }_{i}) }^{\\mathrm{H}}})  \\otimes  {I}_{{n}_{x}}})  \\otimes  {I}_{{n}_{\\phi }} \\end{array}\\rbrack",
     "pred_cdm": "Z Z^{\\top}&\\stackrel{(1)}{=}T\\left[\\begin{array}{c c}D_{\\mathrm{d e s}}^{\\frac{1}{2}\\top}\\left(\\left(\\sum_{i=1}^{T}\\bar{x}(\\omega_{i})^{\\sf H}\\bar{x}(\\omega_{i})\\right)\\otimes I_{n_{\\phi}}\\right)D_{\\mathrm{d e s}}^{\\frac{1}{2}}&D_{\\mathrm{d e s}}^{\\frac{1}{2}\\top}\\left(\\sum_{i=1}^{T}\\bar{x}(\\omega_{i})^{\\top}\\left(\\bar{\\phi}(\\omega_{i})^{\\sf H}\\otimes I_{n_{\\mathrm{x}}}\\right)\\right)\\otimes I_{n_{\\phi}}\\\\ \\left(\\sum_{i=1}^{T}\\bar{x}(\\omega_{i})^{\\top}\\left(\\bar{\\phi}(\\omega_{i})^{\\sf H}\\otimes I_{n_{\\mathrm{x}}}\\right)\\right)^{\\sf H}\\otimes I_{n_{\\phi}}D_{\\mathrm{d e s}}^{\\frac{1}{2}}&\\left(\\left(\\sum_{i=1}^{T}\\bar{\\phi}(\\omega_{i})^{\\prime}\\bar{\\phi}(\\omega_{i})^{\\sf H}\\right)\\otimes I_{n_{\\mathrm{x}}}\\right)\\otimes I_{n_{\\phi}}\\end{array}\\right]",
-    "pred_cdm_alt": "Z Z^{\\top}&\\stackrel{(1)}{=}T\\left[\\begin{array}{c c}D_{d e s}^{\\frac{1}{2}\\top}\\left(\\left(\\sum_{i=1}^{T}\\bar{x}(\\omega_{i})^{\\sf H}\\bar{x}(\\omega_{i})\\right)\\otimes I_{n_{\\phi}}\\right)D_{d e s}^{\\frac{1}{2}}&D_{d e s}^{\\frac{1}{2}\\top}\\left(\\sum_{i=1}^{T}\\bar{x}(\\omega_{i})^{\\top}\\left(\\bar{\\phi}(\\omega_{i})^{\\sf H}\\otimes I_{n_{x}}\\right)\\right)\\otimes I_{n_{\\phi}}\\\\\\left(\\sum_{i=1}^{T}\\bar{x}(\\omega_{i})^{\\top}\\left(\\bar{\\phi}(\\omega_{i})^{\\sf H}\\otimes I_{n_{x}}\\right)\\right)^{\\sf H}\\otimes I_{n_{\\phi}}D_{d e s}^{\\frac{1}{2}}&\\left(\\left(\\sum_{i=1}^{T}\\bar{\\phi}(\\omega_{i})^{\\prime}\\bar{\\phi}(\\omega_{i})^{\\sf H}\\right)\\otimes I_{n_{x}}\\right)\\otimes I_{n_{\\phi}}\\end{array}\\right]",
+    "pred_cdm_alt": "Z Z^{\\top}&\\stackrel{(1)}{=}T[\\begin{array}{c c}D_{d e s}^{\\frac{1}{2}\\top}((\\sum_{i=1}^{T}\\bar{x}(\\omega_{i})^{\\sf H}\\bar{x}(\\omega_{i}))\\otimes I_{n_{\\phi}})D_{d e s}^{\\frac{1}{2}}&D_{d e s}^{\\frac{1}{2}\\top}(\\sum_{i=1}^{T}\\bar{x}(\\omega_{i})^{\\top}(\\bar{\\phi}(\\omega_{i})^{\\sf H}\\otimes I_{n_{x}}))\\otimes I_{n_{\\phi}}\\\\(\\sum_{i=1}^{T}\\bar{x}(\\omega_{i})^{\\top}(\\bar{\\phi}(\\omega_{i})^{\\sf H}\\otimes I_{n_{x}}))^{\\sf H}\\otimes I_{n_{\\phi}}D_{d e s}^{\\frac{1}{2}}&((\\sum_{i=1}^{T}\\bar{\\phi}(\\omega_{i})^{\\prime}\\bar{\\phi}(\\omega_{i})^{\\sf H})\\otimes I_{n_{x}})\\otimes I_{n_{\\phi}}\\end{array}]",
     "selection_reason": "cdm_zero",
-    "failure_class": "evaluator_gt_compat",
+    "failure_class": "model_or_dataset_gap",
     "gt_self": {
-      "recall": 0.0,
-      "precision": 0.0,
-      "F1_score": 0.0,
-      "tp": 0,
-      "gt_tokens": 0,
-      "pred_tokens": 0
+      "recall": 1.0,
+      "precision": 1.0,
+      "F1_score": 1.0,
+      "tp": 160,
+      "gt_tokens": 160,
+      "pred_tokens": 160
     },
     "pred_self": {
       "recall": 1.0,
       "precision": 1.0,
       "F1_score": 1.0,
-      "tp": 151,
-      "gt_tokens": 151,
-      "pred_tokens": 151
+      "tp": 23,
+      "gt_tokens": 23,
+      "pred_tokens": 23
     },
     "gt_pred": {
-      "recall": 0.0,
-      "precision": 0.0,
-      "F1_score": 0.0,
-      "tp": 0,
-      "gt_tokens": 0,
-      "pred_tokens": 0
+      "recall": 0.031,
+      "precision": 0.217,
+      "F1_score": 0.055,
+      "tp": 5,
+      "gt_tokens": 160,
+      "pred_tokens": 23
     }
   },
   {
@@ -1327,34 +1327,34 @@
     "pred": "\\[&\\succeq T\\left[\\begin{array}{c}D_{\\mathrm{d e s}}^{\\frac{1}{2}\\top}\\left(\\left(\\sum_{i=1}^{L}\\bar{x}(\\omega_{i})^{\\sf H}\\bar{x}(\\omega_{i})\\right)\\otimes I_{n_{\\phi}}\\right)D_{\\mathrm{d e s}}^{\\frac{1}{2}}&D_{\\mathrm{d e s}}^{\\frac{1}{2}\\top}\\left(\\sum_{i=1}^{L}\\bar{x}(\\omega_{i})^{\\top}\\left(\\bar{\\phi}(\\omega_{i})^{\\sf H}\\otimes I_{n_{\\mathrm{x}}}\\right)\\right)\\otimes I_{n_{\\phi}}\\\\ \\left(\\sum_{i=1}^{L}\\bar{x}(\\omega_{i})^{\\top}\\left(\\bar{\\phi}(\\omega_{i})^{\\sf H}\\otimes I_{n_{\\mathrm{x}}}\\right)\\right)^{\\sf H}\\otimes I_{n_{\\phi}}D_{\\mathrm{d e s}}^{\\frac{1}{2}}&\\left(\\left(\\sum_{i=1}^{L}\\bar{\\phi}(\\omega_{i})^{\\prime}\\bar{\\phi}(\\omega_{i})^{\\sf H}\\right)\\otimes I_{n_{\\mathrm{x}}}\\right)\\otimes I_{n_{\\phi}}\\end{array}\\right]\\]",
     "edit": 0.29310344827586204,
     "cdm": 0.0,
-    "gt_cdm": "\\succeq T\\left\\lbrack  \\begin{array}{cc} {D}_{\\text{des }}^{\\frac{1}{2}\\top }\\left( {\\left( {\\mathop{\\sum }\\limits_{{i = 1}}^{L}\\bar{x}{\\left( {\\omega }_{i}\\right) }^{\\mathrm{H}}\\bar{x}\\left( {\\omega }_{i}\\right) }\\right)  \\otimes  {I}_{{n}_{\\phi }}}\\right) {D}_{\\text{des }}^{\\frac{1}{2} }{D}_{\\text{des }}^{\\frac{1}{2}\\top }\\left( {\\mathop{\\sum }\\limits_{{i = 1}}^{L}\\bar{x}{\\left( {\\omega }_{i}\\right) }^{\\top }\\left( {\\bar{\\phi }{\\left( {\\omega }_{i}\\right) }^{\\mathrm{H}} \\otimes  {I}_{{n}_{x}}}\\right) }\\right)  \\otimes  {I}_{{n}_{\\phi }} \\\\  {\\left( \\mathop{\\sum }\\limits_{{i = 1}}^{L}\\bar{x}{\\left( {\\omega }_{i}\\right) }^{\\top }\\left( \\bar{\\phi }{\\left( {\\omega }_{i}\\right) }^{\\mathrm{H}} \\otimes  {I}_{{n}_{x}}\\right) \\right) }^{\\mathrm{H}} \\otimes  {I}_{{n}_{\\phi }}{D}_{\\text{des }}^{\\frac{1}{2}}\\left( {\\left( {\\mathop{\\sum }\\limits_{{i = 1}}^{L}\\bar{\\phi }\\left( {\\omega }_{i}\\right) \\bar{\\phi }{\\left( {\\omega }_{i}\\right) }^{\\mathrm{H}}}\\right)  \\otimes  {I}_{{n}_{x}}}\\right)  \\otimes  {I}_{{n}_{\\phi }} \\end{array}\\right\\rbrack",
+    "gt_cdm": "\\succeq T\\lbrack  \\begin{array}{cc} {D}_{\\text{des }}^{\\frac{1}{2}\\top }( {( {\\sum_{{i = 1}}^{L}\\bar{x}{( {\\omega }_{i}) }^{\\mathrm{H}}\\bar{x}( {\\omega }_{i}) })  \\otimes  {I}_{{n}_{\\phi }}}) {D}_{\\text{des }}^{\\frac{1}{2} }{D}_{\\text{des }}^{\\frac{1}{2}\\top }( {\\sum_{{i = 1}}^{L}\\bar{x}{( {\\omega }_{i}) }^{\\top }( {\\bar{\\phi }{( {\\omega }_{i}) }^{\\mathrm{H}} \\otimes  {I}_{{n}_{x}}}) })  \\otimes  {I}_{{n}_{\\phi }} \\\\  {( \\sum_{{i = 1}}^{L}\\bar{x}{( {\\omega }_{i}) }^{\\top }( \\bar{\\phi }{( {\\omega }_{i}) }^{\\mathrm{H}} \\otimes  {I}_{{n}_{x}}) ) }^{\\mathrm{H}} \\otimes  {I}_{{n}_{\\phi }}{D}_{\\text{des }}^{\\frac{1}{2}}( {( {\\sum_{{i = 1}}^{L}\\bar{\\phi }( {\\omega }_{i}) \\bar{\\phi }{( {\\omega }_{i}) }^{\\mathrm{H}}})  \\otimes  {I}_{{n}_{x}}})  \\otimes  {I}_{{n}_{\\phi }} \\end{array}\\rbrack",
     "pred_cdm": "&\\succeq T\\left[\\begin{array}{c}D_{\\mathrm{d e s}}^{\\frac{1}{2}\\top}\\left(\\left(\\sum_{i=1}^{L}\\bar{x}(\\omega_{i})^{\\sf H}\\bar{x}(\\omega_{i})\\right)\\otimes I_{n_{\\phi}}\\right)D_{\\mathrm{d e s}}^{\\frac{1}{2}}&D_{\\mathrm{d e s}}^{\\frac{1}{2}\\top}\\left(\\sum_{i=1}^{L}\\bar{x}(\\omega_{i})^{\\top}\\left(\\bar{\\phi}(\\omega_{i})^{\\sf H}\\otimes I_{n_{\\mathrm{x}}}\\right)\\right)\\otimes I_{n_{\\phi}}\\\\ \\left(\\sum_{i=1}^{L}\\bar{x}(\\omega_{i})^{\\top}\\left(\\bar{\\phi}(\\omega_{i})^{\\sf H}\\otimes I_{n_{\\mathrm{x}}}\\right)\\right)^{\\sf H}\\otimes I_{n_{\\phi}}D_{\\mathrm{d e s}}^{\\frac{1}{2}}&\\left(\\left(\\sum_{i=1}^{L}\\bar{\\phi}(\\omega_{i})^{\\prime}\\bar{\\phi}(\\omega_{i})^{\\sf H}\\right)\\otimes I_{n_{\\mathrm{x}}}\\right)\\otimes I_{n_{\\phi}}\\end{array}\\right]",
-    "pred_cdm_alt": "&\\succeq T\\left[\\begin{array}{c}D_{d e s}^{\\frac{1}{2}\\top}\\left(\\left(\\sum_{i=1}^{L}\\bar{x}(\\omega_{i})^{\\sf H}\\bar{x}(\\omega_{i})\\right)\\otimes I_{n_{\\phi}}\\right)D_{d e s}^{\\frac{1}{2}}&D_{d e s}^{\\frac{1}{2}\\top}\\left(\\sum_{i=1}^{L}\\bar{x}(\\omega_{i})^{\\top}\\left(\\bar{\\phi}(\\omega_{i})^{\\sf H}\\otimes I_{n_{x}}\\right)\\right)\\otimes I_{n_{\\phi}}\\\\\\left(\\sum_{i=1}^{L}\\bar{x}(\\omega_{i})^{\\top}\\left(\\bar{\\phi}(\\omega_{i})^{\\sf H}\\otimes I_{n_{x}}\\right)\\right)^{\\sf H}\\otimes I_{n_{\\phi}}D_{d e s}^{\\frac{1}{2}}&\\left(\\left(\\sum_{i=1}^{L}\\bar{\\phi}(\\omega_{i})^{\\prime}\\bar{\\phi}(\\omega_{i})^{\\sf H}\\right)\\otimes I_{n_{x}}\\right)\\otimes I_{n_{\\phi}}\\end{array}\\right]",
+    "pred_cdm_alt": "&\\succeq T[\\begin{array}{c}D_{d e s}^{\\frac{1}{2}\\top}((\\sum_{i=1}^{L}\\bar{x}(\\omega_{i})^{\\sf H}\\bar{x}(\\omega_{i}))\\otimes I_{n_{\\phi}})D_{d e s}^{\\frac{1}{2}}&D_{d e s}^{\\frac{1}{2}\\top}(\\sum_{i=1}^{L}\\bar{x}(\\omega_{i})^{\\top}(\\bar{\\phi}(\\omega_{i})^{\\sf H}\\otimes I_{n_{x}}))\\otimes I_{n_{\\phi}}\\\\(\\sum_{i=1}^{L}\\bar{x}(\\omega_{i})^{\\top}(\\bar{\\phi}(\\omega_{i})^{\\sf H}\\otimes I_{n_{x}}))^{\\sf H}\\otimes I_{n_{\\phi}}D_{d e s}^{\\frac{1}{2}}&((\\sum_{i=1}^{L}\\bar{\\phi}(\\omega_{i})^{\\prime}\\bar{\\phi}(\\omega_{i})^{\\sf H})\\otimes I_{n_{x}})\\otimes I_{n_{\\phi}}\\end{array}]",
     "selection_reason": "cdm_zero",
-    "failure_class": "evaluator_gt_compat",
+    "failure_class": "model_or_dataset_gap",
     "gt_self": {
-      "recall": 0.0,
-      "precision": 0.0,
-      "F1_score": 0.0,
-      "tp": 0,
-      "gt_tokens": 0,
-      "pred_tokens": 0
+      "recall": 1.0,
+      "precision": 1.0,
+      "F1_score": 1.0,
+      "tp": 153,
+      "gt_tokens": 153,
+      "pred_tokens": 153
     },
     "pred_self": {
       "recall": 1.0,
       "precision": 1.0,
       "F1_score": 1.0,
-      "tp": 145,
-      "gt_tokens": 145,
-      "pred_tokens": 145
+      "tp": 22,
+      "gt_tokens": 22,
+      "pred_tokens": 22
     },
     "gt_pred": {
-      "recall": 0.0,
-      "precision": 0.0,
-      "F1_score": 0.0,
-      "tp": 0,
-      "gt_tokens": 0,
-      "pred_tokens": 0
+      "recall": 0.026,
+      "precision": 0.182,
+      "F1_score": 0.046,
+      "tp": 4,
+      "gt_tokens": 153,
+      "pred_tokens": 22
     }
   },
   {
@@ -1372,18 +1372,18 @@
     "pred": "\\[ {G}^{\\mathbf{K}}= \\left\\{{ \\leftarrow \\subseteq G \\times G: \\forall \\gtrdot \\in  {\\mathbf{K}}_{H}^{G}\\ ( < \\circ \\leftarrow \\circ \\gtrdot \\mathrm{~subfactors~into~some~}{\\sqsupset}, \\exists \\in  {\\mathbf{K}}_{I}^{H})\\right\\}. \\]",
     "edit": 0.08461538461538462,
     "cdm": 0.0,
-    "gt_cdm": "{G}^{\\mathbf{K}} = \\left\\{  { \\leftarrow   \\subseteq  G \\times  G : \\forall \\gtrdot   \\in  {\\mathbf{K}}_{H}^{G}\\left( { \\lessdot  \\circ   \\leftarrow   \\circ   \\gtrdot \\text{ subfactors into some }{ \\sqsupset  } ,\\exists  \\in  {\\mathbf{K}}_{I}^{H}}\\right) }\\right\\}  .",
+    "gt_cdm": "{G}^{\\mathbf{K}} = \\{  { \\leftarrow   \\subseteq  G \\times  G : \\forall \\gtrdot   \\in  {\\mathbf{K}}_{H}^{G}( { \\lessdot  \\circ   \\leftarrow   \\circ   \\gtrdot \\text{ subfactors into some }{ \\sqsupset  } ,\\exists  \\in  {\\mathbf{K}}_{I}^{H}}) }\\}  .",
     "pred_cdm": "{G}^{\\mathbf{K}}= \\left\\{{ \\leftarrow \\subseteq G \\times G: \\forall \\gtrdot \\in  {\\mathbf{K}}_{H}^{G}\\ ( < \\circ \\leftarrow \\circ \\gtrdot \\mathrm{~subfactors~into~some~}{\\sqsupset}, \\exists \\in  {\\mathbf{K}}_{I}^{H})\\right\\}.",
-    "pred_cdm_alt": null,
+    "pred_cdm_alt": "{G}^{\\mathbf{K}}= \\{{ \\leftarrow \\subseteq G \\times G: \\forall \\gtrdot \\in  {\\mathbf{K}}_{H}^{G}\\ ( < \\circ \\leftarrow \\circ \\gtrdot \\mathrm{~subfactors~into~some~}{\\sqsupset}, \\exists \\in  {\\mathbf{K}}_{I}^{H})\\}.",
     "selection_reason": "cdm_zero",
     "failure_class": "pred_latex_unrenderable",
     "gt_self": {
       "recall": 1.0,
       "precision": 1.0,
       "F1_score": 1.0,
-      "tp": 48,
-      "gt_tokens": 48,
-      "pred_tokens": 48
+      "tp": 50,
+      "gt_tokens": 50,
+      "pred_tokens": 50
     },
     "pred_self": {
       "recall": 0.0,
@@ -1398,7 +1398,7 @@
       "precision": 0.0,
       "F1_score": 0.0,
       "tp": 0,
-      "gt_tokens": 48,
+      "gt_tokens": 50,
       "pred_tokens": 0
     }
   },
@@ -1417,18 +1417,18 @@
     "pred": "\\[ \\mathrm{F i l}_{*}^{\\Lambda_{\\supset2}S_{L^{\\prime}}}\\mathcal{F}_{X_{\\mathrm{s m}}}^{p,w}|_{X_{\\mathrm{s m}}\\cap\\bigcap_{i=1}^{r(L^{\\prime})}W_{S_{L^{\\prime},i}^{\\prime}}^{\\prime}}\\cong\\bigoplus_{b\\in\\mathbb{Z}^{\\left\\{S_{L^{\\prime},i}^{\\prime},i}\\right\\}_{i=1}^{r(L^{\\prime})}\\cup\\left\\{S_{L^{\\prime}}\\right\\}}}\\mathrm{F i l}_{*}^{\\Lambda_{\\supset2}S_{L^{\\prime}}}\\mathrm{g r}_{b}\\mathcal{F}_{X_{\\mathrm{s m}}}^{p,w}|_{X_{\\mathrm{s m}}\\cap\\bigcap_{i=1}^{r(L^{\\prime})}W_{S_{L^{\\prime},i}^{\\prime}}^{\\prime}}, \\]",
     "edit": 0.07449856733524356,
     "cdm": 0.018,
-    "gt_cdm": "\\mathrm{Fil}_{\\ast}^{\\Lambda_{\\supsetneq S_{L^{\\prime}}}}\\mathscr{F}_{X_{\\mathrm{sm}}}^{p,w}|_{X_{\\mathrm{sm}}\\cap\\bigcap_{i=1}^{r(L^{\\prime})}W_{S_{L^{\\prime},i}}^{\\prime}}\\cong\\bigoplus_{b\\in\\mathbb{Z}^{\\left\\{S_{L^{\\prime},i}^{\\prime}\\right\\}_{i=1}^{r(L^{\\prime})}\\cup\\left\\{S_{L^{\\prime}}\\right\\}}}\\mathrm{Fil}_{\\ast}^{\\Lambda_{\\supsetneq S_{L^{\\prime}}}}\\mathrm{gr}_{b}\\mathscr{F}_{X_{\\mathrm{sm}}}^{p,w}|_{X_{\\mathrm{sm}}\\cap\\bigcap_{i=1}^{r(L^{\\prime})}W_{S_{L^{\\prime},i}^{\\prime}}^{\\prime}},",
+    "gt_cdm": "\\mathrm{Fil}_{\\ast}^{\\Lambda_{\\supsetneq S_{L^{\\prime}}}}\\mathscr{F}_{X_{\\mathrm{sm}}}^{p,w}|_{X_{\\mathrm{sm}}\\cap\\bigcap_{i=1}^{r(L^{\\prime})}W_{S_{L^{\\prime},i}}^{\\prime}}\\cong\\bigoplus_{b\\in\\mathbb{Z}^{\\{S_{L^{\\prime},i}^{\\prime}\\}_{i=1}^{r(L^{\\prime})}\\cup\\{S_{L^{\\prime}}\\}}}\\mathrm{Fil}_{\\ast}^{\\Lambda_{\\supsetneq S_{L^{\\prime}}}}\\mathrm{gr}_{b}\\mathscr{F}_{X_{\\mathrm{sm}}}^{p,w}|_{X_{\\mathrm{sm}}\\cap\\bigcap_{i=1}^{r(L^{\\prime})}W_{S_{L^{\\prime},i}^{\\prime}}^{\\prime}},",
     "pred_cdm": "\\mathrm{F i l}_{*}^{\\Lambda_{\\supset2}S_{L^{\\prime}}}\\mathcal{F}_{X_{\\mathrm{s m}}}^{p,w}|_{X_{\\mathrm{s m}}\\cap\\bigcap_{i=1}^{r(L^{\\prime})}W_{S_{L^{\\prime},i}^{\\prime}}^{\\prime}}\\cong\\bigoplus_{b\\in\\mathbb{Z}^{\\left\\{S_{L^{\\prime},i}^{\\prime},i}\\right\\}_{i=1}^{r(L^{\\prime})}\\cup\\left\\{S_{L^{\\prime}}\\right\\}}}\\mathrm{F i l}_{*}^{\\Lambda_{\\supset2}S_{L^{\\prime}}}\\mathrm{g r}_{b}\\mathcal{F}_{X_{\\mathrm{s m}}}^{p,w}|_{X_{\\mathrm{s m}}\\cap\\bigcap_{i=1}^{r(L^{\\prime})}W_{S_{L^{\\prime},i}^{\\prime}}^{\\prime}},",
-    "pred_cdm_alt": null,
+    "pred_cdm_alt": "\\mathrm{F i l}_{*}^{\\Lambda_{\\supset2}S_{L^{\\prime}}}\\mathcal{F}_{X_{\\mathrm{s m}}}^{p,w}|_{X_{\\mathrm{s m}}\\cap\\bigcap_{i=1}^{r(L^{\\prime})}W_{S_{L^{\\prime},i}^{\\prime}}^{\\prime}}\\cong\\bigoplus_{b\\in\\mathbb{Z}^{\\{S_{L^{\\prime},i}^{\\prime},i}\\}_{i=1}^{r(L^{\\prime})}\\cup\\{S_{L^{\\prime}}\\}}}\\mathrm{F i l}_{*}^{\\Lambda_{\\supset2}S_{L^{\\prime}}}\\mathrm{g r}_{b}\\mathcal{F}_{X_{\\mathrm{s m}}}^{p,w}|_{X_{\\mathrm{s m}}\\cap\\bigcap_{i=1}^{r(L^{\\prime})}W_{S_{L^{\\prime},i}^{\\prime}}^{\\prime}},",
     "selection_reason": "cdm_low_edit_close",
     "failure_class": "normalization_or_matching",
     "gt_self": {
       "recall": 1.0,
       "precision": 1.0,
       "F1_score": 1.0,
-      "tp": 104,
-      "gt_tokens": 104,
-      "pred_tokens": 104
+      "tp": 106,
+      "gt_tokens": 106,
+      "pred_tokens": 106
     },
     "pred_self": {
       "recall": 1.0,
@@ -1439,11 +1439,11 @@
       "pred_tokens": 10
     },
     "gt_pred": {
-      "recall": 0.01,
+      "recall": 0.009,
       "precision": 0.1,
-      "F1_score": 0.018,
+      "F1_score": 0.017,
       "tp": 1,
-      "gt_tokens": 104,
+      "gt_tokens": 106,
       "pred_tokens": 10
     }
   },
@@ -1462,34 +1462,34 @@
     "pred": "\\[&\\leq\\underbrace{\\max_{j\\in[J]}\\left\\|\\mathbf{E}_{:,j}^{\\top}\\left(\\mathbf{U}^{(j)}\\mathbf{U}^{(j)\\top}\\mathbf{U}^{*}-\\mathbf{U}^{*}\\right)\\right\\|}_{\\gamma_{1}^{\\prime}}+\\underbrace{\\max_{j\\in[J]}\\left\\|\\mathbf{E}_{:,j}^{\\top}\\left(\\mathbf{U}\\mathbf{U}^{\\top}\\mathbf{U}^{*}-\\mathbf{U}^{(j)}\\mathbf{U}^{(j)\\top}\\mathbf{U}^{*}\\right)\\right\\|}_{\\gamma_{2}^{\\prime}}.\\]",
     "edit": 0.44029850746268656,
     "cdm": 0.0,
-    "gt_cdm": "\\leq  \\underset{{\\gamma }_{1}^{\\prime }}{\\underbrace{\\mathop{\\max }\\limits_{{j \\in  \\left\\lbrack  J\\right\\rbrack  }}\\left\\|{{\\mathbf{E}}_{ : ,j}^{\\top }\\left( {{\\mathbf{U}}^{( j) }{\\mathbf{U}}^{( j) ^{\\top }}{\\mathbf{U}}^{ * } - {\\mathbf{U}}^{ * }}\\right) }\\right\\|}} + \\underset{{\\gamma }_{2}^{\\prime }}{\\underbrace{\\mathop{\\max }\\limits_{{j \\in  [J] }}\\left\\|{{\\mathbf{E}}_{ : ,j}^{\\top }\\left( {\\mathbf{U}{\\mathbf{U}}^{\\top }{\\mathbf{U}}^{ * } - {\\mathbf{U}}^{( j) }{\\mathbf{U}}^{{( j)}^{\\top }}{\\mathbf{U}}^{ * }}\\right) }\\right\\|}} .",
+    "gt_cdm": "\\leq  \\underset{{\\gamma }_{1}^{\\prime }}{\\underbrace{\\max_{{j \\in  \\lbrack  J\\rbrack  }}\\|{{\\mathbf{E}}_{ : ,j}^{\\top }( {{\\mathbf{U}}^{( j) }{\\mathbf{U}}^{( j) ^{\\top }}{\\mathbf{U}}^{ * } - {\\mathbf{U}}^{ * }}) }\\|}} + \\underset{{\\gamma }_{2}^{\\prime }}{\\underbrace{\\max_{{j \\in  [J] }}\\|{{\\mathbf{E}}_{ : ,j}^{\\top }( {\\mathbf{U}{\\mathbf{U}}^{\\top }{\\mathbf{U}}^{ * } - {\\mathbf{U}}^{( j) }{\\mathbf{U}}^{{( j)}^{\\top }}{\\mathbf{U}}^{ * }}) }\\|}} .",
     "pred_cdm": "&\\leq\\underbrace{\\max_{j\\in[J]}\\left\\|\\mathbf{E}_{:,j}^{\\top}\\left(\\mathbf{U}^{(j)}\\mathbf{U}^{(j)\\top}\\mathbf{U}^{*}-\\mathbf{U}^{*}\\right)\\right\\|}_{\\gamma_{1}^{\\prime}}+\\underbrace{\\max_{j\\in[J]}\\left\\|\\mathbf{E}_{:,j}^{\\top}\\left(\\mathbf{U}\\mathbf{U}^{\\top}\\mathbf{U}^{*}-\\mathbf{U}^{(j)}\\mathbf{U}^{(j)\\top}\\mathbf{U}^{*}\\right)\\right\\|}_{\\gamma_{2}^{\\prime}}.",
-    "pred_cdm_alt": null,
+    "pred_cdm_alt": "&\\leq\\underbrace{\\max_{j\\in[J]}\\|\\mathbf{E}_{:,j}^{\\top}(\\mathbf{U}^{(j)}\\mathbf{U}^{(j)\\top}\\mathbf{U}^{*}-\\mathbf{U}^{*})\\|}_{\\gamma_{1}^{\\prime}}+\\underbrace{\\max_{j\\in[J]}\\|\\mathbf{E}_{:,j}^{\\top}(\\mathbf{U}\\mathbf{U}^{\\top}\\mathbf{U}^{*}-\\mathbf{U}^{(j)}\\mathbf{U}^{(j)\\top}\\mathbf{U}^{*})\\|}_{\\gamma_{2}^{\\prime}}.",
     "selection_reason": "cdm_zero",
-    "failure_class": "evaluator_gt_compat",
+    "failure_class": "pending",
     "gt_self": {
-      "recall": 0.0,
-      "precision": 0.0,
-      "F1_score": 0.0,
-      "tp": 0,
-      "gt_tokens": 0,
-      "pred_tokens": 0
+      "recall": 1.0,
+      "precision": 1.0,
+      "F1_score": 1.0,
+      "tp": 76,
+      "gt_tokens": 76,
+      "pred_tokens": 76
     },
     "pred_self": {
       "recall": 1.0,
       "precision": 1.0,
       "F1_score": 1.0,
-      "tp": 70,
-      "gt_tokens": 70,
-      "pred_tokens": 70
+      "tp": 76,
+      "gt_tokens": 76,
+      "pred_tokens": 76
     },
     "gt_pred": {
-      "recall": 0.0,
-      "precision": 0.0,
-      "F1_score": 0.0,
-      "tp": 0,
-      "gt_tokens": 0,
-      "pred_tokens": 0
+      "recall": 1.0,
+      "precision": 1.0,
+      "F1_score": 1.0,
+      "tp": 76,
+      "gt_tokens": 76,
+      "pred_tokens": 76
     }
   },
   {
@@ -1507,18 +1507,18 @@
     "pred": "\\[&\\quad+\\frac{1}{\\overline{C}_{x}}\\frac{|\\beta|+2}{|\\beta|+1}\\Biggl[24\\alpha B_{z}\\varepsilon\\sum_{j_{1}+j_{2}+j_{3}=|\\beta|}\\frac{|\\beta|+2}{j_{1}^{3}(j_{2}+1)^{2}(j_{3}+2)}+2\\sum_{j=0}^{|\\beta|}\\frac{|\\beta|+2}{(j+1)^{2}(|\\beta|+1-j)^{2}}+\\frac{9}{2}B_{z}\\varepsilon\\sum_{j_{1}+j_{2}+j_{3}=|\\beta|}\\frac{|\\beta|+2}{(j+1)^{2}(j_{2}+1)^{2}(j_{3}+1)^{2}}\\Biggr]\\]",
     "edit": 0.2714285714285714,
     "cdm": 0.0,
-    "gt_cdm": "+ \\frac{1}{{\\bar{C}}_{x}}\\frac{\\left| \\beta \\right|  + 2}{\\left| \\beta \\right|  + 1}\\left\\lbrack  {{24\\alpha }{B}_{z}\\varepsilon \\mathop{\\sum }\\limits_{\\substack{{{j}_{1} + {j}_{2} + {j}_{3} = \\left| \\beta \\right| } \\\\  {{j}_{1} \\geq  1} }}\\frac{\\left| \\beta \\right|  + 2}{{j}_{1}^{3}{\\left( {j}_{2} + 1\\right) }^{2}\\left( {{j}_{3} + 2}\\right) } + 2\\mathop{\\sum }\\limits_{{j = 0}}^{\\left| \\beta \\right| }\\frac{\\left| \\beta \\right|  + 2}{{\\left( j + 1\\right) }^{2}{\\left( \\left| \\beta \\right|  + 1 - j\\right) }^{2}} + \\frac{9}{2}{B}_{z}\\varepsilon \\mathop{\\sum }\\limits_{{{j}_{1} + {j}_{2} + {j}_{3} = \\left| \\beta \\right| }}\\frac{\\left| \\beta \\right|  + 2}{{\\left( {j}_{1} + 1\\right) }^{2}{\\left( {j}_{2} + 1\\right) }^{2}{\\left( {j}_{3} + 1\\right) }^{2}}}\\right\\rbrack",
+    "gt_cdm": "+ \\frac{1}{{\\bar{C}}_{x}}\\frac{| \\beta |  + 2}{| \\beta |  + 1}\\lbrack  {{24\\alpha }{B}_{z}\\varepsilon \\sum_{\\substack{{{j}_{1} + {j}_{2} + {j}_{3} = | \\beta | } \\\\  {{j}_{1} \\geq  1} }}\\frac{| \\beta |  + 2}{{j}_{1}^{3}{( {j}_{2} + 1) }^{2}( {{j}_{3} + 2}) } + 2\\sum_{{j = 0}}^{| \\beta | }\\frac{| \\beta |  + 2}{{( j + 1) }^{2}{( | \\beta |  + 1 - j) }^{2}} + \\frac{9}{2}{B}_{z}\\varepsilon \\sum_{{{j}_{1} + {j}_{2} + {j}_{3} = | \\beta | }}\\frac{| \\beta |  + 2}{{( {j}_{1} + 1) }^{2}{( {j}_{2} + 1) }^{2}{( {j}_{3} + 1) }^{2}}}\\rbrack",
     "pred_cdm": "&\\quad+\\frac{1}{\\overline{C}_{x}}\\frac{|\\beta|+2}{|\\beta|+1}\\Biggl[24\\alpha B_{z}\\varepsilon\\sum_{j_{1}+j_{2}+j_{3}=|\\beta|}\\frac{|\\beta|+2}{j_{1}^{3}(j_{2}+1)^{2}(j_{3}+2)}+2\\sum_{j=0}^{|\\beta|}\\frac{|\\beta|+2}{(j+1)^{2}(|\\beta|+1-j)^{2}}+\\frac{9}{2}B_{z}\\varepsilon\\sum_{j_{1}+j_{2}+j_{3}=|\\beta|}\\frac{|\\beta|+2}{(j+1)^{2}(j_{2}+1)^{2}(j_{3}+1)^{2}}\\Biggr]",
-    "pred_cdm_alt": null,
+    "pred_cdm_alt": "",
     "selection_reason": "cdm_zero",
-    "failure_class": "evaluator_gt_compat",
+    "failure_class": "pending",
     "gt_self": {
-      "recall": 0.0,
-      "precision": 0.0,
-      "F1_score": 0.0,
-      "tp": 0,
-      "gt_tokens": 0,
-      "pred_tokens": 0
+      "recall": 1.0,
+      "precision": 1.0,
+      "F1_score": 1.0,
+      "tp": 142,
+      "gt_tokens": 142,
+      "pred_tokens": 142
     },
     "pred_self": {
       "recall": 1.0,
@@ -1529,12 +1529,12 @@
       "pred_tokens": 137
     },
     "gt_pred": {
-      "recall": 0.0,
-      "precision": 0.0,
-      "F1_score": 0.0,
-      "tp": 0,
-      "gt_tokens": 0,
-      "pred_tokens": 0
+      "recall": 0.951,
+      "precision": 0.985,
+      "F1_score": 0.968,
+      "tp": 135,
+      "gt_tokens": 142,
+      "pred_tokens": 137
     }
   },
   {
@@ -1552,34 +1552,34 @@
     "pred": "\\[+\\frac{3}{2}(\\mathcal{P}\\operatorname*{curl}^{\\circ}{^{\\prime}}F)_{\\ell=1,S^{\\prime},J^{\\prime(p)}}+\\mathcal{L}[\\operatorname{curl}\\beta](F,\\underline{F},\\Lambda)&=O\\left(\\frac{\\varepsilon_{0}}{u^{\\delta_{dec}}}\\right),\\ $ \\mathcal{M})_{\\ell\\geq2,S^{\\prime},J^{\\prime(p)}}+((\\mathring{ \\Delta}^{^{\\prime}}+ 2)\\Lambda)_{\\ell\\geq2,S^{\\prime},J^{\\prime(p)}}+\\mathcal{L}[\\mu](F,F,\\Lambda)&=O\\left(\\frac{\\varepsilon_{0}}{u^{\\delta_{dec}}}\\right),\\]",
     "edit": 0.461038961038961,
     "cdm": 0.0,
-    "gt_cdm": "(\\mathscr{M})_{\\ell\\geq2,S^{\\prime},J^{\\prime(p)}}+((\\mathring{\\Delta}^{^{\\prime}}+2)\\Lambda)_{\\ell\\geq2,S^{\\prime},J^{{\\prime}(p)}}+\\mathcal{L}[\\mu](F,F,\\Lambda)=O\\left(\\frac{\\varepsilon_{0}}{u^{\\delta_{dec}}}\\right),",
+    "gt_cdm": "(\\mathscr{M})_{\\ell\\geq2,S^{\\prime},J^{\\prime(p)}}+((\\mathring{\\Delta}^{^{\\prime}}+2)\\Lambda)_{\\ell\\geq2,S^{\\prime},J^{{\\prime}(p)}}+\\mathcal{L}[\\mu](F,F,\\Lambda)=O(\\frac{\\varepsilon_{0}}{u^{\\delta_{dec}}}),",
     "pred_cdm": "+\\frac{3}{2}(\\mathcal{P}\\operatorname*{curl}^{\\circ}{^{\\prime}}F)_{\\ell=1,S^{\\prime},J^{\\prime(p)}}+\\mathcal{L}[\\operatorname{curl}\\beta](F,\\underline{F},\\Lambda)&=O\\left(\\frac{\\varepsilon_{0}}{u^{\\delta_{dec}}}\\right),\\ $ \\mathcal{M})_{\\ell\\geq2,S^{\\prime},J^{\\prime(p)}}+((\\mathring{ \\Delta}^{^{\\prime}}+ 2)\\Lambda)_{\\ell\\geq2,S^{\\prime},J^{\\prime(p)}}+\\mathcal{L}[\\mu](F,F,\\Lambda)&=O\\left(\\frac{\\varepsilon_{0}}{u^{\\delta_{dec}}}\\right),",
-    "pred_cdm_alt": null,
+    "pred_cdm_alt": "+\\frac{3}{2}(\\mathcal{P}\\operatorname*{curl}^{\\circ}{^{\\prime}}F)_{\\ell=1,S^{\\prime},J^{\\prime(p)}}+\\mathcal{L}[\\operatorname{curl}\\beta](F,\\underline{F},\\Lambda)&=O(\\frac{\\varepsilon_{0}}{u^{\\delta_{dec}}}), \\mathcal{M})_{\\ell\\geq2,S^{\\prime},J^{\\prime(p)}}+((\\mathring{ \\Delta}^{^{\\prime}}+ 2)\\Lambda)_{\\ell\\geq2,S^{\\prime},J^{\\prime(p)}}+\\mathcal{L}[\\mu](F,F,\\Lambda)&=O(\\frac{\\varepsilon_{0}}{u^{\\delta_{dec}}}),",
     "selection_reason": "cdm_zero",
-    "failure_class": "pred_latex_unrenderable",
+    "failure_class": "pending",
     "gt_self": {
       "recall": 1.0,
       "precision": 1.0,
       "F1_score": 1.0,
-      "tp": 62,
-      "gt_tokens": 62,
-      "pred_tokens": 62
+      "tp": 63,
+      "gt_tokens": 63,
+      "pred_tokens": 63
     },
     "pred_self": {
-      "recall": 0.0,
-      "precision": 0.0,
-      "F1_score": 0.0,
-      "tp": 0,
-      "gt_tokens": 0,
-      "pred_tokens": 0
+      "recall": 1.0,
+      "precision": 1.0,
+      "F1_score": 1.0,
+      "tp": 118,
+      "gt_tokens": 118,
+      "pred_tokens": 118
     },
     "gt_pred": {
-      "recall": 0.0,
-      "precision": 0.0,
-      "F1_score": 0.0,
-      "tp": 0,
-      "gt_tokens": 62,
-      "pred_tokens": 0
+      "recall": 0.857,
+      "precision": 0.458,
+      "F1_score": 0.597,
+      "tp": 54,
+      "gt_tokens": 63,
+      "pred_tokens": 118
     }
   },
   {
@@ -1597,34 +1597,34 @@
     "pred": "\\[\\left|\\int_{2}^{\\sqrt{t}}\\frac{u}{(\\log u)^{2}}\\frac{D^{(1)}(t/u)}{u^{2}}du\\ll\\int_{2}^{\\sqrt{t}}\\frac{\\left(\\log\\log(t/u)\\right)^{a-1}}{u(\\log u)^{2}\\log^{b}(t/u)}du\\ll\\frac{(\\log\\log t)^{a-1}}{(\\log t)^{b}}\\int_{2}^{\\sqrt{t}}\\frac{du}{u(\\log u)^{2}}\\right|\\]",
     "edit": 0.10552763819095477,
     "cdm": 0.0,
-    "gt_cdm": "{\\int }_{2}^{\\sqrt{t}}\\frac{u}{{\\left( \\log u\\right) }^{2}}\\frac{{D}^{\\left( 1\\right) }\\left( {t/u}\\right) }{{u}^{2}}{du} \\ll  {\\int }_{2}^{\\sqrt{t}}\\frac{{\\left( \\log \\log \\left( t/u\\right) \\right) }^{a - 1}}{u{\\left( \\log u\\right) }^{2}{\\log }^{b}\\left( {t/u}\\right) }{du} \\ll  \\frac{{\\left( \\log \\log t\\right) }^{a - 1}}{{\\left( \\log t\\right) }^{b}}{\\int }_{2}^{\\sqrt{t}}\\frac{du}{u{\\left( \\log u\\right) }^{2}}",
+    "gt_cdm": "{\\int }_{2}^{\\sqrt{t}}\\frac{u}{{( \\log u) }^{2}}\\frac{{D}^{( 1) }( {t/u}) }{{u}^{2}}{du} \\ll  {\\int }_{2}^{\\sqrt{t}}\\frac{{( \\log \\log ( t/u) ) }^{a - 1}}{u{( \\log u) }^{2}{\\log }^{b}( {t/u}) }{du} \\ll  \\frac{{( \\log \\log t) }^{a - 1}}{{( \\log t) }^{b}}{\\int }_{2}^{\\sqrt{t}}\\frac{du}{u{( \\log u) }^{2}}",
     "pred_cdm": "\\left|\\int_{2}^{\\sqrt{t}}\\frac{u}{(\\log u)^{2}}\\frac{D^{(1)}(t/u)}{u^{2}}du\\ll\\int_{2}^{\\sqrt{t}}\\frac{\\left(\\log\\log(t/u)\\right)^{a-1}}{u(\\log u)^{2}\\log^{b}(t/u)}du\\ll\\frac{(\\log\\log t)^{a-1}}{(\\log t)^{b}}\\int_{2}^{\\sqrt{t}}\\frac{du}{u(\\log u)^{2}}\\right|",
-    "pred_cdm_alt": null,
+    "pred_cdm_alt": "|\\int_{2}^{\\sqrt{t}}\\frac{u}{(\\log u)^{2}}\\frac{D^{(1)}(t/u)}{u^{2}}du\\ll\\int_{2}^{\\sqrt{t}}\\frac{(\\log\\log(t/u))^{a-1}}{u(\\log u)^{2}\\log^{b}(t/u)}du\\ll\\frac{(\\log\\log t)^{a-1}}{(\\log t)^{b}}\\int_{2}^{\\sqrt{t}}\\frac{du}{u(\\log u)^{2}}|",
     "selection_reason": "cdm_zero",
-    "failure_class": "evaluator_gt_compat",
+    "failure_class": "pending",
     "gt_self": {
-      "recall": 0.0,
-      "precision": 0.0,
-      "F1_score": 0.0,
-      "tp": 0,
-      "gt_tokens": 0,
-      "pred_tokens": 0
+      "recall": 1.0,
+      "precision": 1.0,
+      "F1_score": 1.0,
+      "tp": 104,
+      "gt_tokens": 104,
+      "pred_tokens": 104
     },
     "pred_self": {
       "recall": 1.0,
       "precision": 1.0,
       "F1_score": 1.0,
-      "tp": 103,
-      "gt_tokens": 103,
-      "pred_tokens": 103
+      "tp": 106,
+      "gt_tokens": 106,
+      "pred_tokens": 106
     },
     "gt_pred": {
-      "recall": 0.0,
-      "precision": 0.0,
-      "F1_score": 0.0,
-      "tp": 0,
-      "gt_tokens": 0,
-      "pred_tokens": 0
+      "recall": 1.0,
+      "precision": 0.981,
+      "F1_score": 0.99,
+      "tp": 104,
+      "gt_tokens": 104,
+      "pred_tokens": 106
     }
   },
   {
@@ -1642,34 +1642,34 @@
     "pred": "\\[ =-d_{u}\\Big[\\mathop{\\operatorname{Res}}\\limits_{\\tilde{q}=\\iota u}\\frac{dz_{1}d\\tilde{q}}{(z_{1}-\\tilde{q})^{2}}\\sum_{s=1}^{|I|}\\sum_{\\substack{I_{1}\\sqcup\\ldots\\sqcup I_{s}=I\\\\ I_{1},\\ldots,I_{s}\\neq\\emptyset}}\\frac{\\omega_{2}^{(0)}(u,z_{2})\\prod_{i=1}^{s}\\omega_{|I_{i}|+1}^{(0)}(u,I_{i})}{\\left((y(\\iota\\tilde{q})-y(u))dx(u)\\right)^{s+1}}\\Big] \\]",
     "edit": 0.2537313432835821,
     "cdm": 0.0,
-    "gt_cdm": "=  - {d}_{u}\\left\\lbrack  {\\mathop{\\operatorname{Res}}\\limits_{{\\widetilde{q} = {\\iota u}}}\\frac{d{z}_{1}d\\widetilde{q}}{{\\left( {z}_{1} - \\widetilde{q}\\right) }^{2}}\\mathop{\\sum }\\limits_{{s = 1}}^{\\left| I\\right| }\\mathop{\\sum }\\limits_{\\substack{{{I}_{1} \\sqcup  \\ldots  \\sqcup  {I}_{s} = I} \\\\  {{I}_{1},\\ldots ,{I}_{s} \\neq \\emptyset } }}\\frac{{\\omega }_{2}^{\\left( 0\\right) }\\left( {u,{z}_{2}}\\right) \\mathop{\\prod }\\limits_{{i = 1}}^{s}{\\omega }_{\\left| {I}_{i}\\right|  + 1}^{\\left( 0\\right) }\\left( {u,{I}_{i}}\\right) }{{\\left( \\left( y\\left( \\iota \\widetilde{q}\\right)  - y\\left( u\\right) \\right) dx\\left( u\\right) \\right) }^{s + 1}}}\\right\\rbrack",
+    "gt_cdm": "=  - {d}_{u}\\lbrack  {\\operatorname{Res}_{{\\widetilde{q} = {\\iota u}}}\\frac{d{z}_{1}d\\widetilde{q}}{{( {z}_{1} - \\widetilde{q}) }^{2}}\\sum_{{s = 1}}^{| I| }\\sum_{\\substack{{{I}_{1} \\sqcup  \\ldots  \\sqcup  {I}_{s} = I} \\\\  {{I}_{1},\\ldots ,{I}_{s} \\neq \\emptyset } }}\\frac{{\\omega }_{2}^{( 0) }( {u,{z}_{2}}) \\prod_{{i = 1}}^{s}{\\omega }_{| {I}_{i}|  + 1}^{( 0) }( {u,{I}_{i}}) }{{( ( y( \\iota \\widetilde{q})  - y( u) ) dx( u) ) }^{s + 1}}}\\rbrack",
     "pred_cdm": "=-d_{u}\\Big[\\mathop{\\operatorname{Res}}\\limits_{\\tilde{q}=\\iota u}\\frac{dz_{1}d\\tilde{q}}{(z_{1}-\\tilde{q})^{2}}\\sum_{s=1}^{|I|}\\sum_{\\substack{I_{1}\\sqcup\\ldots\\sqcup I_{s}=I\\\\ I_{1},\\ldots,I_{s}\\neq\\emptyset}}\\frac{\\omega_{2}^{(0)}(u,z_{2})\\prod_{i=1}^{s}\\omega_{|I_{i}|+1}^{(0)}(u,I_{i})}{\\left((y(\\iota\\tilde{q})-y(u))dx(u)\\right)^{s+1}}\\Big]",
-    "pred_cdm_alt": null,
+    "pred_cdm_alt": "=-d_{u}\\Big[\\operatorname{Res}_{\\tilde{q}=\\iota u}\\frac{dz_{1}d\\tilde{q}}{(z_{1}-\\tilde{q})^{2}}\\sum_{s=1}^{|I|}\\sum_{\\substack{I_{1}\\sqcup\\ldots\\sqcup I_{s}=I\\\\ I_{1},\\ldots,I_{s}\\neq\\emptyset}}\\frac{\\omega_{2}^{(0)}(u,z_{2})\\prod_{i=1}^{s}\\omega_{|I_{i}|+1}^{(0)}(u,I_{i})}{((y(\\iota\\tilde{q})-y(u))dx(u))^{s+1}}\\Big]",
     "selection_reason": "cdm_zero",
-    "failure_class": "evaluator_gt_compat",
+    "failure_class": "pending",
     "gt_self": {
-      "recall": 0.0,
-      "precision": 0.0,
-      "F1_score": 0.0,
-      "tp": 0,
-      "gt_tokens": 0,
-      "pred_tokens": 0
+      "recall": 1.0,
+      "precision": 1.0,
+      "F1_score": 1.0,
+      "tp": 115,
+      "gt_tokens": 115,
+      "pred_tokens": 115
     },
     "pred_self": {
       "recall": 1.0,
       "precision": 1.0,
       "F1_score": 1.0,
-      "tp": 114,
-      "gt_tokens": 114,
-      "pred_tokens": 114
+      "tp": 115,
+      "gt_tokens": 115,
+      "pred_tokens": 115
     },
     "gt_pred": {
-      "recall": 0.0,
-      "precision": 0.0,
-      "F1_score": 0.0,
-      "tp": 0,
-      "gt_tokens": 0,
-      "pred_tokens": 0
+      "recall": 1.0,
+      "precision": 1.0,
+      "F1_score": 1.0,
+      "tp": 115,
+      "gt_tokens": 115,
+      "pred_tokens": 115
     }
   },
   {
@@ -1687,18 +1687,18 @@
     "pred": "\\[ L[\\underbrace{\\int_{0}^{t}...\\int_{0}^{t}f(t)dt...dt}_{n}]=\\frac{F(s)}{s^{n}}+\\frac{1}{s^{n}}f^{(-1)}(0)+...+\\frac{1}{s}f^{(-n)}(0) \\]",
     "edit": 0.3582089552238806,
     "cdm": 0.0,
-    "gt_cdm": "L\\left\\lbrack  \\underset{n}{\\underbrace{{\\int }_{0}^{t}\\ldots {\\int }_{0}^{t}f\\left( t\\right) {dt}\\ldots {dt}}}\\right\\rbrack   = \\frac{F\\left( s\\right) }{{s}^{n}} + \\frac{1}{{s}^{n}}{f}^{\\left( -1\\right) }\\left( 0\\right)  + \\ldots  + \\frac{1}{s}{f}^{\\left( -n\\right) }\\left( 0\\right)",
+    "gt_cdm": "L\\lbrack  \\underset{n}{\\underbrace{{\\int }_{0}^{t}\\ldots {\\int }_{0}^{t}f( t) {dt}\\ldots {dt}}}\\rbrack   = \\frac{F( s) }{{s}^{n}} + \\frac{1}{{s}^{n}}{f}^{( -1) }( 0)  + \\ldots  + \\frac{1}{s}{f}^{( -n) }( 0)",
     "pred_cdm": "L[\\underbrace{\\int_{0}^{t}...\\int_{0}^{t}f(t)dt...dt}_{n}]=\\frac{F(s)}{s^{n}}+\\frac{1}{s^{n}}f^{(-1)}(0)+...+\\frac{1}{s}f^{(-n)}(0)",
-    "pred_cdm_alt": null,
+    "pred_cdm_alt": "",
     "selection_reason": "cdm_zero",
-    "failure_class": "evaluator_gt_compat",
+    "failure_class": "pending",
     "gt_self": {
-      "recall": 0.0,
-      "precision": 0.0,
-      "F1_score": 0.0,
-      "tp": 0,
-      "gt_tokens": 0,
-      "pred_tokens": 0
+      "recall": 1.0,
+      "precision": 1.0,
+      "F1_score": 1.0,
+      "tp": 62,
+      "gt_tokens": 62,
+      "pred_tokens": 62
     },
     "pred_self": {
       "recall": 1.0,
@@ -1709,12 +1709,12 @@
       "pred_tokens": 62
     },
     "gt_pred": {
-      "recall": 0.0,
-      "precision": 0.0,
-      "F1_score": 0.0,
-      "tp": 0,
-      "gt_tokens": 0,
-      "pred_tokens": 0
+      "recall": 0.984,
+      "precision": 0.984,
+      "F1_score": 0.984,
+      "tp": 61,
+      "gt_tokens": 62,
+      "pred_tokens": 62
     }
   },
   {
@@ -1732,34 +1732,34 @@
     "pred": "\\[ \\sqrt[n]{\\mathrm{e}}-1=\\frac{1}{n}+\\frac{1}{2n^{2}}+o\\left(\\frac{1}{n^{2}}\\right), \\]",
     "edit": 0.15555555555555556,
     "cdm": 0.0,
-    "gt_cdm": "\\root n \\of{\\mathrm{e}}-1=\\frac{1} {n}+\\frac{1} {2 n^{2}}+o \\left( \\frac{1} {n^{2}} \\right),",
+    "gt_cdm": "\\sqrt[n]{\\mathrm{e}}-1=\\frac{1} {n}+\\frac{1} {2 n^{2}}+o ( \\frac{1} {n^{2}} ),",
     "pred_cdm": "\\sqrt[n]{\\mathrm{e}}-1=\\frac{1}{n}+\\frac{1}{2n^{2}}+o\\left(\\frac{1}{n^{2}}\\right),",
-    "pred_cdm_alt": null,
+    "pred_cdm_alt": "\\sqrt[n]{\\mathrm{e}}-1=\\frac{1}{n}+\\frac{1}{2n^{2}}+o(\\frac{1}{n^{2}}),",
     "selection_reason": "cdm_zero",
-    "failure_class": "evaluator_gt_compat",
+    "failure_class": "pending",
     "gt_self": {
-      "recall": 0.0,
-      "precision": 0.0,
-      "F1_score": 0.0,
-      "tp": 0,
-      "gt_tokens": 0,
-      "pred_tokens": 0
+      "recall": 1.0,
+      "precision": 1.0,
+      "F1_score": 1.0,
+      "tp": 24,
+      "gt_tokens": 24,
+      "pred_tokens": 24
     },
     "pred_self": {
       "recall": 1.0,
       "precision": 1.0,
       "F1_score": 1.0,
-      "tp": 23,
-      "gt_tokens": 23,
-      "pred_tokens": 23
+      "tp": 24,
+      "gt_tokens": 24,
+      "pred_tokens": 24
     },
     "gt_pred": {
-      "recall": 0.0,
-      "precision": 0.0,
-      "F1_score": 0.0,
-      "tp": 0,
-      "gt_tokens": 0,
-      "pred_tokens": 0
+      "recall": 1.0,
+      "precision": 1.0,
+      "F1_score": 1.0,
+      "tp": 24,
+      "gt_tokens": 24,
+      "pred_tokens": 24
     }
   },
   {
@@ -1779,7 +1779,7 @@
     "cdm": 0.0,
     "gt_cdm": "& =9\\cdot\\text{高.①}",
     "pred_cdm": "S_{\\Delta MAD} = ?",
-    "pred_cdm_alt": null,
+    "pred_cdm_alt": "",
     "selection_reason": "cdm_zero",
     "failure_class": "model_or_dataset_gap",
     "gt_self": {
@@ -1869,7 +1869,7 @@
     "cdm": 0.0,
     "gt_cdm": "\\begin{array} { r l r }  &{  \\sum _ { u ^  2  + d \\delta = n \\atop \\delta \\equiv 1  { ~\\pmod  2  } }( - 1 ) ^ { ( \\delta - 1 ) / 2 } (d ^ { 4 } ( n - 1 1 u ^ { 2 } ) + 1 0 d ^ { 2 } u ^ { 2 } ( n - 3 u ^ { 2 } ) } \\\\  & { + u ^ { 4 } ( 5 n - 7 u ^ { 2 } ) ) = \\{ n^ { 3 } \\} _ { n = \\ell ^ { 2 } } .  } \\end{array}",
     "pred_cdm": "\\begin{array}{r l r}{\\lefteqn{\\displaystyle\\sum_{u^{2}+d\\delta=n\\atop\\delta\\equiv1\\pmod2}(-1)^{(\\delta-1)/2}(d^{4}(n-11u^{2})+10d^{2}u^{2}(n-3u^{2})}\\\\ &{}&{+u^{4}(5n-7u^{2}))=\\{n^{3}\\}_{n=\\ell^{2}}.}\\end{array}",
-    "pred_cdm_alt": null,
+    "pred_cdm_alt": "",
     "selection_reason": "cdm_zero",
     "failure_class": "pred_latex_unrenderable",
     "gt_self": {
@@ -1912,34 +1912,34 @@
     "pred": "\\[ \\begin{aligned}&=\\left.\\begin{aligned}\\\\ &2\\sum_{1\\leq u\\leq\\sqrt{x}}\\left[\\frac{x}{u}\\right]-\\left[\\sqrt{x}\\right]^{2}\\\\&=2\\sum_{1\\leq u\\leq\\sqrt{x}}\\left(\\frac{x}{u}-\\left\\{\\frac{x}{u}\\right\\}\\right)-\\left(\\sqrt{x}-\\left\\{\\sqrt{x}\\right\\}\\right)^{2}\\\\&=2x\\sum_{1\\leq u\\leq\\sqrt{x}}\\frac{1}{u}-2\\sum_{1\\leq u\\leq\\sqrt{x}}\\left\\{\\frac{x}{u}\\right\\}-x+O(\\sqrt{x})\\\\&=2x\\left(\\log\\sqrt{x}+\\gamma+O\\left(\\frac{1}{\\sqrt{x}}\\right)\\right)-x+O(\\sqrt{x})\\\\&=x\\log x+(2\\gamma-1)x+O(\\sqrt{x}).\\\\ &\\end{aligned}\\right\\}\\\\ \\end{aligned} \\]",
     "edit": 0.7288732394366197,
     "cdm": 0.0,
-    "gt_cdm": "= & 2x \\sum_{1 \\leq u \\leq \\sqrt{x}} \\frac{1}{u} - 2 \\sum_{1 \\leq u \\leq \\sqrt{x}} \\left\\{\\frac{x}{u}\\right\\} - x + O(\\sqrt{x})",
+    "gt_cdm": "= & 2x \\sum_{1 \\leq u \\leq \\sqrt{x}} \\frac{1}{u} - 2 \\sum_{1 \\leq u \\leq \\sqrt{x}} \\{\\frac{x}{u}\\} - x + O(\\sqrt{x})",
     "pred_cdm": "\\begin{aligned}&=\\left.\\begin{aligned}\\\\ &2\\sum_{1\\leq u\\leq\\sqrt{x}}\\left[\\frac{x}{u}\\right]-\\left[\\sqrt{x}\\right]^{2}\\\\&=2\\sum_{1\\leq u\\leq\\sqrt{x}}\\left(\\frac{x}{u}-\\left\\{\\frac{x}{u}\\right\\}\\right)-\\left(\\sqrt{x}-\\left\\{\\sqrt{x}\\right\\}\\right)^{2}\\\\&=2x\\sum_{1\\leq u\\leq\\sqrt{x}}\\frac{1}{u}-2\\sum_{1\\leq u\\leq\\sqrt{x}}\\left\\{\\frac{x}{u}\\right\\}-x+O(\\sqrt{x})\\\\&=2x\\left(\\log\\sqrt{x}+\\gamma+O\\left(\\frac{1}{\\sqrt{x}}\\right)\\right)-x+O(\\sqrt{x})\\\\&=x\\log x+(2\\gamma-1)x+O(\\sqrt{x}).\\\\ &\\end{aligned}\\right\\}\\\\ \\end{aligned}",
-    "pred_cdm_alt": null,
+    "pred_cdm_alt": "\\begin{aligned}&=\\begin{aligned}\\\\ &2\\sum_{1\\leq u\\leq\\sqrt{x}}[\\frac{x}{u}]-[\\sqrt{x}]^{2}\\\\&=2\\sum_{1\\leq u\\leq\\sqrt{x}}(\\frac{x}{u}-\\{\\frac{x}{u}\\})-(\\sqrt{x}-\\{\\sqrt{x}\\})^{2}\\\\&=2x\\sum_{1\\leq u\\leq\\sqrt{x}}\\frac{1}{u}-2\\sum_{1\\leq u\\leq\\sqrt{x}}\\{\\frac{x}{u}\\}-x+O(\\sqrt{x})\\\\&=2x(\\log\\sqrt{x}+\\gamma+O(\\frac{1}{\\sqrt{x}}))-x+O(\\sqrt{x})\\\\&=x\\log x+(2\\gamma-1)x+O(\\sqrt{x}).\\\\ &\\end{aligned}\\}\\\\ \\end{aligned}",
     "selection_reason": "cdm_zero",
-    "failure_class": "pred_latex_unrenderable",
+    "failure_class": "model_or_dataset_gap",
     "gt_self": {
       "recall": 1.0,
       "precision": 1.0,
       "F1_score": 1.0,
-      "tp": 34,
-      "gt_tokens": 34,
-      "pred_tokens": 34
+      "tp": 35,
+      "gt_tokens": 35,
+      "pred_tokens": 35
     },
     "pred_self": {
-      "recall": 0.0,
-      "precision": 0.0,
-      "F1_score": 0.0,
-      "tp": 0,
-      "gt_tokens": 0,
-      "pred_tokens": 0
+      "recall": 1.0,
+      "precision": 1.0,
+      "F1_score": 1.0,
+      "tp": 136,
+      "gt_tokens": 136,
+      "pred_tokens": 136
     },
     "gt_pred": {
-      "recall": 0.0,
-      "precision": 0.0,
-      "F1_score": 0.0,
-      "tp": 0,
-      "gt_tokens": 34,
-      "pred_tokens": 0
+      "recall": 0.886,
+      "precision": 0.228,
+      "F1_score": 0.363,
+      "tp": 31,
+      "gt_tokens": 35,
+      "pred_tokens": 136
     }
   },
   {
@@ -1957,18 +1957,18 @@
     "pred": "\\[ \\begin{pmatrix}{{{M=\\left[\\begin{bmatrix}0}}}&{{{0}}}&{{{0}}}&{{{2}}} \\\\{{{0}}}&{{{0}}}&{{{2}}}&{{{6}}} \\\\{{{0}}}&{{{1}}}&{{{2}}}&{{{2}}} \\\\{{{4}}}&{{{4}}}&{{{8}}}&{{{8}}}\\end{bmatrix}.\\\\ \\end{pmatrix} \\]",
     "edit": 0.23076923076923078,
     "cdm": 0.0,
-    "gt_cdm": "M = \\left[ { \\begin{array} { c c c c } { 0 } & { 0 } & { 0 } & { 2 } \\\\ { 0 } & { 0 } & { 2 } & { 6 } \\\\ { 0 } & { 1 } & { 2 } & { 2 } \\\\ { 4 } & { 4 } & { 8 } & { 8 } \\end{array} } \\right] .",
+    "gt_cdm": "M = [ { \\begin{array} { c c c c } { 0 } & { 0 } & { 0 } & { 2 } \\\\ { 0 } & { 0 } & { 2 } & { 6 } \\\\ { 0 } & { 1 } & { 2 } & { 2 } \\\\ { 4 } & { 4 } & { 8 } & { 8 } \\end{array} } ] .",
     "pred_cdm": "\\begin{pmatrix}{{{M=\\left[\\begin{bmatrix}0}}}&{{{0}}}&{{{0}}}&{{{2}}} \\\\{{{0}}}&{{{0}}}&{{{2}}}&{{{6}}} \\\\{{{0}}}&{{{1}}}&{{{2}}}&{{{2}}} \\\\{{{4}}}&{{{4}}}&{{{8}}}&{{{8}}}\\end{bmatrix}.\\\\ \\end{pmatrix}",
-    "pred_cdm_alt": "\\begin{pmatrix}{{{M=\\left[\\begin{bmatrix}0}}}&{{{0}}}&{{{0}}}&{{{2}}} \\\\{{{0}}}&{{{0}}}&{{{2}}}&{{{6}}} \\\\{{{0}}}&{{{1}}}&{{{2}}}&{{{2}}} \\\\{{{4}}}&{{{4}}}&{{{8}}}&{{{8}}}\\end{bmatrix}.\\end{pmatrix}",
+    "pred_cdm_alt": "\\begin{pmatrix}{{{M=[\\begin{bmatrix}0}}}&{{{0}}}&{{{0}}}&{{{2}}} \\\\{{{0}}}&{{{0}}}&{{{2}}}&{{{6}}} \\\\{{{0}}}&{{{1}}}&{{{2}}}&{{{2}}} \\\\{{{4}}}&{{{4}}}&{{{8}}}&{{{8}}}\\end{bmatrix}.\\end{pmatrix}",
     "selection_reason": "cdm_zero",
     "failure_class": "model_or_dataset_gap",
     "gt_self": {
       "recall": 1.0,
       "precision": 1.0,
       "F1_score": 1.0,
-      "tp": 20,
-      "gt_tokens": 20,
-      "pred_tokens": 20
+      "tp": 21,
+      "gt_tokens": 21,
+      "pred_tokens": 21
     },
     "pred_self": {
       "recall": 1.0,
@@ -1983,7 +1983,7 @@
       "precision": 0.0,
       "F1_score": 0.0,
       "tp": 0,
-      "gt_tokens": 20,
+      "gt_tokens": 21,
       "pred_tokens": 1
     }
   },
@@ -2002,18 +2002,18 @@
     "pred": "\\[ \\begin{pmatrix}{{{0=\\det\\begin{pmatrix}x_{1}^{2}+y_{1}^{2}}}}&{{{x_{1}}}}&{{{y_{1}}}}&{{{1}}} \\\\{{{x_{2}^{2}+y_{2}^{2}}}}&{{{x_{2}}}}&{{{y_{2}}}}&{{{1}}} \\\\{{{x_{3}^{2}+y_{3}^{2}}}}&{{{x_{3}}}}&{{{y_{3}}}}&{{{1}}} \\\\{{{x^{2}+y^{2}\\quad x\\quad y\\quad1}}}\\end{pmatrix}\\end{pmatrix} \\]",
     "edit": 0.0641025641025641,
     "cdm": 0.0,
-    "gt_cdm": "0 = \\det \\left( \\begin{array}{cccc} x_{1}^{2} + y_{1}^{2} & x_{1} & y_{1} & 1 \\\\ x_{2}^{2} + y_{2}^{2} & x_{2} & y_{2} & 1 \\\\ x_{3}^{2} + y_{3}^{2} & x_{3} & y_{3} & 1 \\\\ x^{2} + y^{2} & x & y & 1 \\end{array} \\right)",
+    "gt_cdm": "0 = \\det ( \\begin{array}{cccc} x_{1}^{2} + y_{1}^{2} & x_{1} & y_{1} & 1 \\\\ x_{2}^{2} + y_{2}^{2} & x_{2} & y_{2} & 1 \\\\ x_{3}^{2} + y_{3}^{2} & x_{3} & y_{3} & 1 \\\\ x^{2} + y^{2} & x & y & 1 \\end{array} )",
     "pred_cdm": "\\begin{pmatrix}{{{0=\\det\\begin{pmatrix}x_{1}^{2}+y_{1}^{2}}}}&{{{x_{1}}}}&{{{y_{1}}}}&{{{1}}} \\\\{{{x_{2}^{2}+y_{2}^{2}}}}&{{{x_{2}}}}&{{{y_{2}}}}&{{{1}}} \\\\{{{x_{3}^{2}+y_{3}^{2}}}}&{{{x_{3}}}}&{{{y_{3}}}}&{{{1}}} \\\\{{{x^{2}+y^{2}\\quad x\\quad y\\quad1}}}\\end{pmatrix}\\end{pmatrix}",
-    "pred_cdm_alt": null,
+    "pred_cdm_alt": "",
     "selection_reason": "cdm_zero",
     "failure_class": "normalization_or_matching",
     "gt_self": {
       "recall": 1.0,
       "precision": 1.0,
       "F1_score": 1.0,
-      "tp": 50,
-      "gt_tokens": 50,
-      "pred_tokens": 50
+      "tp": 51,
+      "gt_tokens": 51,
+      "pred_tokens": 51
     },
     "pred_self": {
       "recall": 1.0,
@@ -2028,7 +2028,7 @@
       "precision": 0.0,
       "F1_score": 0.0,
       "tp": 0,
-      "gt_tokens": 50,
+      "gt_tokens": 51,
       "pred_tokens": 3
     }
   },
@@ -2049,7 +2049,7 @@
     "cdm": 0.0,
     "gt_cdm": "s - a , s - b , s - c > 0 \\qquad s = \\frac { a + b + c } { 2 } ,",
     "pred_cdm": "\\frac{s-a,s-b,s-c>0 貼 s=\\frac{a+b+c}{2},",
-    "pred_cdm_alt": null,
+    "pred_cdm_alt": "",
     "selection_reason": "cdm_zero",
     "failure_class": "pred_latex_unrenderable",
     "gt_self": {

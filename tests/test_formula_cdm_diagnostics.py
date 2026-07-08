@@ -129,6 +129,58 @@ def test_run_pair_probe_writes_probe_metrics_at_case_top_level(tmp_path, monkeyp
     assert result["failure_class"] == "normalization_or_matching"
 
 
+def test_run_pair_probe_rebuilds_cdm_variants_from_raw_case_text(tmp_path, monkeypatch):
+    diag = load_module()
+    calls = []
+
+    def fake_build_matrix_cdm_variants(gt, pred):
+        assert gt == "raw gt"
+        assert pred == "raw pred"
+        return "fresh gt", "fresh pred alt"
+
+    def fake_cdm_metrics(left, right, save_vis=False, tmp_dir=""):
+        calls.append((left, right))
+        return {
+            "recall": 1.0,
+            "precision": 1.0,
+            "F1_score": 1.0 if left == right else 0.25,
+            "tp": 1,
+            "gt_tokens": 1,
+            "pred_tokens": 1,
+        }
+
+    cdm_module = types.ModuleType("src.metrics.cdm.cdm")
+    cdm_module.cdm_metrics = fake_cdm_metrics
+    formula_module = types.ModuleType("src.core.preprocess.formula_cdm")
+    formula_module.build_matrix_cdm_variants = fake_build_matrix_cdm_variants
+    monkeypatch.setitem(sys.modules, "src", types.ModuleType("src"))
+    monkeypatch.setitem(sys.modules, "src.metrics", types.ModuleType("src.metrics"))
+    monkeypatch.setitem(sys.modules, "src.metrics.cdm", types.ModuleType("src.metrics.cdm"))
+    monkeypatch.setitem(sys.modules, "src.metrics.cdm.cdm", cdm_module)
+    monkeypatch.setitem(sys.modules, "src.core", types.ModuleType("src.core"))
+    monkeypatch.setitem(sys.modules, "src.core.preprocess", types.ModuleType("src.core.preprocess"))
+    monkeypatch.setitem(sys.modules, "src.core.preprocess.formula_cdm", formula_module)
+    case = {
+        "case_id": "cdm-0001",
+        "gt": "raw gt",
+        "pred": "raw pred",
+        "gt_cdm": "stale gt",
+        "pred_cdm": "stale pred",
+        "pred_cdm_alt": "stale pred alt",
+        "edit": 0.01,
+    }
+
+    result = diag.run_pair_probe([case], tmp_path)[0]
+
+    assert calls == [
+        ("fresh gt", "fresh gt"),
+        ("fresh pred alt", "fresh pred alt"),
+        ("fresh gt", "fresh pred alt"),
+    ]
+    assert result["gt_cdm"] == "fresh gt"
+    assert result["pred_cdm_alt"] == "fresh pred alt"
+
+
 def test_build_report_includes_hard_subset_metrics_and_recovery_potential():
     diag = load_module()
     cases = [
