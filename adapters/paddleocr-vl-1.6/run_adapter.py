@@ -45,6 +45,9 @@ from pathlib import Path
 # run_adapter.py --help` crash with ModuleNotFoundError before argparse ran.
 
 IMAGE_EXTENSIONS = (".jpg", ".jpeg", ".png", ".bmp", ".tiff", ".gif")
+ADAPTER_DIR = Path(__file__).resolve().parent
+REPO_ROOT = ADAPTER_DIR.parents[1]
+DEFAULT_ENGINE = "lightweight"
 
 
 def _read_env_local(repo_root: Path) -> dict[str, str]:
@@ -86,6 +89,25 @@ def process_folder(
     img_dir: Path,
     out_dir: Path,
     *,
+    layout_model: str,
+    server_url: str,
+    api_model_name: str,
+    vlm_backend: str = "vllm-server",
+) -> dict:
+    return run_lightweight_folder(
+        img_dir=img_dir,
+        out_dir=out_dir,
+        layout_model=layout_model,
+        server_url=server_url,
+        api_model_name=api_model_name,
+        vlm_backend=vlm_backend,
+    )
+
+
+def run_lightweight_folder(
+    *,
+    img_dir: Path,
+    out_dir: Path,
     layout_model: str,
     server_url: str,
     api_model_name: str,
@@ -151,6 +173,8 @@ def process_folder(
             summary = {
                 "count": len(images),
                 "ok": sum(1 for s in stats if s["status"] == "ok"),
+                "fail": sum(1 for s in stats if s["status"] != "ok"),
+                "engine": "lightweight",
                 "stats": stats,
             }
             json.dump(summary, fh, ensure_ascii=False, indent=2)
@@ -174,11 +198,136 @@ def process_folder(
     return {
         "count": len(images),
         "ok": ok_count,
+        "fail": len(images) - ok_count,
+        "engine": "lightweight",
         "stats": stats,
     }
 
 
-def run_adapter(img_dir, out_dir, server_url: str = "") -> dict:
+def _official_result_to_markdown(result: object) -> str:
+    if isinstance(result, str):
+        return result
+
+    markdown = getattr(result, "markdown", None)
+    if isinstance(markdown, str):
+        return markdown
+
+    if isinstance(result, dict):
+        for key in ("markdown", "md", "content", "markdown_text"):
+            value = result.get(key)
+            if isinstance(value, str):
+                return value
+
+    json_value = getattr(result, "json", None)
+    if isinstance(json_value, dict):
+        for key in ("markdown", "md", "content", "markdown_text"):
+            value = json_value.get(key)
+            if isinstance(value, str):
+                return value
+
+    for method_name in ("to_markdown", "export_markdown"):
+        method = getattr(result, method_name, None)
+        if callable(method):
+            value = method()
+            if isinstance(value, str):
+                return value
+
+    raise TypeError("Official PaddleOCRVL result did not expose Markdown text.")
+
+
+def run_official_folder(
+    *,
+    img_dir: Path,
+    out_dir: Path,
+    server_url: str,
+    api_model_name: str,
+) -> dict:
+    if not img_dir.is_dir():
+        raise SystemExit(f"Image directory not found: {img_dir}")
+    try:
+        from paddleocr import PaddleOCRVL
+    except ImportError as exc:
+        raise RuntimeError(
+            "Official engine requires PaddleOCR. Run 00-install-deps/setup.ps1 first."
+        ) from exc
+
+    pipeline = PaddleOCRVL(
+        pipeline_version="v1.6",
+        vl_rec_backend="llama-cpp-server",
+        vl_rec_server_url=server_url,
+        vl_rec_api_model_name=api_model_name,
+    )
+
+    out_dir.mkdir(parents=True, exist_ok=True)
+    errors_path = out_dir / "_errors.log"
+    stats_path = out_dir / "_run_stats.json"
+    errors_path.unlink(missing_ok=True)
+    stats_path.unlink(missing_ok=True)
+
+    stats: list[dict] = []
+    images = sorted(p for p in img_dir.iterdir() if p.suffix.lower() in IMAGE_EXTENSIONS)
+    for img in images:
+        start = time.time()
+        try:
+            result = pipeline.predict(str(img))
+            if isinstance(result, list):
+                markdown = "\n\n".join(_official_result_to_markdown(item) for item in result)
+            else:
+                markdown = _official_result_to_markdown(result)
+            (out_dir / expected_md_name(img.name)).write_text(markdown, encoding="utf-8")
+            stats.append(
+                {"image": img.name, "status": "ok", "seconds": round(time.time() - start, 2)}
+            )
+        except Exception as exc:  # noqa: BLE001 - diagnostics continue per page.
+            tb = traceback.format_exc()
+            stats.append(
+                {
+                    "image": img.name,
+                    "status": f"failed: {exc}",
+                    "seconds": round(time.time() - start, 2),
+                    "traceback": tb,
+                }
+            )
+            with open(errors_path, "a", encoding="utf-8") as fh:
+                fh.write(f"[{time.strftime('%Y-%m-%dT%H:%M:%S')}] {img.name}: {exc}\n{tb}\n")
+
+    ok_count = sum(1 for s in stats if s["status"] == "ok")
+    summary = {
+        "count": len(images),
+        "ok": ok_count,
+        "fail": len(images) - ok_count,
+        "engine": "official",
+        "stats": stats,
+    }
+    stats_path.write_text(json.dumps(summary, ensure_ascii=False, indent=2), encoding="utf-8")
+    if len(images) > 0 and ok_count < 0.5 * len(images):
+        import sys as _sys
+
+        print(
+            f"WARNING: {ok_count}/{len(images)} pages succeeded (< 50%). See "
+            f"{errors_path} for per-page failures.",
+            file=_sys.stderr,
+        )
+        _sys.exit(2)
+    return summary
+
+
+def _read_adapter_env() -> dict[str, str]:
+    values = _read_env_local(ADAPTER_DIR)
+    root_values = _read_env_local(REPO_ROOT)
+    return {**root_values, **values}
+
+
+def run_adapter(
+    img_dir,
+    out_dir,
+    server_url: str = "",
+    *,
+    engine: str = DEFAULT_ENGINE,
+    layout_model: str | None = None,
+    api_model_name: str | None = None,
+    vlm_backend: str = "vllm-server",
+) -> dict:
     """Adapter interface contract: images -> one ``<stem>.md`` per page.
 
     This is the documented entry point every adapter in this repo exposes
@@ -206,13 +355,13 @@ def run_adapter(img_dir, out_dir, server_url: str = "") -> dict:
         :func:`process_folder`). The eval-infra ignores this; it only consumes
         the written ``.md`` files.
     """
-    # repo root = three levels up from adapters/paddleocr-vl-1.6/run_adapter.py
-    repo_root = Path(__file__).resolve().parents[2]
-    env = _read_env_local(repo_root)
+    env = _read_adapter_env()
+    repo_root = REPO_ROOT
 
     # Defaults: ADAPTER_* env var > .env.local > hard-coded fallback.
     default_layout = (
-        os.environ.get("ADAPTER_LAYOUT_MODEL")
+        layout_model
+        or os.environ.get("ADAPTER_LAYOUT_MODEL")
         or env.get("PP_DOCLAYOUTV3_ONNX_DIR")
         or str(repo_root / "adapters" / "paddleocr-vl-1.6" / "models" / "PP-DocLayoutV3-onnx")
     )
@@ -226,18 +375,30 @@ def run_adapter(img_dir, out_dir, server_url: str = "") -> dict:
     # VL_REC_API_MODEL_NAME is the model id llama-server reports at /v1/models;
     # the pipeline must ask for the same id or the server returns 404.
     default_api_model = (
-        os.environ.get("ADAPTER_API_MODEL_NAME")
+        api_model_name
+        or os.environ.get("ADAPTER_API_MODEL_NAME")
         or env.get("VL_REC_API_MODEL_NAME")
         or "PaddleOCR-VL-1.6-GGUF.gguf"
     )
 
-    return process_folder(
-        Path(img_dir),
-        Path(out_dir),
-        layout_model=default_layout,
-        server_url=resolved_server,
-        api_model_name=default_api_model,
-    )
+    engine = (engine or DEFAULT_ENGINE).strip().lower()
+    if engine == "lightweight":
+        return run_lightweight_folder(
+            img_dir=Path(img_dir),
+            out_dir=Path(out_dir),
+            layout_model=default_layout,
+            server_url=resolved_server,
+            api_model_name=default_api_model,
+            vlm_backend=vlm_backend,
+        )
+    if engine == "official":
+        return run_official_folder(
+            img_dir=Path(img_dir),
+            out_dir=Path(out_dir),
+            server_url=resolved_server,
+            api_model_name=default_api_model,
+        )
+    raise ValueError("Unsupported engine '%s'. Use lightweight or official." % engine)
 
 
 def main() -> None:
@@ -247,6 +408,12 @@ def main() -> None:
     parser.add_argument("--img-dir", required=True, help="Dataset images directory.")
     parser.add_argument(
         "--out-dir", required=True, help="Output flat dir of <basename>.md predictions."
+    )
+    parser.add_argument(
+        "--engine",
+        choices=["lightweight", "official"],
+        default=os.environ.get("PADDLEOCR_VL_ENGINE", DEFAULT_ENGINE),
+        help="Adapter engine for subset diagnostics.",
     )
     parser.add_argument("--layout-model", default=None, help="PP-DocLayoutV3 ONNX dir (default: .env.local).")
     parser.add_argument("--server-url", default="", help="llama-server OpenAI API URL (default: .env.local).")
@@ -264,22 +431,28 @@ def main() -> None:
     # explicitly overridden, fall through to process_folder() to honor them.
     advanced_override = args.layout_model or args.api_model_name or args.vlm_backend != "vllm-server"
     if not advanced_override:
-        summary = run_adapter(Path(args.img_dir), Path(args.out_dir), args.server_url)
-    else:
-        summary = process_folder(
+        summary = run_adapter(
             Path(args.img_dir),
             Path(args.out_dir),
-            layout_model=args.layout_model or _layout_default(),
-            server_url=args.server_url,
-            api_model_name=args.api_model_name or _api_model_default(),
+            args.server_url,
+            engine=args.engine,
+        )
+    else:
+        summary = run_adapter(
+            Path(args.img_dir),
+            Path(args.out_dir),
+            args.server_url,
+            engine=args.engine,
+            layout_model=args.layout_model,
+            api_model_name=args.api_model_name,
             vlm_backend=args.vlm_backend,
         )
     print(summary)
 
 
 def _layout_default() -> str:
-    repo_root = Path(__file__).resolve().parents[2]
-    env = _read_env_local(repo_root)
+    repo_root = REPO_ROOT
+    env = _read_adapter_env()
     return (
         os.environ.get("ADAPTER_LAYOUT_MODEL")
         or env.get("PP_DOCLAYOUTV3_ONNX_DIR")
@@ -288,8 +461,7 @@ def _layout_default() -> str:
 
 
 def _api_model_default() -> str:
-    repo_root = Path(__file__).resolve().parents[2]
-    env = _read_env_local(repo_root)
+    env = _read_adapter_env()
     return (
         os.environ.get("ADAPTER_API_MODEL_NAME")
         or env.get("VL_REC_API_MODEL_NAME")
