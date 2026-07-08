@@ -1,0 +1,152 @@
+diff --git a/src/core/preprocess/formula_cdm.py b/src/core/preprocess/formula_cdm.py
+index 8973cc3..5c0fe83 100644
+--- a/src/core/preprocess/formula_cdm.py
++++ b/src/core/preprocess/formula_cdm.py
+@@ -37,6 +37,12 @@ _ALIGNED_MATRIX_RE = re.compile(
+     r'\s*(?:\\\\\s*)?\\end\{aligned\*?\}\s*$',
+     re.S,
+ )
++_ARRAY_LEADING_LEFT_BAR_RE = re.compile(
++    r'(\\begin\{array\}\{[^{}]*\}\s*\{\s*)\\left\|'
++)
++_ALIGNED_LEADING_LEFT_BAR_RE = re.compile(
++    r'(\\begin\{aligned\*?\}\s*)\\left\|'
++)
+ 
+ 
+ def _needs_gt_cdm_fix(text: str) -> bool:
+@@ -85,6 +91,34 @@ def _strip_outer_braces(text: str) -> str:
+     return stripped
+ 
+ 
++def _strip_unmatched_leading_left_bar(text: str) -> str:
++    formula = str(text or '').strip()
++    if not formula or formula.count(r'\left|') <= formula.count(r'\right|'):
++        return formula
++
++    formula = _ARRAY_LEADING_LEFT_BAR_RE.sub(r'\1', formula)
++    formula = _ALIGNED_LEADING_LEFT_BAR_RE.sub(r'\1', formula)
++
++    prefix = ''
++    rest = formula.lstrip()
++    while rest.startswith('&') or rest.startswith('{'):
++        prefix += rest[0]
++        rest = rest[1:].lstrip()
++    if rest.startswith(r'\left|'):
++        rest = rest[len(r'\left|'):].lstrip()
++        formula = prefix + rest
++        if formula.endswith('}') and formula.count('{') < formula.count('}'):
++            formula = formula[:-1].rstrip()
++    return formula.strip()
++
++
++def _normalize_cdm_compatible_commands(text: str) -> str:
++    formula = str(text or '')
++    formula = formula.replace(r'\overrightarrow', r'\vec')
++    formula = _strip_unmatched_leading_left_bar(formula)
++    return formula.strip()
++
++
+ def _split_latex_rows(body: str) -> list[str]:
+     begin_token = '\\begin{'
+     end_token = '\\end{'
+@@ -313,8 +347,13 @@ def sanitize_formula_for_cdm(text: str, gt_text: str = '') -> str:
+     formula = strip_formula_tags(strip_formula_delimiters(str(text or '')).strip())
+     if not formula:
+         return ''
++    formula = _normalize_cdm_compatible_commands(formula)
+ 
+-    matrix_context = _contains_matrix_hint(formula) or _contains_matrix_hint(strip_formula_tags(gt_text))
++    matrix_context = (
++        _needs_gt_cdm_fix(formula)
++        or _contains_matrix_hint(formula)
++        or _contains_matrix_hint(strip_formula_tags(gt_text))
++    )
+     if not matrix_context:
+         return formula.strip()
+ 
+@@ -339,11 +378,14 @@ def build_matrix_cdm_variants(gt_text: str, pred_text: str) -> tuple[str, str]:
+ 
+     if not raw_gt and not raw_pred:
+         return '', ''
+-    if not (_contains_matrix_hint(raw_gt) or _contains_matrix_hint(raw_pred)):
+-        return raw_gt, ''
+ 
+-    sanitized_gt = sanitize_formula_for_cdm(raw_gt, raw_gt)
+-    gt_cdm = sanitized_gt if _needs_gt_cdm_fix(raw_gt) else raw_gt
+-    pred_cdm = sanitize_formula_for_cdm(raw_pred, sanitized_gt or raw_gt)
++    compatible_gt = _normalize_cdm_compatible_commands(raw_gt)
++    gt_cdm = compatible_gt if compatible_gt and compatible_gt != raw_gt else raw_gt
++    if _needs_gt_cdm_fix(raw_gt):
++        sanitized_gt = sanitize_formula_for_cdm(raw_gt, raw_gt)
++        if sanitized_gt:
++            gt_cdm = sanitized_gt
++
++    pred_cdm = sanitize_formula_for_cdm(raw_pred, gt_cdm)
+     pred_cdm_alt = pred_cdm if pred_cdm and pred_cdm != raw_pred else ''
+     return gt_cdm or raw_gt, pred_cdm_alt
+diff --git a/tests/test_formula_cdm_normalization.py b/tests/test_formula_cdm_normalization.py
+new file mode 100644
+index 0000000..6fee231
+--- /dev/null
++++ b/tests/test_formula_cdm_normalization.py
+@@ -0,0 +1,59 @@
++from src.core.preprocess.formula_cdm import build_matrix_cdm_variants, sanitize_formula_for_cdm
++
++
++def test_build_cdm_variant_removes_unmatched_leading_left_bar():
++    gt = r"\sum_{n=0}^{\infty} f(n) \frac{t^n}{n!} &= \int_{0}^{1} \exp(xt) dx"
++    pred = r"\left|\sum_{n=0}^{\infty}f(n)\frac{t^{n}}{n!}&=\int_{0}^{1}\exp(xt)dx"
++
++    gt_cdm, pred_cdm_alt = build_matrix_cdm_variants(gt, pred)
++
++    assert gt_cdm == gt
++    assert pred_cdm_alt.startswith(r"\sum_{n=0}^{\infty}")
++    assert r"\left|" not in pred_cdm_alt
++
++
++def test_build_cdm_variant_removes_array_cell_leading_left_bar():
++    gt = r"H_{n} = \sum_{m=0}^{k} \frac{1}{5^{m}} I_{\lfloor n/5^{m} \rfloor},"
++    pred = (
++        r"\begin{array}{r}{\left|H_{n}=\displaystyle\sum_{m=0}^{k}"
++        r"\frac{1}{5^{m}}I_{\left\lfloor n/5^{m}\right\rfloor},}\end{array}"
++    )
++
++    _, pred_cdm_alt = build_matrix_cdm_variants(gt, pred)
++
++    assert pred_cdm_alt
++    assert r"{\left|H_{n}" not in pred_cdm_alt
++
++
++def test_build_cdm_variant_normalizes_overrightarrow_for_gt_and_pred():
++    gt = r"{ \overrightarrow { P Q } \times \overrightarrow { P R } = \left( { 8 , 1 0 , 6 } \right) . }"
++    pred = r"\overrightarrow{PQ}\times\overrightarrow{PR}&=\left(8,10,6\right)."
++
++    gt_cdm, pred_cdm_alt = build_matrix_cdm_variants(gt, pred)
++
++    assert r"\overrightarrow" not in gt_cdm
++    assert r"\overrightarrow" not in pred_cdm_alt
++    assert gt_cdm.count(r"\vec") == 2
++    assert pred_cdm_alt.count(r"\vec") == 2
++
++
++def test_build_cdm_variant_preserves_regular_matrix_gt():
++    gt = r"\begin{array}{cc}a&b\\c&d\end{array}"
++    pred = r"\begin{matrix}a&b\\c&d\end{matrix}"
++
++    gt_cdm, pred_cdm_alt = build_matrix_cdm_variants(gt, pred)
++
++    assert gt_cdm == gt
++    assert pred_cdm_alt
++
++
++def test_sanitize_formula_fixes_empty_array_column_spec():
++    formula = r"\begin{array}{}x=1\\y=2\end{array}"
++
++    assert sanitize_formula_for_cdm(formula).startswith(r"\begin{array}{l}")
++
++
++def test_sanitize_formula_preserves_balanced_absolute_value():
++    formula = r"\left|x+y\right| \leq \left|x\right|+\left|y\right|"
++
++    assert sanitize_formula_for_cdm(formula) == formula

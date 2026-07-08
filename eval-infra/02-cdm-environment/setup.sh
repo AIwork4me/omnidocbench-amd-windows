@@ -192,6 +192,26 @@ else
     grep -q "/usr/local/texlive/2026" "$TEXLIVE_ENV" && ok "texlive_env.py patched for TL2026" || fail "texlive_env.py patch"
 fi
 
+# Apply repo-maintained OmniDocBench Formula CDM compatibility patch. The
+# OmniDocBench checkout under $HOME is generated and stripped of .git; copied
+# Windows files may also have mode differences, so detect idempotency with
+# behavior markers rather than relying on a reverse patch check.
+FORMULA_PATCH="$REPO_ROOT/eval-infra/01-omnidocbench/patches/0001-formula-cdm-normalization.patch"
+FORMULA_FILE="$ODB_LOCAL/src/core/preprocess/formula_cdm.py"
+FORMULA_TEST="$ODB_LOCAL/tests/test_formula_cdm_normalization.py"
+if [ -f "$FORMULA_PATCH" ]; then
+    if grep -q "pred_cdm_alt" "$FORMULA_FILE" 2>/dev/null \
+       && grep -q "\\\\overrightarrow" "$FORMULA_FILE" 2>/dev/null \
+       && grep -q "_EMPTY_ARRAY_SPEC_RE" "$FORMULA_FILE" 2>/dev/null \
+       && grep -q "test_sanitize_formula_fixes_empty_array_column_spec" "$FORMULA_TEST" 2>/dev/null; then
+        ok "Formula CDM normalization patch already present"
+    else
+        (cd "$ODB_LOCAL" && git apply --check "$FORMULA_PATCH") || fail "Formula CDM normalization patch check"
+        (cd "$ODB_LOCAL" && git apply "$FORMULA_PATCH") || fail "Formula CDM normalization patch apply"
+        ok "Formula CDM normalization patch applied"
+    fi
+fi
+
 # ── Step 9: Python venv + OmniDocBench deps ──
 step 9 "Python venv + OmniDocBench dependencies"
 if [ ! -d "$ODB_VENV" ]; then

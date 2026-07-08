@@ -89,6 +89,29 @@ if (-not (Test-Path $probe)) {
     Write-Host "OmniDocBench code already present: $probe" -ForegroundColor Green
 }
 
+# --- 1a. Apply repo-maintained OmniDocBench compatibility patches -----------
+# The OmniDocBench checkout is a generated dependency and is ignored by this
+# repo. Keep local scoring compatibility fixes reproducible by applying tracked
+# patch files after clone/resume. Idempotency is handled with a reverse patch
+# check: if the patch can be reversed cleanly, it is already applied.
+$patchDir = Join-Path $PSScriptRoot "patches"
+$formulaPatch = Join-Path $patchDir "0001-formula-cdm-normalization.patch"
+if (Test-Path $formulaPatch) {
+    Write-Host "Checking Formula CDM normalization patch ..." -ForegroundColor Cyan
+    git -C $odbDir apply --reverse --check $formulaPatch *> $null
+    if ($LASTEXITCODE -eq 0) {
+        Write-Host "Formula CDM normalization patch already applied." -ForegroundColor Green
+    } else {
+        git -C $odbDir apply --check $formulaPatch
+        if ($LASTEXITCODE -ne 0) {
+            throw "Formula CDM normalization patch does not apply cleanly. Inspect $formulaPatch and $odbDir."
+        }
+        git -C $odbDir apply $formulaPatch
+        if ($LASTEXITCODE -ne 0) { throw "Formula CDM normalization patch failed." }
+        Write-Host "Formula CDM normalization patch applied." -ForegroundColor Green
+    }
+}
+
 # --- 1b. Create repo-root .venv + install OmniDocBench deps ---
 # OmniDocBench is NOT Python 3.12+ compatible (uses inspect.getargspec /
 # distutils removed in 3.12). Prefer 3.11, then 3.10; fall back to the default
