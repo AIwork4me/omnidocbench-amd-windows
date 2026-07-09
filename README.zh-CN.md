@@ -12,13 +12,13 @@
 （1651 页，四项标准指标：文本 / 阅读顺序 / 表格 TEDS / **公式 CDM**）。模型无关——换任何文档解析模型只需写一个
 [适配器](adapters/)。以 PaddleOCR-VL-1.6 为已验证参考。
 
-| 指标 | PaddleOCR-VL-1.6（我们） | 官方 | 差距 |
-|---:|---:|---:|---:|
-| 整体 Overall ↑ | **94.63** | 96.33 | -1.70 |
-| 文本 Edit-dist ↓ | **0.035**（96.5%） | 0.033 | +0.002 |
-| 阅读顺序 ↓ | **0.130**（87.0%） | 0.127 | +0.003 |
-| 表格 TEDS ↑ | **0.930** | 0.948 | -0.018 |
-| 公式 CDM ↑ | **0.944** | 0.975 | -0.031 |
+| 指标 | 方向 | 官方基线 | PaddleOCR official engine | PaddleOCR-VL-ROCm engine |
+|---|:---:|---:|---:|---:|
+| 整体 Overall | ↑ | 96.33 | 95.8116 | 95.2524 |
+| 文本 Edit-distance | ↓ | 0.033 | 0.03447 | 0.03397 |
+| 阅读顺序 Edit-distance | ↓ | 0.127 | 0.12929 | 0.12833 |
+| 表格 TEDS | ↑ | 94.76 | 94.2187 | 94.3216 |
+| 公式 CDM | ↑ | 97.49 | 96.6629 | 94.8326 |
 
 > Overall = (文本准确率 + CDM + TEDS) / 3，其中文本准确率 = (1 − Edit_dist) × 100。阅读顺序不纳入 Overall（布局指标，非内容准确率）。
 
@@ -77,6 +77,18 @@ powershell -ExecutionPolicy Bypass -File eval-infra\03-scoring\verify.ps1
 powershell -ExecutionPolicy Bypass -File scripts\full-verify.ps1
 ```
 
+如果用 PaddleOCR 官方 `PaddleOCRVL` engine 跑基准评测，请用
+`_to_markdown(pretty=False)` 导出评测型 Markdown。默认 pretty Markdown
+面向展示，可能因为 HTML 图片/标题包装导致 OmniDocBench Text Edit-distance
+被放大。
+
+```powershell
+python adapters\paddleocr-vl-1.6\run_adapter.py `
+    --engine official `
+    --img-dir eval-infra\01-omnidocbench\data\images `
+    --out-dir predictions\paddleocr_official_prettyfalse_full_2026-07-09
+```
+
 想用 agent 驱动？把 **Claude Code**（或 OpenCode，或任何能读 `CLAUDE.md` 的 agent）指向本 repo，说"按 CLAUDE.md 搭建" / "Read CLAUDE.md and execute the setup flow."。完整分步流程（含异常处理）见 [`CLAUDE.md`](CLAUDE.md)。
 
 [English](README.md) · [架构图](docs/architecture.md) · [踩坑知识库](docs/pitfalls.md) · [CLAUDE.md](CLAUDE.md)
@@ -128,17 +140,31 @@ def run_adapter(img_dir: Path, out_dir: Path, server_url: str = ""):
 
 ## PaddleOCR-VL-1.6 参考得分
 
-我们在 OmniDocBench v1.6（全量 1651 页）上由本 repo 复现的已验证结果。适配器是确定性的（`--temp 0 --top-k 1 --seed 1`），因此这些数值在不同运行和不同机器上可复现。
+我们在 OmniDocBench v1.6（全量 1651 页）上由本 repo 复现的已验证结果。
+PaddleOCR official engine 使用 `paddleocr.PaddleOCRVL`，并强制
+`_to_markdown(pretty=False)` 输出评测型 Markdown。PaddleOCR-VL-ROCm engine
+是默认的 AMD Windows 本地参考路径。命令、运行统计和根因说明见
+[`docs/release-paddleocr-vl-1.6-amd-windows-2026-07-09.md`](docs/release-paddleocr-vl-1.6-amd-windows-2026-07-09.md)。
 
-| 指标 | 方向 | 本 repo<br>（PaddleOCR-VL-1.6） | 官方 1.6 | 差距 |
+| 指标 | 方向 | 官方基线 | PaddleOCR official engine | PaddleOCR-VL-ROCm engine |
 |---|:---:|---:|---:|---:|
-| 整体 Overall | ↑ | **94.63** | 96.33 | -1.70 |
-| 文本编辑距离 | ↓ | **0.035**（96.5%） | 0.033（96.7%） | +0.002 |
-| 阅读顺序编辑距离 | ↓ | **0.130**（87.0%） | 0.127（87.3%） | +0.003 |
-| 表格 TEDS | ↑ | **0.930** | 0.948 | -0.018 |
-| 公式 CDM | ↑ | **0.944** | 0.975 | -0.031 |
+| 整体 Overall | ↑ | 96.33 | 95.8116 | 95.2524 |
+| 文本 Edit-distance | ↓ | 0.033 | 0.03447 | 0.03397 |
+| 阅读顺序 Edit-distance | ↓ | 0.127 | 0.12929 | 0.12833 |
+| 表格 TEDS | ↑ | 94.76 | 94.2187 | 94.3216 |
+| 公式 CDM | ↑ | 97.49 | 96.6629 | 94.8326 |
 
 > Overall = (文本准确率 + CDM + TEDS) / 3，其中文本准确率 = (1 − Edit_dist) × 100。阅读顺序不纳入 Overall（布局指标，非内容准确率）。
+
+跑基准评测时，PaddleOCR 官方 `PaddleOCRVL` engine 必须用
+`_to_markdown(pretty=False)` 导出 Markdown。默认 pretty Markdown 面向展示，
+会引入 HTML 图片/标题包装，可能放大 OmniDocBench Text Edit-distance。
+
+official engine 的 Formula CDM 已明显接近官方基线；剩余差距主要来自官方
+Linux vLLM 基线与本机 Windows AMD llama.cpp server 路径的推理后端/模型输出差异，
+以及本轮 1 个未恢复的 VLM 500 页面。CDM 环境问题见
+[`docs/pitfalls.md#mathcolor`](docs/pitfalls.md#mathcolor) 和
+[`docs/pitfalls.md#cdm-zero`](docs/pitfalls.md#cdm-zero)。
 
 一次全新运行要达到"复现我们的结果"，需要满足的门槛：文本编辑距离 < 0.10 · 阅读顺序 < 0.20 · TEDS > 0.85 · CDM > 0.85。
 

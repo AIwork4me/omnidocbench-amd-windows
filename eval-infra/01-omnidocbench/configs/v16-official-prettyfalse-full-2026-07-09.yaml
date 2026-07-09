@@ -1,0 +1,15 @@
+# OmniDocBench v1.6 full-set eval config for the PaddleOCR official engine
+# after forcing evaluation-oriented Markdown with _to_markdown(pretty=False).
+# CDM is disabled here because Formula CDM runs in WSL via the paired config.
+end2end_eval:
+  metrics:
+    text_block:      { metric: [Edit_dist] }
+    display_formula: { metric: [Edit_dist] }
+    table:           { metric: [TEDS, Edit_dist], teds_workers: 16 }
+    reading_order:   { metric: [Edit_dist] }
+  dataset:
+    dataset_name: end2end_dataset
+    ground_truth: { data_path: <REPO_ROOT>/eval-infra/01-omnidocbench/data/OmniDocBench.json }
+    prediction:   { data_path: <REPO_ROOT>/predictions/paddleocr_official_prettyfalse_full_2026-07-09 }
+    match_method: quick_match
+    match_workers: 24

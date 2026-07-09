@@ -13,13 +13,13 @@ One-command setup of [OmniDocBench](https://github.com/opendatalab/OmniDocBench)
 reading-order Edit-distance, table TEDS, **formula CDM**. Model-agnostic — swap any document parsing
 model via [adapters](adapters/). PaddleOCR-VL-1.6 ships as the validated reference.
 
-| Metric | PaddleOCR-VL-1.6 (ours) | Official | Gap |
-|---:|---:|---:|---:|
-| Overall ↑ | **94.63** | 96.33 | -1.70 |
-| Text Edit-dist ↓ | **0.035** (96.5%) | 0.033 | +0.002 |
-| Reading-order ↓ | **0.130** (87.0%) | 0.127 | +0.003 |
-| Table TEDS ↑ | **0.930** | 0.948 | -0.018 |
-| Formula CDM ↑ | **0.944** | 0.975 | -0.031 |
+| Metric | Direction | Official baseline | PaddleOCR official engine | PaddleOCR-VL-ROCm engine |
+|---|:---:|---:|---:|---:|
+| Overall | ↑ | 96.33 | 95.8116 | 95.2524 |
+| Text Edit-distance | ↓ | 0.033 | 0.03447 | 0.03397 |
+| Reading-order Edit-distance | ↓ | 0.127 | 0.12929 | 0.12833 |
+| Table TEDS | ↑ | 94.76 | 94.2187 | 94.3216 |
+| Formula CDM | ↑ | 97.49 | 96.6629 | 94.8326 |
 
 > Overall = (Text accuracy + CDM + TEDS) / 3, where Text accuracy = (1 − Edit_dist) × 100.
 > Reading order is excluded from Overall (layout metric, not content accuracy).
@@ -81,6 +81,18 @@ wsl -d Ubuntu2204 bash /mnt/c/<path-to-repo>/eval-infra/03-scoring/score-cdm.sh
 powershell -ExecutionPolicy Bypass -File eval-infra\03-scoring\verify.ps1
 # Or all-at-once:
 powershell -ExecutionPolicy Bypass -File scripts\full-verify.ps1
+```
+
+For benchmark scoring with PaddleOCR's official `PaddleOCRVL` engine, export
+evaluation-oriented Markdown with `_to_markdown(pretty=False)`. The default
+pretty Markdown is intended for display and can inflate Text Edit-distance
+because OmniDocBench expects scorer-friendly Markdown.
+
+```powershell
+python adapters\paddleocr-vl-1.6\run_adapter.py `
+    --engine official `
+    --img-dir eval-infra\01-omnidocbench\data\images `
+    --out-dir predictions\paddleocr_official_prettyfalse_full_2026-07-09
 ```
 
 Prefer the agent-driven flow? Point **Claude Code** (or OpenCode, or any agent
@@ -148,24 +160,33 @@ The scoring layer consumes those `.md` files and never imports the adapter.
 
 ## PaddleOCR-VL-1.6 reference scores
 
-Our validated results on OmniDocBench v1.6 (full 1651-page set), reproduced by
-this repo. The adapter is deterministic (`--temp 0 --top-k 1 --seed 1`), so
-these numbers are reproducible across runs and machines.
+Validated OmniDocBench v1.6 full-set results from this repo. The PaddleOCR
+official engine uses `paddleocr.PaddleOCRVL` with `_to_markdown(pretty=False)`.
+The PaddleOCR-VL-ROCm engine is the default local AMD Windows reference path.
+See [`docs/release-paddleocr-vl-1.6-amd-windows-2026-07-09.md`](docs/release-paddleocr-vl-1.6-amd-windows-2026-07-09.md)
+for commands, run stats, and root-cause notes.
 
-| Metric | Direction | This repo<br>(PaddleOCR-VL-1.6) | Official 1.6 | Gap |
+| Metric | Direction | Official baseline | PaddleOCR official engine | PaddleOCR-VL-ROCm engine |
 |---|:---:|---:|---:|---:|
-| Overall | ↑ | **94.63** | 96.33 | -1.70 |
-| Text Edit-distance | ↓ | **0.035** (96.5%) | 0.033 (96.7%) | +0.002 |
-| Reading-order Edit-distance | ↓ | **0.130** (87.0%) | 0.127 (87.3%) | +0.003 |
-| Table TEDS | ↑ | **0.930** | 0.948 | -0.018 |
-| Formula CDM | ↑ | **0.944** | 0.975 | -0.031 |
+| Overall | ↑ | 96.33 | 95.8116 | 95.2524 |
+| Text Edit-distance | ↓ | 0.033 | 0.03447 | 0.03397 |
+| Reading-order Edit-distance | ↓ | 0.127 | 0.12929 | 0.12833 |
+| Table TEDS | ↑ | 94.76 | 94.2187 | 94.3216 |
+| Formula CDM | ↑ | 97.49 | 96.6629 | 94.8326 |
 
 > Overall = (Text accuracy + CDM + TEDS) / 3, where Text accuracy = (1 − Edit_dist) × 100.
 
-The CDM gap (3.1 pt) and TEDS gap (1.8 pt) reflect the cost of the lightweight
-ONNX+llama.cpp pipeline vs the official Paddle-native path (the model itself
-is BF16 unquantized) plus the `\mathcolor` rendering override; see
-[`docs/pitfalls.md#mathcolor`](docs/pitfalls.md#mathcolor).
+For benchmark scoring, the official PaddleOCRVL engine must export Markdown
+with `_to_markdown(pretty=False)`. The default pretty Markdown is intended for
+display and can inflate Text Edit-distance because OmniDocBench expects
+evaluation-oriented Markdown.
+
+The official-engine Formula CDM result is much closer to the public baseline
+than the ROCm engine result. The remaining gap is attributed to inference
+backend/model-output differences between the public Linux vLLM baseline and
+this Windows AMD llama.cpp server path, plus one unrecovered VLM 500 page.
+For CDM environment issues, see [`docs/pitfalls.md#mathcolor`](docs/pitfalls.md#mathcolor)
+and [`docs/pitfalls.md#cdm-zero`](docs/pitfalls.md#cdm-zero).
 
 These are the success thresholds a fresh run must clear to count as
 reproducing our results: Text Edit-dist < 0.10 · Reading-order < 0.20 ·

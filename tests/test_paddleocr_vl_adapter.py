@@ -92,6 +92,38 @@ def test_official_result_to_markdown_reads_paddlex_markdown_dict():
     assert adapter._official_result_to_markdown(Result()) == "# title\n"
 
 
+def test_official_result_to_markdown_prefers_pretty_false_export():
+    adapter = load_adapter()
+    calls = []
+
+    class Result:
+        markdown = {"markdown_texts": '<div style="text-align: center;">pretty</div>\n'}
+
+        def _to_markdown(self, pretty=True, show_formula_number=False):
+            calls.append(pretty)
+            return {"markdown_texts": "plain\n"}
+
+    assert adapter._official_result_to_markdown(Result()) == "plain\n"
+    assert calls == [False]
+
+
+def test_official_markdown_normalizes_centered_html_wrappers():
+    adapter = load_adapter()
+
+    markdown = (
+        '<div style="text-align: center;"><img src="imgs/fig.jpg" '
+        'alt="Image" width="45%" /></div>\n\n'
+        '<div style="text-align: center;">Fig. 1. Caption &amp; note.</div>\n\n'
+        "Body text.\n"
+    )
+
+    assert adapter._normalize_official_markdown_for_omnidocbench(markdown) == (
+        "![](imgs/fig.jpg)\n\n"
+        "Fig. 1. Caption & note.\n\n"
+        "Body text.\n"
+    )
+
+
 def test_official_folder_retries_page_before_marking_failed(tmp_path, monkeypatch):
     adapter = load_adapter()
     img_dir = tmp_path / "images"

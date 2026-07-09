@@ -98,6 +98,28 @@ two `setup.ps1` scripts) for `--layout-model`, `--server-url`, and
 `--api-model-name` defaults, so you usually do not need to pass those flags.
 CLI flags override `.env.local`, which overrides hard-coded fallbacks.
 
+### Official engine Markdown mode
+
+For diagnostics, `run_adapter.py` also supports `--engine official`, which uses
+the official `paddleocr.PaddleOCRVL` doc_parser package instead of the local
+`paddleocr_vl_rocm` lightweight path.
+
+Important: PaddleOCRVL's default Markdown export is presentation-oriented:
+`_to_markdown(pretty=True)` wraps centered images and captions in HTML
+`<div>`/`<img>` tags. OmniDocBench's parser/scorer expects evaluation-oriented
+plain Markdown, where images are written as `![](imgs/...)`. The official
+engine therefore defaults to `_to_markdown(pretty=False)` before writing
+prediction `.md` files.
+
+If you call PaddleOCRVL directly for benchmark scoring, use:
+
+```python
+markdown = result._to_markdown(pretty=False)["markdown_texts"]
+```
+
+Using the default pretty Markdown can inflate Text Edit-distance by changing
+the text candidates that OmniDocBench matches.
+
 ## Files
 
 | File | Purpose |

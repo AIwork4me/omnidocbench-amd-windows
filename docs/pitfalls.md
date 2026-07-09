@@ -33,6 +33,7 @@ relevant entry first.
 - [PYTHONUTF8 / Windows codepage corruption](#pythonutf8)
 - [Layout (ONNX) model not found](#layout)
 - [VLM server 500 errors](#vlm)
+- [Official PaddleOCRVL pretty Markdown hurts Text Edit-distance](#official-pretty-markdown)
 
 ---
 
@@ -564,6 +565,45 @@ before running the adapter. The adapter's `verify.ps1` does this.
 **If you skip it.** Empty or partial predictions; per-page failures are caught
 by `run_adapter` (one bad page scores zero, the rest continue), but a totally
 dead server means zero predictions for every page.
+
+---
+
+<a id="official-pretty-markdown"></a>
+## #official-pretty-markdown - Official PaddleOCRVL pretty Markdown hurts Text Edit-distance
+
+**Symptom.** Switching from the lightweight PaddleOCR-VL-ROCm adapter path to
+the official `paddleocr.PaddleOCRVL` doc_parser path makes non-CDM metrics,
+especially `text_block.Edit_dist`, worse on pages with figures/captions, even
+when the recognized text itself looks similar.
+
+**Root cause.** PaddleOCRVL's default Markdown export is
+presentation-oriented: `_to_markdown(pretty=True)` wraps centered images and
+captions in HTML such as:
+
+```html
+<div style="text-align: center;"><img src="imgs/..." alt="Image" width="45%" /></div>
+```
+
+OmniDocBench's `md_tex_filter()` removes Markdown image syntax
+`![](imgs/...)`, but non-table HTML image wrappers are left as ordinary
+`text_all` candidates. This changes the candidate sequence and can make
+quick-match pair the wrong text spans.
+
+**Fix.** For benchmark scoring, export official PaddleOCRVL results with
+evaluation-oriented Markdown:
+
+```python
+markdown = result._to_markdown(pretty=False)["markdown_texts"]
+```
+
+The repo's `adapters/paddleocr-vl-1.6/run_adapter.py --engine official` does
+this by default and keeps a small HTML-wrapper normalization fallback for older
+or alternate result objects.
+
+**Verify.** On the 2026-07-09 Text regression probe, raw official pretty
+Markdown scored `0.430483` Text Edit-distance; `_to_markdown(pretty=False)`
+scored `0.183316`, matching the HTML-normalized diagnostic path and nearly
+matching lightweight `0.178384`.
 
 ---
 

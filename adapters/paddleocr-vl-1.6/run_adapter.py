@@ -29,8 +29,10 @@ provisioning, you can run it with no flags.
 from __future__ import annotations
 
 import argparse
+import html
 import json
 import os
+import re
 import shutil
 import time
 import traceback
@@ -216,6 +218,22 @@ def _official_result_to_markdown(result: object) -> str:
     if isinstance(result, str):
         return result
 
+    # PaddleOCRVLResult defaults to ``pretty=True`` for display-oriented
+    # Markdown, which wraps images/captions in HTML. OmniDocBench's scorer
+    # expects plain evaluation Markdown, so prefer the explicit plain export.
+    official_export = getattr(result, "_to_markdown", None)
+    if callable(official_export):
+        try:
+            exported = official_export(pretty=False)
+        except TypeError:
+            exported = None
+        if isinstance(exported, dict):
+            mapped = markdown_from_mapping(exported)
+            if mapped is not None:
+                return mapped
+        if isinstance(exported, str):
+            return exported
+
     markdown = getattr(result, "markdown", None)
     if isinstance(markdown, str):
         return markdown
@@ -248,6 +266,33 @@ def _official_result_to_markdown(result: object) -> str:
                 return value
 
     raise TypeError("Official PaddleOCRVL result did not expose Markdown text.")
+
+
+_CENTERED_IMAGE_DIV_RE = re.compile(
+    r"<div[^>]*style=[\"'][^\"']*text-align:\s*center;?[^\"']*[\"'][^>]*>\s*"
+    r"<img\b[^>]*\bsrc=[\"']([^\"']+)[\"'][^>]*>\s*</div>",
+    re.IGNORECASE | re.DOTALL,
+)
+_CENTERED_TEXT_DIV_RE = re.compile(
+    r"<div[^>]*style=[\"'][^\"']*text-align:\s*center;?[^\"']*[\"'][^>]*>\s*(.*?)\s*</div>",
+    re.IGNORECASE | re.DOTALL,
+)
+_HTML_TAG_RE = re.compile(r"<[^>]+>")
+
+
+def _normalize_official_markdown_for_omnidocbench(markdown: str) -> str:
+    """Convert official doc_parser HTML wrappers to scorer-friendly Markdown."""
+
+    def replace_image(match: re.Match[str]) -> str:
+        return f"![]({html.unescape(match.group(1))})"
+
+    def replace_text(match: re.Match[str]) -> str:
+        inner = _HTML_TAG_RE.sub("", match.group(1))
+        return html.unescape(inner.strip())
+
+    markdown = _CENTERED_IMAGE_DIV_RE.sub(replace_image, markdown)
+    markdown = _CENTERED_TEXT_DIV_RE.sub(replace_text, markdown)
+    return re.sub(r"\n{3,}", "\n\n", markdown)
 
 
 def run_official_folder(
@@ -311,6 +356,7 @@ def run_official_folder(
                     markdown = "\n\n".join(_official_result_to_markdown(item) for item in result)
                 else:
                     markdown = _official_result_to_markdown(result)
+                markdown = _normalize_official_markdown_for_omnidocbench(markdown)
                 (out_dir / expected_md_name(img.name)).write_text(markdown, encoding="utf-8")
                 stats.append(
                     {
