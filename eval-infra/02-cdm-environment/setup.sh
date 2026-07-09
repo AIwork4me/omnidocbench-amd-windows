@@ -212,6 +212,20 @@ if [ -f "$FORMULA_PATCH" ]; then
     fi
 fi
 
+TIMEOUT_PATCH="$REPO_ROOT/eval-infra/01-omnidocbench/patches/0002-timeout-fallback-long-text-span.patch"
+TIMEOUT_FILE="$ODB_LOCAL/src/dataset/end2end_dataset.py"
+TIMEOUT_TEST="$ODB_LOCAL/tests/test_timeout_fallback_long_text_span.py"
+if [ -f "$TIMEOUT_PATCH" ]; then
+    if grep -q "int(len(gt_norm) / 24) + 4" "$TIMEOUT_FILE" 2>/dev/null \
+       && grep -q "test_local_text_span_fallback_recovers_long_text_split_across_many_predictions" "$TIMEOUT_TEST" 2>/dev/null; then
+        ok "Timeout fallback long-text span patch already present"
+    else
+        (cd "$ODB_LOCAL" && git apply --unidiff-zero --ignore-space-change --check "$TIMEOUT_PATCH") || fail "Timeout fallback long-text span patch check"
+        (cd "$ODB_LOCAL" && git apply --unidiff-zero --ignore-space-change "$TIMEOUT_PATCH") || fail "Timeout fallback long-text span patch apply"
+        ok "Timeout fallback long-text span patch applied"
+    fi
+fi
+
 # ── Step 9: Python venv + OmniDocBench deps ──
 step 9 "Python venv + OmniDocBench dependencies"
 if [ ! -d "$ODB_VENV" ]; then

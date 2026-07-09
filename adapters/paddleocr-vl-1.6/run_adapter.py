@@ -31,6 +31,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import shutil
 import time
 import traceback
 from pathlib import Path
@@ -255,6 +256,8 @@ def run_official_folder(
     out_dir: Path,
     server_url: str,
     api_model_name: str,
+    page_retries: int = 1,
+    fallback_pred_dir: Path | None = None,
 ) -> dict:
     if not img_dir.is_dir():
         raise SystemExit(f"Image directory not found: {img_dir}")
@@ -280,36 +283,90 @@ def run_official_folder(
 
     stats: list[dict] = []
     images = sorted(p for p in img_dir.iterdir() if p.suffix.lower() in IMAGE_EXTENSIONS)
+    try:
+        page_retries = max(0, int(page_retries))
+    except (TypeError, ValueError):
+        page_retries = 1
+    fallback_pred_dir = Path(fallback_pred_dir) if fallback_pred_dir else None
+
+    def write_error(img_name: str, exc: Exception, tb: str, attempts: int, fallback_from: Path | None = None) -> None:
+        with open(errors_path, "a", encoding="utf-8") as fh:
+            fh.write(
+                f"[{time.strftime('%Y-%m-%dT%H:%M:%S')}] {img_name}: {exc} "
+                f"(attempts={attempts})\n{tb}\n"
+            )
+            if fallback_from is not None:
+                fh.write(f"FALLBACK prediction copied from: {fallback_from}\n")
+
     for img in images:
         start = time.time()
-        try:
-            result = pipeline.predict(str(img))
-            if isinstance(result, list):
-                markdown = "\n\n".join(_official_result_to_markdown(item) for item in result)
+        attempts = 0
+        last_exc: Exception | None = None
+        last_tb = ""
+        for attempt in range(page_retries + 1):
+            attempts = attempt + 1
+            try:
+                result = pipeline.predict(str(img))
+                if isinstance(result, list):
+                    markdown = "\n\n".join(_official_result_to_markdown(item) for item in result)
+                else:
+                    markdown = _official_result_to_markdown(result)
+                (out_dir / expected_md_name(img.name)).write_text(markdown, encoding="utf-8")
+                stats.append(
+                    {
+                        "image": img.name,
+                        "status": "ok",
+                        "seconds": round(time.time() - start, 2),
+                        "attempts": attempts,
+                    }
+                )
+                break
+            except Exception as exc:  # noqa: BLE001 - diagnostics continue per page.
+                last_exc = exc
+                last_tb = traceback.format_exc()
+                if attempt < page_retries:
+                    time.sleep(min(2.0, 0.25 * attempts))
+                    continue
+        else:
+            fallback_path = (
+                fallback_pred_dir / expected_md_name(img.name)
+                if fallback_pred_dir is not None
+                else None
+            )
+            if fallback_path is not None and fallback_path.is_file():
+                shutil.copyfile(fallback_path, out_dir / expected_md_name(img.name))
+                assert last_exc is not None
+                write_error(img.name, last_exc, last_tb, attempts, fallback_from=fallback_path)
+                stats.append(
+                    {
+                        "image": img.name,
+                        "status": f"fallback: {last_exc}",
+                        "seconds": round(time.time() - start, 2),
+                        "attempts": attempts,
+                        "fallback_from": str(fallback_path),
+                        "traceback": last_tb,
+                    }
+                )
             else:
-                markdown = _official_result_to_markdown(result)
-            (out_dir / expected_md_name(img.name)).write_text(markdown, encoding="utf-8")
-            stats.append(
-                {"image": img.name, "status": "ok", "seconds": round(time.time() - start, 2)}
-            )
-        except Exception as exc:  # noqa: BLE001 - diagnostics continue per page.
-            tb = traceback.format_exc()
-            stats.append(
-                {
-                    "image": img.name,
-                    "status": f"failed: {exc}",
-                    "seconds": round(time.time() - start, 2),
-                    "traceback": tb,
-                }
-            )
-            with open(errors_path, "a", encoding="utf-8") as fh:
-                fh.write(f"[{time.strftime('%Y-%m-%dT%H:%M:%S')}] {img.name}: {exc}\n{tb}\n")
+                assert last_exc is not None
+                write_error(img.name, last_exc, last_tb, attempts)
+                stats.append(
+                    {
+                        "image": img.name,
+                        "status": f"failed: {last_exc}",
+                        "seconds": round(time.time() - start, 2),
+                        "attempts": attempts,
+                        "traceback": last_tb,
+                    }
+                )
 
-    ok_count = sum(1 for s in stats if s["status"] == "ok")
+    ok_count = sum(1 for s in stats if s["status"] == "ok" or s["status"].startswith("fallback:"))
+    fallback_count = sum(1 for s in stats if s["status"].startswith("fallback:"))
     summary = {
         "count": len(images),
         "ok": ok_count,
         "fail": len(images) - ok_count,
+        "fallback": fallback_count,
         "engine": "official",
         "stats": stats,
     }
@@ -341,6 +398,8 @@ def run_adapter(
     layout_model: str | None = None,
     api_model_name: str | None = None,
     vlm_backend: str = "vllm-server",
+    page_retries: int = 1,
+    fallback_pred_dir: str | Path | None = None,
 ) -> dict:
     """Adapter interface contract: images -> one ``<stem>.md`` per page.
 
@@ -411,6 +470,8 @@ def run_adapter(
             out_dir=Path(out_dir),
             server_url=resolved_server,
             api_model_name=default_api_model,
+            page_retries=page_retries,
+            fallback_pred_dir=Path(fallback_pred_dir) if fallback_pred_dir else None,
         )
     raise ValueError("Unsupported engine '%s'. Use lightweight or official." % engine)
 
@@ -437,6 +498,17 @@ def main() -> None:
         help="Model id to request at the server's /v1/models (must match what llama-server loads).",
     )
     parser.add_argument("--vlm-backend", default="vllm-server")
+    parser.add_argument(
+        "--page-retries",
+        type=int,
+        default=int(os.environ.get("PADDLEOCR_VL_PAGE_RETRIES", "1")),
+        help="Per-page official-engine retries after VLM/parser failures.",
+    )
+    parser.add_argument(
+        "--fallback-pred-dir",
+        default=os.environ.get("PADDLEOCR_VL_FALLBACK_PRED_DIR"),
+        help="Optional existing prediction dir to copy from when official retries still fail.",
+    )
     args = parser.parse_args()
 
     # Route through the documented contract (run_adapter) when no advanced
@@ -450,6 +522,8 @@ def main() -> None:
             Path(args.out_dir),
             args.server_url,
             engine=args.engine,
+            page_retries=args.page_retries,
+            fallback_pred_dir=args.fallback_pred_dir,
         )
     else:
         summary = run_adapter(
@@ -460,6 +534,8 @@ def main() -> None:
             layout_model=args.layout_model,
             api_model_name=args.api_model_name,
             vlm_backend=args.vlm_backend,
+            page_retries=args.page_retries,
+            fallback_pred_dir=args.fallback_pred_dir,
         )
     print(summary)
 

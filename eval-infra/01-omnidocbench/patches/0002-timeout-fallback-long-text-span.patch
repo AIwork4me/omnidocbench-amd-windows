@@ -1,0 +1,70 @@
+diff --git a/src/dataset/end2end_dataset.py b/src/dataset/end2end_dataset.py
+index 633a28a..504bcca 100644
+--- a/src/dataset/end2end_dataset.py
++++ b/src/dataset/end2end_dataset.py
+@@ -529 +529,6 @@ class End2EndDataset():
+-        max_span = 8 if has_formula_hint else 4
++        if has_formula_hint:
++            max_span = 8
++        else:
++            max_span = 4
++            if len(gt_norm) >= 400:
++                max_span = min(160, max(max_span, int(len(gt_norm) / 24) + 4))
+@@ -583,0 +589,3 @@ class End2EndDataset():
++                if len(norm_pred) > len(gt_norm) * 1.35 and edit > current_edit:
++                    break
++
+diff --git a/tests/test_timeout_fallback_long_text_span.py b/tests/test_timeout_fallback_long_text_span.py
+new file mode 100644
+index 0000000..4ec870f
+--- /dev/null
++++ b/tests/test_timeout_fallback_long_text_span.py
+@@ -0,0 +1,48 @@
++from src.core.preprocess.data_preprocess import normalized_text
++from src.dataset.end2end_dataset import End2EndDataset
++
++
++def test_local_text_span_fallback_recovers_long_text_split_across_many_predictions():
++    dataset = object.__new__(End2EndDataset)
++    chunks = [
++        f"Long timeout fallback segment {idx:02d} keeps one continuous paragraph intact. "
++        for idx in range(12)
++    ]
++    gt_text = "".join(chunks)
++    match = [
++        {
++            "gt_idx": [0],
++            "gt": gt_text,
++            "norm_gt": normalized_text(gt_text),
++            "gt_category_type": "text_block",
++            "gt_position": [1],
++            "gt_attribute": [{}],
++            "pred_idx": [""],
++            "pred": "",
++            "norm_pred": "",
++            "pred_category_type": "",
++            "pred_position": "",
++            "edit": 1.0,
++            "img_id": "long-text-timeout.png",
++        }
++    ]
++    pred_dataset_mix = [
++        {
++            "category_type": "text_all",
++            "content": chunk,
++            "position": [idx, idx + 1],
++        }
++        for idx, chunk in enumerate(chunks)
++    ]
++
++    updated = dataset._maybe_apply_local_text_span_fallback(match, pred_dataset_mix)
++
++    assert updated[0]["edit"] == 0
++    assert updated[0]["pred_idx"] == list(range(len(chunks)))
++    assert updated[0]["pred"] == gt_text
++
++
++if __name__ == "__main__":
++    for name, func in sorted(globals().items()):
++        if name.startswith("test_") and callable(func):
++            func()

@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import importlib.util
+import sys
+from types import SimpleNamespace
 from pathlib import Path
 
 
@@ -88,6 +90,81 @@ def test_official_result_to_markdown_reads_paddlex_markdown_dict():
         markdown = {"markdown_texts": "# title\n"}
 
     assert adapter._official_result_to_markdown(Result()) == "# title\n"
+
+
+def test_official_folder_retries_page_before_marking_failed(tmp_path, monkeypatch):
+    adapter = load_adapter()
+    img_dir = tmp_path / "images"
+    out_dir = tmp_path / "pred"
+    img_dir.mkdir()
+    (img_dir / "page.png").write_bytes(b"fake")
+    calls = []
+
+    class Result:
+        markdown = "# recovered\n"
+
+    class Pipeline:
+        def predict(self, image_path):
+            calls.append(Path(image_path).name)
+            if len(calls) == 1:
+                raise RuntimeError("transient vlm 500")
+            return Result()
+
+    monkeypatch.setitem(
+        sys.modules,
+        "paddleocr",
+        SimpleNamespace(PaddleOCRVL=lambda **kwargs: Pipeline()),
+    )
+
+    result = adapter.run_official_folder(
+        img_dir=img_dir,
+        out_dir=out_dir,
+        server_url="http://127.0.0.1:8111/v1",
+        api_model_name="model.gguf",
+        page_retries=1,
+    )
+
+    assert calls == ["page.png", "page.png"]
+    assert result["ok"] == 1
+    assert result["fail"] == 0
+    assert result["stats"][0]["attempts"] == 2
+    assert (out_dir / "page.md").read_text(encoding="utf-8") == "# recovered\n"
+
+
+def test_official_folder_can_copy_explicit_fallback_prediction(tmp_path, monkeypatch):
+    adapter = load_adapter()
+    img_dir = tmp_path / "images"
+    out_dir = tmp_path / "pred"
+    fallback_dir = tmp_path / "fallback"
+    img_dir.mkdir()
+    fallback_dir.mkdir()
+    (img_dir / "page.png").write_bytes(b"fake")
+    (fallback_dir / "page.md").write_text("# fallback\n", encoding="utf-8")
+
+    class Pipeline:
+        def predict(self, image_path):
+            raise RuntimeError("persistent vlm 500")
+
+    monkeypatch.setitem(
+        sys.modules,
+        "paddleocr",
+        SimpleNamespace(PaddleOCRVL=lambda **kwargs: Pipeline()),
+    )
+
+    result = adapter.run_official_folder(
+        img_dir=img_dir,
+        out_dir=out_dir,
+        server_url="http://127.0.0.1:8111/v1",
+        api_model_name="model.gguf",
+        page_retries=0,
+        fallback_pred_dir=fallback_dir,
+    )
+
+    assert result["ok"] == 1
+    assert result["fail"] == 0
+    assert result["fallback"] == 1
+    assert result["stats"][0]["status"].startswith("fallback:")
+    assert (out_dir / "page.md").read_text(encoding="utf-8") == "# fallback\n"
 
 
 def test_vlm_setup_checks_llama_server_full_name():

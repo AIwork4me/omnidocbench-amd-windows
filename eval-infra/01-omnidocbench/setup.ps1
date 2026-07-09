@@ -96,12 +96,22 @@ if (-not (Test-Path $probe)) {
 # check: if the patch can be reversed cleanly, it is already applied.
 $patchDir = Join-Path $PSScriptRoot "patches"
 $formulaPatch = Join-Path $patchDir "0001-formula-cdm-normalization.patch"
+$timeoutPatch = Join-Path $patchDir "0002-timeout-fallback-long-text-span.patch"
 if (Test-Path $formulaPatch) {
-    Write-Host "Checking Formula CDM normalization patch ..." -ForegroundColor Cyan
-    git -C $odbDir apply --reverse --check $formulaPatch *> $null
-    if ($LASTEXITCODE -eq 0) {
-        Write-Host "Formula CDM normalization patch already applied." -ForegroundColor Green
+    $formulaFile = Join-Path $odbDir "src\core\preprocess\formula_cdm.py"
+    $formulaTest = Join-Path $odbDir "tests\test_formula_cdm_normalization.py"
+    $formulaApplied = (
+        (Test-Path $formulaFile) -and
+        (Test-Path $formulaTest) -and
+        (Select-String -LiteralPath $formulaFile -Pattern "pred_cdm_alt" -SimpleMatch -Quiet) -and
+        (Select-String -LiteralPath $formulaFile -Pattern "\overrightarrow" -SimpleMatch -Quiet) -and
+        (Select-String -LiteralPath $formulaFile -Pattern "_EMPTY_ARRAY_SPEC_RE" -SimpleMatch -Quiet) -and
+        (Select-String -LiteralPath $formulaTest -Pattern "test_sanitize_formula_fixes_empty_array_column_spec" -SimpleMatch -Quiet)
+    )
+    if ($formulaApplied) {
+        Write-Host "Formula CDM normalization patch already present." -ForegroundColor Green
     } else {
+        Write-Host "Applying Formula CDM normalization patch ..." -ForegroundColor Cyan
         git -C $odbDir apply --check $formulaPatch
         if ($LASTEXITCODE -ne 0) {
             throw "Formula CDM normalization patch does not apply cleanly. Inspect $formulaPatch and $odbDir."
@@ -109,6 +119,28 @@ if (Test-Path $formulaPatch) {
         git -C $odbDir apply $formulaPatch
         if ($LASTEXITCODE -ne 0) { throw "Formula CDM normalization patch failed." }
         Write-Host "Formula CDM normalization patch applied." -ForegroundColor Green
+    }
+}
+if (Test-Path $timeoutPatch) {
+    $timeoutFile = Join-Path $odbDir "src\dataset\end2end_dataset.py"
+    $timeoutTest = Join-Path $odbDir "tests\test_timeout_fallback_long_text_span.py"
+    $timeoutApplied = (
+        (Test-Path $timeoutFile) -and
+        (Test-Path $timeoutTest) -and
+        (Select-String -LiteralPath $timeoutFile -Pattern "int(len(gt_norm) / 24) + 4" -SimpleMatch -Quiet) -and
+        (Select-String -LiteralPath $timeoutTest -Pattern "test_local_text_span_fallback_recovers_long_text_split_across_many_predictions" -SimpleMatch -Quiet)
+    )
+    if ($timeoutApplied) {
+        Write-Host "Timeout fallback long-text span patch already present." -ForegroundColor Green
+    } else {
+        Write-Host "Applying timeout fallback long-text span patch ..." -ForegroundColor Cyan
+        git -C $odbDir apply --unidiff-zero --check $timeoutPatch
+        if ($LASTEXITCODE -ne 0) {
+            throw "Timeout fallback long-text span patch does not apply cleanly. Inspect $timeoutPatch and $odbDir."
+        }
+        git -C $odbDir apply --unidiff-zero $timeoutPatch
+        if ($LASTEXITCODE -ne 0) { throw "Timeout fallback long-text span patch failed." }
+        Write-Host "Timeout fallback long-text span patch applied." -ForegroundColor Green
     }
 }
 

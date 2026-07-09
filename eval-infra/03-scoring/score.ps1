@@ -61,7 +61,7 @@ if ([string]::IsNullOrWhiteSpace($Python)) {
 # --- 1. Locate inputs -------------------------------------------------------
 $cfgTemplate = Join-Path $rootDir "eval-infra\01-omnidocbench\configs\$Config"
 if (-not (Test-Path $cfgTemplate)) {
-    throw "Config template not found: $cfgTemplate`nAvailable templates: v16.yaml, v16-hard.yaml, v16-cdm.yaml"
+    throw "Config template not found: $cfgTemplate`nAvailable templates include: v16.yaml, v16-official.yaml, v16-hard.yaml, v16-cdm.yaml, v16-cdm-official.yaml"
 }
 
 $odbDir = Join-Path $rootDir "eval-infra\01-omnidocbench\OmniDocBench"
