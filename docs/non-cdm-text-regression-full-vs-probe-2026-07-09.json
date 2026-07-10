@@ -1,0 +1,92 @@
+[
+  {
+    "image": "newspaper_The Times UK_0801@magazinesclubnew_page_031.png",
+    "full_light_local": 0.0,
+    "full_official_current": 1.0,
+    "probe_light": 1.0,
+    "probe_official": 1.0,
+    "full_light_wsl_cdm": 0.0,
+    "full_delta_official_minus_light": 1.0,
+    "probe_delta_official_minus_light": 0.0
+  },
+  {
+    "image": "docstructbench_llm-raw-scihub-o.O-j.snb.2004.06.022.pdf_2.jpg",
+    "full_light_local": 0.0,
+    "full_official_current": 0.4909560723514212,
+    "probe_light": 0.0,
+    "probe_official": 0.4909560723514212,
+    "full_light_wsl_cdm": 0.0,
+    "full_delta_official_minus_light": 0.4909560723514212,
+    "probe_delta_official_minus_light": 0.4909560723514212
+  },
+  {
+    "image": "docstructbench_dianzishu_zhongwenzaixian-o.O-63710614.pdf_149.jpg",
+    "full_light_local": 0.0,
+    "full_official_current": 0.4810126582278481,
+    "probe_light": 0.0,
+    "probe_official": 0.4810126582278481,
+    "full_light_wsl_cdm": 0.0,
+    "full_delta_official_minus_light": 0.4810126582278481,
+    "probe_delta_official_minus_light": 0.4810126582278481
+  },
+  {
+    "image": "PPT_ch7_page_053.png",
+    "full_light_local": 0.0,
+    "full_official_current": 0.36363636363636365,
+    "probe_light": 0.0,
+    "probe_official": 0.36363636363636365,
+    "full_light_wsl_cdm": 0.0,
+    "full_delta_official_minus_light": 0.36363636363636365,
+    "probe_delta_official_minus_light": 0.36363636363636365
+  },
+  {
+    "image": "page-87866578-c897-404e-b751-51fd444f59b2.png",
+    "full_light_local": 0.13580246913580246,
+    "full_official_current": 0.16049382716049382,
+    "probe_light": 0.13580246913580246,
+    "probe_official": 0.16049382716049382,
+    "full_light_wsl_cdm": 0.13580246913580246,
+    "full_delta_official_minus_light": 0.024691358024691357,
+    "probe_delta_official_minus_light": 0.024691358024691357
+  },
+  {
+    "image": "PPT_fundamental_theorem_of_calculus___page_002.png",
+    "full_light_local": 0.0,
+    "full_official_current": 0.3434343434343434,
+    "probe_light": 0.0,
+    "probe_official": 0.3434343434343434,
+    "full_light_wsl_cdm": 0.0,
+    "full_delta_official_minus_light": 0.3434343434343434,
+    "probe_delta_official_minus_light": 0.3434343434343434
+  },
+  {
+    "image": "yanbaor2_yanbaoPPT_2108.jpg",
+    "full_light_local": 0.0030864197530864196,
+    "full_official_current": 0.2097560975609756,
+    "probe_light": 0.0030864197530864196,
+    "probe_official": 0.2097560975609756,
+    "full_light_wsl_cdm": 0.0030864197530864196,
+    "full_delta_official_minus_light": 0.2066696778078892,
+    "probe_delta_official_minus_light": 0.2066696778078892
+  },
+  {
+    "image": "PPT_BaharMartonosi_page_005.png",
+    "full_light_local": 0.0,
+    "full_official_current": 0.34523809523809523,
+    "probe_light": 0.0,
+    "probe_official": 0.34523809523809523,
+    "full_light_wsl_cdm": 0.0,
+    "full_delta_official_minus_light": 0.34523809523809523,
+    "probe_delta_official_minus_light": 0.34523809523809523
+  },
+  {
+    "image": "jiaocaineedrop_jiaocai_needrop_en_349.jpg",
+    "full_light_local": 0.7085889570552147,
+    "full_official_current": 0.6051223241590215,
+    "probe_light": 0.4665650600114307,
+    "probe_official": 0.4798154555940023,
+    "full_light_wsl_cdm": 0.4663745475328634,
+    "full_delta_official_minus_light": 0.13874777662615806,
+    "probe_delta_official_minus_light": 0.013250395582571572
+  }
+]

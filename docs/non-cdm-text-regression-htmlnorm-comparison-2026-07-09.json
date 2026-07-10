@@ -1,0 +1,83 @@
+[
+  {
+    "image": "newspaper_The Times UK_0801@magazinesclubnew_page_031.png",
+    "lightweight": 1.0,
+    "official": 1.0,
+    "official_htmlnorm": 1.0,
+    "official_minus_lightweight": 0.0,
+    "htmlnorm_recovery": 0.0,
+    "remaining_vs_lightweight": 0.0
+  },
+  {
+    "image": "docstructbench_llm-raw-scihub-o.O-j.snb.2004.06.022.pdf_2.jpg",
+    "lightweight": 0.0,
+    "official": 0.4909560723514212,
+    "official_htmlnorm": 0.0,
+    "official_minus_lightweight": 0.4909560723514212,
+    "htmlnorm_recovery": 0.4909560723514212,
+    "remaining_vs_lightweight": 0.0
+  },
+  {
+    "image": "docstructbench_dianzishu_zhongwenzaixian-o.O-63710614.pdf_149.jpg",
+    "lightweight": 0.0,
+    "official": 0.4810126582278481,
+    "official_htmlnorm": 0.0,
+    "official_minus_lightweight": 0.4810126582278481,
+    "htmlnorm_recovery": 0.4810126582278481,
+    "remaining_vs_lightweight": 0.0
+  },
+  {
+    "image": "PPT_ch7_page_053.png",
+    "lightweight": 0.0,
+    "official": 0.36363636363636365,
+    "official_htmlnorm": 0.0064516129032258064,
+    "official_minus_lightweight": 0.36363636363636365,
+    "htmlnorm_recovery": 0.3571847507331378,
+    "remaining_vs_lightweight": 0.0064516129032258064
+  },
+  {
+    "image": "page-87866578-c897-404e-b751-51fd444f59b2.png",
+    "lightweight": 0.13580246913580246,
+    "official": 0.16049382716049382,
+    "official_htmlnorm": 0.16049382716049382,
+    "official_minus_lightweight": 0.024691358024691357,
+    "htmlnorm_recovery": 0.0,
+    "remaining_vs_lightweight": 0.024691358024691357
+  },
+  {
+    "image": "PPT_fundamental_theorem_of_calculus___page_002.png",
+    "lightweight": 0.0,
+    "official": 0.3434343434343434,
+    "official_htmlnorm": 0.0,
+    "official_minus_lightweight": 0.3434343434343434,
+    "htmlnorm_recovery": 0.3434343434343434,
+    "remaining_vs_lightweight": 0.0
+  },
+  {
+    "image": "yanbaor2_yanbaoPPT_2108.jpg",
+    "lightweight": 0.0030864197530864196,
+    "official": 0.2097560975609756,
+    "official_htmlnorm": 0.0030864197530864196,
+    "official_minus_lightweight": 0.2066696778078892,
+    "htmlnorm_recovery": 0.2066696778078892,
+    "remaining_vs_lightweight": 0.0
+  },
+  {
+    "image": "PPT_BaharMartonosi_page_005.png",
+    "lightweight": 0.0,
+    "official": 0.34523809523809523,
+    "official_htmlnorm": 0.0,
+    "official_minus_lightweight": 0.34523809523809523,
+    "htmlnorm_recovery": 0.34523809523809523,
+    "remaining_vs_lightweight": 0.0
+  },
+  {
+    "image": "jiaocaineedrop_jiaocai_needrop_en_349.jpg",
+    "lightweight": 0.4665650600114307,
+    "official": 0.4798154555940023,
+    "official_htmlnorm": 0.4798154555940023,
+    "official_minus_lightweight": 0.013250395582571572,
+    "htmlnorm_recovery": 0.0,
+    "remaining_vs_lightweight": 0.013250395582571572
+  }
+]

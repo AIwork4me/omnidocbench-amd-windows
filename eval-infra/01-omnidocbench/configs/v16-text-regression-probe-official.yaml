@@ -1,0 +1,17 @@
+# OmniDocBench v1.6 9-page Text Edit-distance regression probe.
+#
+# This diagnostic subset compares the official doc_parser adapter against the
+# lightweight adapter on pages that drive the official-vs-lightweight Text
+# Edit-distance regression.
+end2end_eval:
+  metrics:
+    text_block:      { metric: [Edit_dist] }
+    display_formula: { metric: [Edit_dist] }
+    table:           { metric: [TEDS, Edit_dist], teds_workers: 16 }
+    reading_order:   { metric: [Edit_dist] }
+  dataset:
+    dataset_name: end2end_dataset
+    ground_truth: { data_path: <REPO_ROOT>/eval-infra/01-omnidocbench/data/OmniDocBench_text_regression_probe_2026-07-09.json }
+    prediction:   { data_path: <REPO_ROOT>/predictions/probe_text_regression_official_2026-07-09 }
+    match_method: quick_match
+    match_workers: 8

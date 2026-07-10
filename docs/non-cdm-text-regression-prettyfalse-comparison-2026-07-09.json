@@ -1,0 +1,92 @@
+[
+  {
+    "image": "newspaper_The Times UK_0801@magazinesclubnew_page_031.png",
+    "lightweight": 1.0,
+    "official_pretty_true": 1.0,
+    "official_htmlnorm": 1.0,
+    "official_pretty_false": 1.0,
+    "pretty_true_minus_lightweight": 0.0,
+    "pretty_false_recovery": 0.0,
+    "pretty_false_remaining_vs_lightweight": 0.0
+  },
+  {
+    "image": "docstructbench_llm-raw-scihub-o.O-j.snb.2004.06.022.pdf_2.jpg",
+    "lightweight": 0.0,
+    "official_pretty_true": 0.4909560723514212,
+    "official_htmlnorm": 0.0,
+    "official_pretty_false": 0.0,
+    "pretty_true_minus_lightweight": 0.4909560723514212,
+    "pretty_false_recovery": 0.4909560723514212,
+    "pretty_false_remaining_vs_lightweight": 0.0
+  },
+  {
+    "image": "docstructbench_dianzishu_zhongwenzaixian-o.O-63710614.pdf_149.jpg",
+    "lightweight": 0.0,
+    "official_pretty_true": 0.4810126582278481,
+    "official_htmlnorm": 0.0,
+    "official_pretty_false": 0.0,
+    "pretty_true_minus_lightweight": 0.4810126582278481,
+    "pretty_false_recovery": 0.4810126582278481,
+    "pretty_false_remaining_vs_lightweight": 0.0
+  },
+  {
+    "image": "PPT_ch7_page_053.png",
+    "lightweight": 0.0,
+    "official_pretty_true": 0.36363636363636365,
+    "official_htmlnorm": 0.0064516129032258064,
+    "official_pretty_false": 0.0064516129032258064,
+    "pretty_true_minus_lightweight": 0.36363636363636365,
+    "pretty_false_recovery": 0.3571847507331378,
+    "pretty_false_remaining_vs_lightweight": 0.0064516129032258064
+  },
+  {
+    "image": "page-87866578-c897-404e-b751-51fd444f59b2.png",
+    "lightweight": 0.13580246913580246,
+    "official_pretty_true": 0.16049382716049382,
+    "official_htmlnorm": 0.16049382716049382,
+    "official_pretty_false": 0.16049382716049382,
+    "pretty_true_minus_lightweight": 0.024691358024691357,
+    "pretty_false_recovery": 0.0,
+    "pretty_false_remaining_vs_lightweight": 0.024691358024691357
+  },
+  {
+    "image": "PPT_fundamental_theorem_of_calculus___page_002.png",
+    "lightweight": 0.0,
+    "official_pretty_true": 0.3434343434343434,
+    "official_htmlnorm": 0.0,
+    "official_pretty_false": 0.0,
+    "pretty_true_minus_lightweight": 0.3434343434343434,
+    "pretty_false_recovery": 0.3434343434343434,
+    "pretty_false_remaining_vs_lightweight": 0.0
+  },
+  {
+    "image": "yanbaor2_yanbaoPPT_2108.jpg",
+    "lightweight": 0.0030864197530864196,
+    "official_pretty_true": 0.2097560975609756,
+    "official_htmlnorm": 0.0030864197530864196,
+    "official_pretty_false": 0.0030864197530864196,
+    "pretty_true_minus_lightweight": 0.2066696778078892,
+    "pretty_false_recovery": 0.2066696778078892,
+    "pretty_false_remaining_vs_lightweight": 0.0
+  },
+  {
+    "image": "PPT_BaharMartonosi_page_005.png",
+    "lightweight": 0.0,
+    "official_pretty_true": 0.34523809523809523,
+    "official_htmlnorm": 0.0,
+    "official_pretty_false": 0.0,
+    "pretty_true_minus_lightweight": 0.34523809523809523,
+    "pretty_false_recovery": 0.34523809523809523,
+    "pretty_false_remaining_vs_lightweight": 0.0
+  },
+  {
+    "image": "jiaocaineedrop_jiaocai_needrop_en_349.jpg",
+    "lightweight": 0.4665650600114307,
+    "official_pretty_true": 0.4798154555940023,
+    "official_htmlnorm": 0.4798154555940023,
+    "official_pretty_false": 0.4798154555940023,
+    "pretty_true_minus_lightweight": 0.013250395582571572,
+    "pretty_false_recovery": 0.0,
+    "pretty_false_remaining_vs_lightweight": 0.013250395582571572
+  }
+]

@@ -36,7 +36,7 @@ CLI; see `_template/run_adapter.py`.
 
 | Adapter | Status | Notes |
 |---|---|---|
-| [`paddleocr-vl-1.6/`](paddleocr-vl-1.6/) | **Reference** (proven end-to-end) | PaddleOCR-VL-ROCm pipeline: PP-DocLayoutV3 ONNX layout + llama.cpp-served PaddleOCR-VL-1.6-GGUF VLM. Deterministic. |
+| [`paddleocr-vl-1.6/`](paddleocr-vl-1.6/) | **Reference** (proven end-to-end) | Two engines: `lightweight`/default for the easy PaddleOCR-VL-ROCm AMD Windows path, and `official` for PaddleOCR `PaddleOCRVL` doc_parser score comparison. Both write the same flat Markdown prediction format. |
 | [`_template/`](_template/) | Skeleton | Copy this to add a new model. Minimal no-op `run_adapter` + `setup.ps1` + this README's "add a model" recipe. |
 
 ## How to add a new model

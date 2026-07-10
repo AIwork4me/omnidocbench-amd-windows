@@ -15,11 +15,11 @@ model via [adapters](adapters/). PaddleOCR-VL-1.6 ships as the validated referen
 
 | Metric | Direction | Official baseline | PaddleOCR official engine | PaddleOCR-VL-ROCm engine |
 |---|:---:|---:|---:|---:|
-| Overall | ↑ | 96.33 | 95.8116 | 95.2524 |
-| Text Edit-distance | ↓ | 0.033 | 0.03447 | 0.03397 |
+| Overall | ↑ | 96.33 | 95.8600 | 95.2524 |
+| Text Edit-distance | ↓ | 0.033 | 0.03446 | 0.03397 |
 | Reading-order Edit-distance | ↓ | 0.127 | 0.12929 | 0.12833 |
 | Table TEDS | ↑ | 94.76 | 94.2187 | 94.3216 |
-| Formula CDM | ↑ | 97.49 | 96.6629 | 94.8326 |
+| Formula CDM | ↑ | 97.49 | 96.8074 | 94.8326 |
 
 > Overall = (Text accuracy + CDM + TEDS) / 3, where Text accuracy = (1 − Edit_dist) × 100.
 > Reading order is excluded from Overall (layout metric, not content accuracy).
@@ -87,6 +87,14 @@ For benchmark scoring with PaddleOCR's official `PaddleOCRVL` engine, export
 evaluation-oriented Markdown with `_to_markdown(pretty=False)`. The default
 pretty Markdown is intended for display and can inflate Text Edit-distance
 because OmniDocBench expects scorer-friendly Markdown.
+
+The published official-engine score keeps the Windows AMD llama.cpp/GGUF
+serving path honest: Formula CDM is `96.8074` after the determinant-array CDM
+normalization fix, and the remaining gap to the public `97.49` baseline is
+attributed to inference backend/model-output differences versus the official
+Linux vLLM-style path. One page still fails with a deterministic VLM 500 on
+this path and is tracked upstream in
+[PaddleOCR issue #18248](https://github.com/PaddlePaddle/PaddleOCR/issues/18248).
 
 ```powershell
 python adapters\paddleocr-vl-1.6\run_adapter.py `
@@ -168,11 +176,11 @@ for commands, run stats, and root-cause notes.
 
 | Metric | Direction | Official baseline | PaddleOCR official engine | PaddleOCR-VL-ROCm engine |
 |---|:---:|---:|---:|---:|
-| Overall | ↑ | 96.33 | 95.8116 | 95.2524 |
-| Text Edit-distance | ↓ | 0.033 | 0.03447 | 0.03397 |
+| Overall | ↑ | 96.33 | 95.8600 | 95.2524 |
+| Text Edit-distance | ↓ | 0.033 | 0.03446 | 0.03397 |
 | Reading-order Edit-distance | ↓ | 0.127 | 0.12929 | 0.12833 |
 | Table TEDS | ↑ | 94.76 | 94.2187 | 94.3216 |
-| Formula CDM | ↑ | 97.49 | 96.6629 | 94.8326 |
+| Formula CDM | ↑ | 97.49 | 96.8074 | 94.8326 |
 
 > Overall = (Text accuracy + CDM + TEDS) / 3, where Text accuracy = (1 − Edit_dist) × 100.
 
@@ -182,15 +190,20 @@ display and can inflate Text Edit-distance because OmniDocBench expects
 evaluation-oriented Markdown.
 
 The official-engine Formula CDM result is much closer to the public baseline
-than the ROCm engine result. The remaining gap is attributed to inference
-backend/model-output differences between the public Linux vLLM baseline and
-this Windows AMD llama.cpp server path, plus one unrecovered VLM 500 page.
+than the ROCm engine result. After the determinant-array CDM normalization fix,
+Formula CDM is `96.8074`; the remaining `0.6826` point gap is attributed to
+inference backend/model-output differences between the public Linux vLLM-style
+baseline and this Windows AMD llama.cpp/GGUF server path. The official-engine
+run also has one deterministic VLM 500 page,
+`newspaper_The Times UK_0801@magazinesclubnew_page_031.png`, tracked upstream
+as [PaddleOCR issue #18248](https://github.com/PaddlePaddle/PaddleOCR/issues/18248).
 For CDM environment issues, see [`docs/pitfalls.md#mathcolor`](docs/pitfalls.md#mathcolor)
 and [`docs/pitfalls.md#cdm-zero`](docs/pitfalls.md#cdm-zero).
 
 These are the success thresholds a fresh run must clear to count as
-reproducing our results: Text Edit-dist < 0.10 · Reading-order < 0.20 ·
-TEDS > 0.85 · CDM > 0.85.
+reproducing our results: Text Edit-dist < 0.10, Reading-order < 0.20,
+TEDS > 85, and CDM > 85 on the reported percentage scale. In raw
+`metric_result.json`, TEDS/CDM thresholds correspond to `> 0.85`.
 
 ---
 

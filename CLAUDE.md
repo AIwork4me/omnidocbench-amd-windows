@@ -137,6 +137,18 @@ python adapters\paddleocr-vl-1.6\run_adapter.py `
 #     (server down) or docs/pitfalls.md#layout (model missing).
 ```
 
+For the PaddleOCR official doc_parser score-comparison path, run the same
+adapter with `--engine official`. That path exports evaluation-oriented
+Markdown with `_to_markdown(pretty=False)` and writes to the explicit
+official prediction directory:
+
+```powershell
+python adapters\paddleocr-vl-1.6\run_adapter.py `
+    --engine official `
+    --img-dir eval-infra\01-omnidocbench\data\images `
+    --out-dir predictions\paddleocr_official_prettyfalse_full_2026-07-09
+```
+
 Use `-Variant cpu` instead of `-Variant hip` on non-AMD-Radeon hardware.
 
 ### Step 4 — scoring + final verification  (Windows + WSL, `eval-infra/03-scoring/`)
@@ -219,12 +231,15 @@ The system is fully operational when **all** hold:
 
 Reference targets (our validated PaddleOCR-VL-1.6 results on OmniDocBench v1.6):
 
-| Metric | Direction | This repo (validated) | Pass threshold |
-|---|---|---:|---:|
-| Text Edit-distance | ↓ | 0.035 | < 0.10 |
-| Reading-order Edit-distance | ↓ | 0.129 | < 0.20 |
-| Table TEDS | ↑ | 0.940 | > 0.85 |
-| Formula CDM | ↑ | 0.944 | > 0.85 |
+| Metric | Direction | PaddleOCR official engine | PaddleOCR-VL-ROCm engine | Pass threshold (reported scale) |
+|---|---|---:|---:|---:|
+| Text Edit-distance | ↓ | 0.03446 | 0.03397 | < 0.10 |
+| Reading-order Edit-distance | ↓ | 0.12929 | 0.12833 | < 0.20 |
+| Table TEDS | ↑ | 94.2187 | 94.3216 | > 85.0 |
+| Formula CDM | ↑ | 96.8074 | 94.8326 | > 85.0 |
+
+In raw `metric_result.json`, TEDS/CDM use 0-1 values, so the same threshold is
+`> 0.85`.
 
 A run whose metrics clear these thresholds reproduces our results. See
 [`README.md`](README.md) for the full table vs. the official baseline.

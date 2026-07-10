@@ -1,10 +1,18 @@
 # paddleocr-vl-1.6/ — reference adapter
 
-The **proven reference adapter** for this benchmark. It wraps the
-[PaddleOCR-VL-ROCm](https://github.com/AIwork4me/PaddleOCR-VL-ROCm) pipeline
-(ONNX layout detection + llama.cpp-served GGUF VLM) and writes one
+The **proven reference adapter** for this benchmark. It writes one
 `<image_stem>.md` per page, which the model-agnostic eval-infra then scores
 against OmniDocBench v1.6.
+
+It exposes two engines:
+
+- `lightweight` (default): the
+  [PaddleOCR-VL-ROCm](https://github.com/AIwork4me/PaddleOCR-VL-ROCm) pipeline
+  with ONNX layout detection plus llama.cpp-served GGUF VLM. This is the easy
+  local AMD Windows path used by the quick start.
+- `official`: PaddleOCR's `paddleocr.PaddleOCRVL` doc_parser path connected to
+  the same Windows AMD llama.cpp/GGUF VLM server. This is the closest
+  score-comparison path to the public PaddleOCR-VL-1.6 baseline.
 
 It exists so that:
 
@@ -85,6 +93,7 @@ After provisioning + installing the package, **run from the repo root** (the
 same CWD `score.ps1` / `full-verify.ps1` assume):
 
 ```powershell
+# Default lightweight engine.
 # --out-dir must match the path the scoring configs read
 # (eval-infra\01-omnidocbench\configs\v16*.yaml). Use paddleocrvl_rocm, not the
 # adapter's own dir name, or score.ps1 finds no predictions and scores are all 0.
@@ -104,6 +113,13 @@ For diagnostics, `run_adapter.py` also supports `--engine official`, which uses
 the official `paddleocr.PaddleOCRVL` doc_parser package instead of the local
 `paddleocr_vl_rocm` lightweight path.
 
+```powershell
+python adapters\paddleocr-vl-1.6\run_adapter.py `
+    --engine official `
+    --img-dir eval-infra\01-omnidocbench\data\images `
+    --out-dir predictions\paddleocr_official_prettyfalse_full_2026-07-09
+```
+
 Important: PaddleOCRVL's default Markdown export is presentation-oriented:
 `_to_markdown(pretty=True)` wraps centered images and captions in HTML
 `<div>`/`<img>` tags. OmniDocBench's parser/scorer expects evaluation-oriented
@@ -119,6 +135,22 @@ markdown = result._to_markdown(pretty=False)["markdown_texts"]
 
 Using the default pretty Markdown can inflate Text Edit-distance by changing
 the text candidates that OmniDocBench matches.
+
+## Validated scores
+
+Full OmniDocBench v1.6 results from this repo:
+
+| Metric | Official baseline | PaddleOCR official engine | PaddleOCR-VL-ROCm engine |
+|---|---:|---:|---:|
+| Overall | 96.33 | 95.8600 | 95.2524 |
+| Text Edit-distance | 0.033 | 0.03446 | 0.03397 |
+| Reading-order Edit-distance | 0.127 | 0.12929 | 0.12833 |
+| Table TEDS | 94.76 | 94.2187 | 94.3216 |
+| Formula CDM | 97.49 | 96.8074 | 94.8326 |
+
+The remaining Formula CDM gap is attributed to inference backend/model-output
+differences between the public Linux vLLM-style path and this Windows AMD
+llama.cpp/GGUF path, after the determinant-array CDM normalization fix.
 
 ## Files
 

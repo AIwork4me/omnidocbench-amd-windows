@@ -56,6 +56,12 @@ never reads scores — it only emits Markdown.
 This is the only layer you touch to add a model. See
 [`adapters/README.md`](../adapters/README.md) for the interface contract.
 
+The PaddleOCR-VL-1.6 reference adapter exposes two engines that share this same
+contract: `lightweight`/default for the local PaddleOCR-VL-ROCm AMD Windows
+path, and `official` for PaddleOCR's `PaddleOCRVL` doc_parser path. They differ
+only in how predictions are generated; the dataset, matcher, CDM environment,
+and scoring scripts are identical.
+
 ### 2. `eval-infra/` — model-agnostic, shared scoring infrastructure
 
 Three numbered sub-directories, in dependency order:
@@ -128,6 +134,8 @@ config template                 predictions dir              save_name          
 v16.yaml                        predictions/paddleocrvl_rocm paddleocrvl_rocm_quick_match               <save_name>_metric_result.json
 v16-hard.yaml                   predictions/..._hard         paddleocrvl_rocm_hard_quick_match          "         _run_summary.json
 v16-cdm.yaml                    predictions/..._cdm          paddleocrvl_rocm_cdm_quick_match           "         _<category>_result.json
+v16-official-prettyfalse-full   predictions/paddleocr_...    paddleocr_official_prettyfalse_...         "
+v16-cdm-official-prettyfalse    predictions/paddleocr_...    paddleocr_official_prettyfalse_...         "
 ```
 
 `save_name = basename(prediction_path) + "_" + match_method`. The `_cdm` suffix

@@ -16,10 +16,10 @@ It contains three things:
 2. **Dataset** — OmniDocBench v1.6 (1651 page images + the `OmniDocBench.json`
    ground-truth manifest) in `data/`. Downloaded from ModelScope (or
    HuggingFace, per `mirrors.env`). ~18 minutes on a slow link.
-3. **Config templates** — `configs/v16.yaml`, `v16-hard.yaml`, `v16-cdm.yaml`.
-   YAML configs consumed by `pdf_validation.py`. They use a `<REPO_ROOT>`
-   placeholder that the scoring module (Task 5) replaces with the absolute repo
-   path at runtime, so the templates are machine-independent and committed.
+3. **Config templates** — YAML configs consumed by `pdf_validation.py`. They
+   use a `<REPO_ROOT>` placeholder that the scoring module (Task 5) replaces
+   with the absolute repo path at runtime, so the templates are
+   machine-independent and committed.
 
 ## Why it's a separate module
 
@@ -74,12 +74,19 @@ absent it falls back to GitHub + ModelScope with a warning.
 | `v16.yaml` | Edit_dist + TEDS (no CDM) | full (1651) | `paddleocrvl_rocm` | minimal env; default |
 | `v16-hard.yaml` | Edit_dist + TEDS (no CDM) | hard (296) | `paddleocrvl_rocm_hard` | needs filtered manifest |
 | `v16-cdm.yaml` | Edit_dist + TEDS **+ CDM** | full (1651) | `paddleocrvl_rocm_cdm` | needs CDM env (Task 3) |
+| `v16-official-prettyfalse-full-2026-07-09.yaml` | Edit_dist + TEDS (no CDM) | full (1651) | `paddleocr_official_prettyfalse_full_2026-07-09` | PaddleOCR official engine with `_to_markdown(pretty=False)` |
+| `v16-cdm-official-prettyfalse-full-2026-07-09.yaml` | Edit_dist + TEDS **+ CDM** | full (1651) | `paddleocr_official_prettyfalse_full_2026-07-09` | WSL CDM pair for the published official-engine score |
 
 The hard-subset manifest (`OmniDocBench_hard296.json`) is **not** part of the
 dataset download; `score.ps1 -Config v16-hard.yaml` auto-derives it from the
 full manifest (filtering for `subset in {equation_hard, layout_hard, table_hard}`)
 on first use. The `prediction` paths point under
 `<REPO_ROOT>/predictions/<adapter>/`, which each adapter populates before scoring.
+
+The `official-prettyfalse` configs are not a separate benchmark. They score the
+same OmniDocBench v1.6 ground truth against predictions produced by the
+PaddleOCR official `PaddleOCRVL` doc_parser engine. The default `v16*.yaml`
+configs score the PaddleOCR-VL-ROCm engine used by the quick start.
 
 ## Notes
 

@@ -67,10 +67,9 @@ dir) even though `pdf_validation.py` exited 0.
 ## Configs and result paths
 
 `score.ps1` / `score-cdm.sh` read a **template** from
-[`../01-omnidocbench/configs/`](../01-omnidocbench/configs/) (`v16.yaml`,
-`v16-hard.yaml`, `v16-cdm.yaml`) and resolve the literal `<REPO_ROOT>`
-placeholder to this repo's absolute path. The rendered config is written into
-the OmniDocBench checkout next to `pdf_validation.py`.
+[`../01-omnidocbench/configs/`](../01-omnidocbench/configs/) and resolve the
+literal `<REPO_ROOT>` placeholder to this repo's absolute path. The rendered
+config is written into the OmniDocBench checkout next to `pdf_validation.py`.
 
 OmniDocBench writes results to `<checkout>/result/` (relative to the
 `pdf_validation.py` CWD), named:
@@ -91,10 +90,19 @@ predictions dir (`paddleocrvl_rocm_cdm`) so its `save_name`
 | `v16.yaml` | `predictions/paddleocrvl_rocm` | `paddleocrvl_rocm_quick_match` |
 | `v16-hard.yaml` | `predictions/paddleocrvl_rocm_hard` | `paddleocrvl_rocm_hard_quick_match` |
 | `v16-cdm.yaml` | `predictions/paddleocrvl_rocm_cdm` | `paddleocrvl_rocm_cdm_quick_match` |
+| `v16-official-prettyfalse-full-2026-07-09.yaml` | `predictions/paddleocr_official_prettyfalse_full_2026-07-09` | `paddleocr_official_prettyfalse_full_2026-07-09_quick_match` |
+| `v16-cdm-official-prettyfalse-full-2026-07-09.yaml` | `predictions/paddleocr_official_prettyfalse_full_2026-07-09` | `paddleocr_official_prettyfalse_full_2026-07-09_quick_match` |
 
 > The prediction dir name comes from whichever adapter produced the Markdown.
 > To score a different adapter, point the config's `prediction.data_path` at
 > that adapter's predictions dir (see [`adapters/README.md`](../../adapters/README.md)).
+
+The `official-prettyfalse` configs are the published PaddleOCR official engine
+score-comparison path. They consume Markdown exported by
+`adapters/paddleocr-vl-1.6/run_adapter.py --engine official`, which forces
+`_to_markdown(pretty=False)` so the Markdown shape matches OmniDocBench's
+parser/scorer expectations. The default `v16*.yaml` configs remain the easy
+local PaddleOCR-VL-ROCm path used by the quick start.
 
 ## PYTHONUTF8 and the Windows UTF-8 trap
 

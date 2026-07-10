@@ -605,6 +605,12 @@ Markdown scored `0.430483` Text Edit-distance; `_to_markdown(pretty=False)`
 scored `0.183316`, matching the HTML-normalized diagnostic path and nearly
 matching lightweight `0.178384`.
 
+On the published full-set official-prettyfalse run, Text Edit-distance is
+`0.03446`, close to the public `0.033` baseline and the local
+PaddleOCR-VL-ROCm engine's `0.03397`. Score it with
+`v16-official-prettyfalse-full-2026-07-09.yaml` and the paired WSL CDM config
+`v16-cdm-official-prettyfalse-full-2026-07-09.yaml`.
+
 ---
 
 ## How to add a new entry
