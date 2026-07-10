@@ -9,7 +9,7 @@ Handles two cases:
 
 .DESCRIPTION
 All scripts in this repo address the WSL distro as **Ubuntu2204** (no dot, no
-dash). That is the canonical name everywhere (CLAUDE.md, full-verify.ps1,
+dash). That is the canonical name everywhere (AGENTS.md, full-verify.ps1,
 score-cdm.sh, the module READMEs, the \\wsl$\Ubuntu2204\ UNC path, ...).
 
 `wsl --install -d Ubuntu-22.04` creates a distro named **Ubuntu-22.04**

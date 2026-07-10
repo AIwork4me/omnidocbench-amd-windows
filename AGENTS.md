@@ -1,7 +1,7 @@
-# CLAUDE.md
+# AGENTS.md
 
-> This file is the **AI-agent orchestration layer**. It is written for Claude
-> Code / OpenCode / similar coding agents: read it top-to-bottom and execute the
+> This file is the **AI-agent orchestration layer**. It is written for Codex
+> Code / Claude Code / OpenCode / similar coding agents: read it top-to-bottom and execute the
 > flow below to bring the full OmniDocBench v1.6 evaluation system up from zero
 > on an AMD Windows machine, then verify it produces real scores.
 >
@@ -272,7 +272,7 @@ example to copy from.
   when editing — never make a setup step destructive to re-run.
 - **Verify is the agent's eyes**: each `setup.*` is followed by a `verify.*`
   returning 0/1. When you add a setup step, add/extend its verify.
-- **No fixes in CLAUDE.md**: new landmines go in `docs/pitfalls.md` as
+- **No fixes in AGENTS.md**: new landmines go in `docs/pitfalls.md` as
   `Symptom → Root Cause → Fix → Verify`, then a row in the exception table
   above. Keep this file orchestration-only.
 - **Codepage**: every Windows scoring run sets `PYTHONUTF8=1`. Never remove it.

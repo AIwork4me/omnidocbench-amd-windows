@@ -96,9 +96,9 @@ python adapters\paddleocr-vl-1.6\run_adapter.py `
     --out-dir predictions\paddleocr_official_prettyfalse_full_2026-07-09
 ```
 
-想用 agent 驱动？把 **Claude Code**（或 OpenCode，或任何能读 `CLAUDE.md` 的 agent）指向本 repo，说"按 CLAUDE.md 搭建" / "Read CLAUDE.md and execute the setup flow."。完整分步流程（含异常处理）见 [`CLAUDE.md`](CLAUDE.md)。
+想用 agent 驱动？把 **Codex、Claude Code、OpenCode，或任何能读 `AGENTS.md` 的 agent** 指向本 repo，说"按 AGENTS.md 搭建" / "Read AGENTS.md and execute the setup flow."。完整分步流程（含异常处理）见 [`AGENTS.md`](AGENTS.md)。
 
-[English](README.md) · [架构图](docs/architecture.md) · [踩坑知识库](docs/pitfalls.md) · [CLAUDE.md](CLAUDE.md)
+[English](README.md) · [架构图](docs/architecture.md) · [踩坑知识库](docs/pitfalls.md) · [AGENTS.md](AGENTS.md)
 
 ---
 
@@ -201,7 +201,7 @@ CDM 环境问题见
 
 我们踩过的所有坑，全部**按症状**组织（根因 → 修复 → 验证）：[`docs/pitfalls.md`](docs/pitfalls.md)。从目录开始，找到你的症状即可。最隐蔽的一种失败是 **CDM F1 = 0 且全程没有任何报错**——所有步骤都成功，分数却是零；[`docs/pitfalls.md#cdm-zero`](docs/pitfalls.md#cdm-zero) 的决策树能解决它。
 
-agent 驱动的流程和异常速查表见 [`CLAUDE.md`](CLAUDE.md)。
+agent 驱动的流程和异常速查表见 [`AGENTS.md`](AGENTS.md)。
 
 ---
 

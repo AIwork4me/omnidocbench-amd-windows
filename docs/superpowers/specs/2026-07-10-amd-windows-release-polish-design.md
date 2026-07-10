@@ -37,7 +37,7 @@ final score JSON files.
 In scope:
 
 - Top-level English and Chinese README files.
-- Agent orchestration documentation (`CLAUDE.md`) where reference scores and
+- Agent orchestration documentation (`AGENTS.md`) where reference scores and
   success criteria are shown.
 - PaddleOCR-VL adapter documentation.
 - Core scoring/evaluation READMEs where users need to understand the official
@@ -77,7 +77,7 @@ superseded by it.
 - `lightweight`: `PaddleOCR-VL-ROCm`, the easy local AMD Windows path, retained
   for reproducible setup and adapter development.
 
-`CLAUDE.md` and core eval-infra README files should keep operational steps
+`AGENTS.md` and core eval-infra README files should keep operational steps
 unchanged while updating final reference numbers and known exceptions.
 
 ## Error Handling And Honesty Rules

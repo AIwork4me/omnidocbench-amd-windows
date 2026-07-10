@@ -103,12 +103,12 @@ python adapters\paddleocr-vl-1.6\run_adapter.py `
     --out-dir predictions\paddleocr_official_prettyfalse_full_2026-07-09
 ```
 
-Prefer the agent-driven flow? Point **Claude Code** (or OpenCode, or any agent
-that reads `CLAUDE.md`) at this repo and say "按 CLAUDE.md 搭建" / "Read CLAUDE.md
-and execute the setup flow." Full step-by-step with exception handling:
-[`CLAUDE.md`](CLAUDE.md).
+Prefer the agent-driven flow? Point **Codex, Claude Code, OpenCode, or any
+agent that reads `AGENTS.md`** at this repo and say "按 AGENTS.md 搭建" /
+"Read AGENTS.md and execute the setup flow." Full step-by-step with exception handling:
+[`AGENTS.md`](AGENTS.md).
 
-[中文文档](README.zh-CN.md) · [Architecture](docs/architecture.md) · [Pitfalls KB](docs/pitfalls.md) · [CLAUDE.md](CLAUDE.md)
+[中文文档](README.zh-CN.md) · [Architecture](docs/architecture.md) · [Pitfalls KB](docs/pitfalls.md) · [AGENTS.md](AGENTS.md)
 
 ---
 
@@ -237,7 +237,7 @@ printed** — everything succeeds yet the score is zero; the decision tree at
 [`docs/pitfalls.md#cdm-zero`](docs/pitfalls.md#cdm-zero) resolves it.
 
 For the agent-driven flow and the exception lookup table, see
-[`CLAUDE.md`](CLAUDE.md).
+[`AGENTS.md`](AGENTS.md).
 
 ---
 

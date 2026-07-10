@@ -1982,7 +1982,7 @@ cross-process coordination:
 
 ## Prerequisites
 
-- Steps 0-3 from [CLAUDE.md](../../CLAUDE.md) must be provisioned (WSL, dataset, CDM environment, adapter)
+- Steps 0-3 from [AGENTS.md](../../AGENTS.md) must be provisioned (WSL, dataset, CDM environment, adapter)
 - `psutil` Python package: `pip install psutil`
 - `rocm-smi` on PATH (for GPU metrics; degrades gracefully if unavailable)
 - `pytest` for running tests: `pip install pytest`
@@ -2056,7 +2056,7 @@ powershell -ExecutionPolicy Bypass -File eval-infra\04-benchmark\verify.ps1 -Rep
 
 ## 前提条件
 
-- 已完成 CLAUDE.md 中的步骤 0-3（WSL、数据集、CDM 环境、适配器）
+- 已完成 AGENTS.md 中的步骤 0-3（WSL、数据集、CDM 环境、适配器）
 - Python 包：`pip install psutil`
 - GPU 监控需 `rocm-smi` 在 PATH 中（不可用时自动降级）
 - 测试：`pip install pytest`
@@ -2084,7 +2084,7 @@ git commit -m "docs(benchmark): bilingual README for 04-benchmark module"
 - Modify: `eval-infra/README.md`
 - Modify: `scripts/full-verify.ps1`
 - Modify: `.gitignore`
-- Modify: `CLAUDE.md`
+- Modify: `AGENTS.md`
 
 **Interfaces:**
 - Consumes: existing file contents (read below)
@@ -2175,7 +2175,7 @@ benchmark-results/*
 **/monitor_stop.txt
 ```
 
-- [ ] **Step 5: Update `CLAUDE.md`**
+- [ ] **Step 5: Update `AGENTS.md`**
 
 After line 156 (end of Step 4 scoring section), insert:
 
@@ -2204,7 +2204,7 @@ In the exception lookup table, add two new rows:
 - [ ] **Step 6: Commit**
 
 ```bash
-git add docs/architecture.md eval-infra/README.md scripts/full-verify.ps1 .gitignore CLAUDE.md
+git add docs/architecture.md eval-infra/README.md scripts/full-verify.ps1 .gitignore AGENTS.md
 git commit -m "feat(benchmark): wire 04-benchmark into existing docs + full-verify chain"
 ```
 

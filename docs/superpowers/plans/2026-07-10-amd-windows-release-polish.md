@@ -132,7 +132,7 @@ Expected: all final markers are present.
 **Files:**
 - Modify: `adapters/paddleocr-vl-1.6/README.md`
 - Modify: `adapters/README.md`
-- Modify: `CLAUDE.md`
+- Modify: `AGENTS.md`
 
 **Interfaces:**
 - Consumes: public README terminology for `official` and `lightweight` engines.
@@ -153,7 +153,7 @@ In `adapters/README.md`, mention that the reference adapter exposes both `offici
 
 - [ ] **Step 3: Update CLAUDE success criteria**
 
-Update the reference target table in `CLAUDE.md` to show:
+Update the reference target table in `AGENTS.md` to show:
 
 ```text
 Text Edit-distance: 0.03446 official / 0.03397 ROCm
@@ -169,7 +169,7 @@ Keep the operational steps and human-intervention messages unchanged.
 Run:
 
 ```powershell
-Select-String -Path adapters\README.md,adapters\paddleocr-vl-1.6\README.md,CLAUDE.md -Pattern "official","lightweight","96.8074","pretty=False"
+Select-String -Path adapters\README.md,adapters\paddleocr-vl-1.6\README.md,AGENTS.md -Pattern "official","lightweight","96.8074","pretty=False"
 ```
 
 Expected: the engine terms and final score appear in the relevant docs.
@@ -233,7 +233,7 @@ Expected: scoring configs and Markdown-mode warning are discoverable.
 Run:
 
 ```powershell
-rg -n "95\.8116|96\.6629|96\.6829|0\.8271|0\.8071" README.md README.zh-CN.md CLAUDE.md docs\release-paddleocr-vl-1.6-amd-windows-2026-07-09.md adapters\README.md adapters\paddleocr-vl-1.6\README.md eval-infra\01-omnidocbench\README.md eval-infra\03-scoring\README.md docs\architecture.md docs\pitfalls.md
+rg -n "95\.8116|96\.6629|96\.6829|0\.8271|0\.8071" README.md README.zh-CN.md AGENTS.md docs\release-paddleocr-vl-1.6-amd-windows-2026-07-09.md adapters\README.md adapters\paddleocr-vl-1.6\README.md eval-infra\01-omnidocbench\README.md eval-infra\03-scoring\README.md docs\architecture.md docs\pitfalls.md
 ```
 
 Expected: no hits in public docs, except `96.6629` if explicitly labeled as pre determinant fix in the release evidence.
@@ -274,7 +274,7 @@ Run:
 
 ```powershell
 git status --short
-git add README.md README.zh-CN.md CLAUDE.md adapters\README.md adapters\paddleocr-vl-1.6\README.md docs\architecture.md docs\pitfalls.md docs\release-paddleocr-vl-1.6-amd-windows-2026-07-09.md docs\formula-cdm-vllm-gap-investigation-2026-07-09.md docs\formula-cdm-official-vllm-gap-cases-2026-07-09.json docs\formula-cdm-official-vllm-gap-probe-2026-07-09.json docs\non-cdm-text-regression-official-vs-lightweight-probe-2026-07-09.md docs\non-cdm-text-regression-full-vs-probe-2026-07-09.json docs\non-cdm-text-regression-htmlnorm-comparison-2026-07-09.json docs\non-cdm-text-regression-prettyfalse-comparison-2026-07-09.json docs\non-cdm-text-regression-probe-summary-2026-07-09.json docs\superpowers\specs\2026-07-10-amd-windows-release-polish-design.md docs\superpowers\plans\2026-07-10-amd-windows-release-polish.md eval-infra\01-omnidocbench\README.md eval-infra\03-scoring\README.md eval-infra\01-omnidocbench\configs\v16-text-regression-probe-lightweight.yaml eval-infra\01-omnidocbench\configs\v16-text-regression-probe-official-htmlnorm.yaml eval-infra\01-omnidocbench\configs\v16-text-regression-probe-official-prettyfalse.yaml eval-infra\01-omnidocbench\configs\v16-text-regression-probe-official.yaml
+git add README.md README.zh-CN.md AGENTS.md adapters\README.md adapters\paddleocr-vl-1.6\README.md docs\architecture.md docs\pitfalls.md docs\release-paddleocr-vl-1.6-amd-windows-2026-07-09.md docs\formula-cdm-vllm-gap-investigation-2026-07-09.md docs\formula-cdm-official-vllm-gap-cases-2026-07-09.json docs\formula-cdm-official-vllm-gap-probe-2026-07-09.json docs\non-cdm-text-regression-official-vs-lightweight-probe-2026-07-09.md docs\non-cdm-text-regression-full-vs-probe-2026-07-09.json docs\non-cdm-text-regression-htmlnorm-comparison-2026-07-09.json docs\non-cdm-text-regression-prettyfalse-comparison-2026-07-09.json docs\non-cdm-text-regression-probe-summary-2026-07-09.json docs\superpowers\specs\2026-07-10-amd-windows-release-polish-design.md docs\superpowers\plans\2026-07-10-amd-windows-release-polish.md eval-infra\01-omnidocbench\README.md eval-infra\03-scoring\README.md eval-infra\01-omnidocbench\configs\v16-text-regression-probe-lightweight.yaml eval-infra\01-omnidocbench\configs\v16-text-regression-probe-official-htmlnorm.yaml eval-infra\01-omnidocbench\configs\v16-text-regression-probe-official-prettyfalse.yaml eval-infra\01-omnidocbench\configs\v16-text-regression-probe-official.yaml
 git commit -m "docs: publish final amd windows benchmark results"
 ```
 

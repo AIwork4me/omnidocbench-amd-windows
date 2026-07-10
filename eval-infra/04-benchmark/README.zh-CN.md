@@ -44,7 +44,7 @@ powershell -ExecutionPolicy Bypass -File eval-infra\04-benchmark\verify.ps1 -Rep
 
 ## 前提条件
 
-- 已完成 CLAUDE.md 中的步骤 0-3（WSL、数据集、CDM 环境、适配器）
+- 已完成 AGENTS.md 中的步骤 0-3（WSL、数据集、CDM 环境、适配器）
 - Python 包：`pip install psutil`
 - GPU 监控需 `rocm-smi` 在 PATH 中（不可用时自动降级）
 - 测试：`pip install pytest`

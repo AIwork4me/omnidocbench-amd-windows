@@ -5,14 +5,14 @@ Full-chain verification of the OmniDocBench AMD Windows evaluation system.
 .DESCRIPTION
 Runs every per-module verify script in dependency order and aggregates the
 results into one pass/fail report. It is the single command an agent (or human)
-runs after the Step 0-4 provisioning in CLAUDE.md to confirm the whole system
+runs after the Step 0-4 provisioning in AGENTS.md to confirm the whole system
 is wired up and producing real scores.
 
 This is a VERIFICATION harness, not an installer. It assumes you have already
 run the setup steps it checks. Each verify it invokes is itself idempotent and
 side-effect-free, so re-running full-verify is always safe.
 
-Order mirrors CLAUDE.md's dependency chain:
+Order mirrors AGENTS.md's dependency chain:
   1. mirrors.env written            (detect-mirrors)
   2. WSL Ubuntu2204 reachable       (wsl-ensure)
   3. OmniDocBench code + dataset    (01-omnidocbench)

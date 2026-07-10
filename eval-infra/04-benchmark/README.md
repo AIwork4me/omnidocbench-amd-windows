@@ -77,7 +77,7 @@ cross-process coordination:
 
 ## Prerequisites
 
-- Steps 0-3 from [CLAUDE.md](../../CLAUDE.md) must be provisioned (WSL, dataset, CDM environment, adapter)
+- Steps 0-3 from [AGENTS.md](../../AGENTS.md) must be provisioned (WSL, dataset, CDM environment, adapter)
 - `psutil` Python package: `pip install psutil`
 - `rocm-smi` on PATH (for GPU metrics; degrades gracefully if unavailable)
 - `pytest` for running tests: `pip install pytest`

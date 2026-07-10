@@ -437,7 +437,7 @@ No new test dependencies beyond Python stdlib + `pytest`.
 | `eval-infra/README.md` | Module table: add row 5 (04-benchmark) |
 | `scripts/full-verify.ps1` | `$modules` array: add `"04-benchmark"`; `Invoke-ModuleVerify` step for benchmark |
 | `.gitignore` | Add: `benchmark-results/*` + `!benchmark-results/reference/` + `**/monitor_stop.txt` |
-| `CLAUDE.md` | Execution flow: add Step 5 after Step 4; exception lookup: add 2 rows (benchmark-specific failures) |
+| `AGENTS.md` | Execution flow: add Step 5 after Step 4; exception lookup: add 2 rows (benchmark-specific failures) |
 
 ## 11. Non-Goals (explicitly out of scope)
 
@@ -457,7 +457,7 @@ No new test dependencies beyond Python stdlib + `pytest`.
 ## 12. Conventions Followed
 
 All design decisions reference the repo's established conventions from
-`CONTRIBUTING.md`, `CLAUDE.md`, and the existing `eval-infra/` modules:
+`CONTRIBUTING.md`, `AGENTS.md`, and the existing `eval-infra/` modules:
 
 - PowerShell 5.1 compatible (no `??`, no ternary, no `Join-Path` 3-arg)
 - `$ErrorActionPreference = "Stop"` in all `.ps1` scripts
