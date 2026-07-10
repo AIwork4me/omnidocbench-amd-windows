@@ -6,11 +6,15 @@
 [![Python 3.10+](https://img.shields.io/badge/Python-3.10+-3776AB.svg)](https://www.python.org/downloads/)
 [![GitHub stars](https://img.shields.io/github/stars/AIwork4me/omnidocbench-amd-windows)](https://github.com/AIwork4me/omnidocbench-amd-windows)
 
+[English](README.md) · [架构图](docs/architecture.md) · [踩坑知识库](docs/pitfalls.md) · [AGENTS.md](AGENTS.md)
+
 > **我们踩了 20+ 个坑才跑通 OmniDocBench CDM。这个 repo 把它们压缩成一条命令。**
 
 在 **Windows + AMD Radeon GPU** 上从零搭建 [OmniDocBench](https://github.com/opendatalab/OmniDocBench) v1.6 全量评测系统
 （1651 页，四项标准指标：文本 / 阅读顺序 / 表格 TEDS / **公式 CDM**）。模型无关——换任何文档解析模型只需写一个
 [适配器](adapters/)。以 PaddleOCR-VL-1.6 为已验证参考。
+
+![OmniDocBench AMD Windows 概览](overview.jpg)
 
 | 指标 | 方向 | 官方基线 | PaddleOCR official engine | PaddleOCR-VL-ROCm engine |
 |---|:---:|---:|---:|---:|
@@ -97,8 +101,6 @@ python adapters\paddleocr-vl-1.6\run_adapter.py `
 ```
 
 想用 agent 驱动？把 **Codex、Claude Code、OpenCode，或任何能读 `AGENTS.md` 的 agent** 指向本 repo，说"按 AGENTS.md 搭建" / "Read AGENTS.md and execute the setup flow."。完整分步流程（含异常处理）见 [`AGENTS.md`](AGENTS.md)。
-
-[English](README.md) · [架构图](docs/architecture.md) · [踩坑知识库](docs/pitfalls.md) · [AGENTS.md](AGENTS.md)
 
 ---
 

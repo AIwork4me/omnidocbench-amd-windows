@@ -6,6 +6,8 @@
 [![Python 3.10+](https://img.shields.io/badge/Python-3.10+-3776AB.svg)](https://www.python.org/downloads/)
 [![GitHub stars](https://img.shields.io/github/stars/AIwork4me/omnidocbench-amd-windows)](https://github.com/AIwork4me/omnidocbench-amd-windows)
 
+[中文文档](README.zh-CN.md) · [Architecture](docs/architecture.md) · [Pitfalls KB](docs/pitfalls.md) · [AGENTS.md](AGENTS.md)
+
 > **Setting up OmniDocBench CDM took us 20+ debugging sessions. This repo distills them into one command.**
 
 One-command setup of [OmniDocBench](https://github.com/opendatalab/OmniDocBench) v1.6 full evaluation
@@ -109,8 +111,6 @@ Prefer the agent-driven flow? Point **Codex, Claude Code, OpenCode, or any
 agent that reads `AGENTS.md`** at this repo and say "按 AGENTS.md 搭建" /
 "Read AGENTS.md and execute the setup flow." Full step-by-step with exception handling:
 [`AGENTS.md`](AGENTS.md).
-
-[中文文档](README.zh-CN.md) · [Architecture](docs/architecture.md) · [Pitfalls KB](docs/pitfalls.md) · [AGENTS.md](AGENTS.md)
 
 ---
 
