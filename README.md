@@ -13,6 +13,8 @@ One-command setup of [OmniDocBench](https://github.com/opendatalab/OmniDocBench)
 reading-order Edit-distance, table TEDS, **formula CDM**. Model-agnostic — swap any document parsing
 model via [adapters](adapters/). PaddleOCR-VL-1.6 ships as the validated reference.
 
+![OmniDocBench AMD Windows overview](overview.jpg)
+
 | Metric | Direction | Official baseline | PaddleOCR official engine | PaddleOCR-VL-ROCm engine |
 |---|:---:|---:|---:|---:|
 | Overall | ↑ | 96.33 | 95.8600 | 95.2524 |
