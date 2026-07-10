@@ -1,8 +1,8 @@
-﻿diff --git a/src/core/preprocess/formula_cdm.py b/src/core/preprocess/formula_cdm.py
-index 8973cc3..7c41aba 100644
+diff --git a/src/core/preprocess/formula_cdm.py b/src/core/preprocess/formula_cdm.py
+index 8973cc3..de083d2 100644
 --- a/src/core/preprocess/formula_cdm.py
 +++ b/src/core/preprocess/formula_cdm.py
-@@ -37,6 +37,45 @@ _ALIGNED_MATRIX_RE = re.compile(
+@@ -37,6 +37,51 @@ _ALIGNED_MATRIX_RE = re.compile(
      r'\s*(?:\\\\\s*)?\\end\{aligned\*?\}\s*$',
      re.S,
  )
@@ -19,6 +19,12 @@ index 8973cc3..7c41aba 100644
 +    r'\\mathop\s*\{\s*(\\operatorname\s*\{[^{}]+\})\s*\}\s*\\limits'
 +)
 +_INLINE_MATH_MARKER_RE = re.compile(r'\\?\s*\$\s*')
++_DETERMINANT_ARRAY_RE = re.compile(
++    r'(?:\\left\||\|)\s*'
++    r'\\begin\{array\}\s*\{[^{}]*\}(?P<body>.*?)\\end\{array\}'
++    r'\s*(?:\\right\||\|)?',
++    re.S,
++)
 +_DYNAMIC_DELIMITER_REPLACEMENTS = (
 +    (r'\left\lbrack', r'\lbrack'),
 +    (r'\right\rbrack', r'\rbrack'),
@@ -48,7 +54,7 @@ index 8973cc3..7c41aba 100644
  
  
  def _needs_gt_cdm_fix(text: str) -> bool:
-@@ -85,6 +124,138 @@ def _strip_outer_braces(text: str) -> str:
+@@ -85,6 +130,151 @@ def _strip_outer_braces(text: str) -> str:
      return stripped
  
  
@@ -173,6 +179,18 @@ index 8973cc3..7c41aba 100644
 +    return formula
 +
 +
++def _normalize_determinant_arrays(text: str) -> str:
++    formula = str(text or '')
++
++    def replace(match: re.Match) -> str:
++        body = match.group('body')
++        if '&' not in body and r'\\' not in body:
++            return match.group(0)
++        return rf'\begin{{vmatrix}}{body}\end{{vmatrix}}'
++
++    return _DETERMINANT_ARRAY_RE.sub(replace, formula)
++
++
 +def _normalize_cdm_compatible_commands(text: str) -> str:
 +    formula = str(text or '')
 +    formula = _INLINE_MATH_MARKER_RE.sub(' ', formula)
@@ -181,13 +199,14 @@ index 8973cc3..7c41aba 100644
 +    formula = _normalize_mathop_limits(formula)
 +    formula = _strip_unmatched_leading_left_bar(formula)
 +    formula = _downgrade_dynamic_delimiters(formula)
++    formula = _normalize_determinant_arrays(formula)
 +    return formula.strip()
 +
 +
  def _split_latex_rows(body: str) -> list[str]:
      begin_token = '\\begin{'
      end_token = '\\end{'
-@@ -313,8 +484,13 @@ def sanitize_formula_for_cdm(text: str, gt_text: str = '') -> str:
+@@ -313,8 +503,13 @@ def sanitize_formula_for_cdm(text: str, gt_text: str = '') -> str:
      formula = strip_formula_tags(strip_formula_delimiters(str(text or '')).strip())
      if not formula:
          return ''
@@ -202,7 +221,7 @@ index 8973cc3..7c41aba 100644
      if not matrix_context:
          return formula.strip()
  
-@@ -339,11 +515,14 @@ def build_matrix_cdm_variants(gt_text: str, pred_text: str) -> tuple[str, str]:
+@@ -339,11 +534,14 @@ def build_matrix_cdm_variants(gt_text: str, pred_text: str) -> tuple[str, str]:
  
      if not raw_gt and not raw_pred:
          return '', ''
@@ -224,10 +243,10 @@ index 8973cc3..7c41aba 100644
      return gt_cdm or raw_gt, pred_cdm_alt
 diff --git a/tests/test_formula_cdm_normalization.py b/tests/test_formula_cdm_normalization.py
 new file mode 100644
-index 0000000..a0bf2f4
+index 0000000..e7db465
 --- /dev/null
 +++ b/tests/test_formula_cdm_normalization.py
-@@ -0,0 +1,103 @@
+@@ -0,0 +1,113 @@
 +from src.core.preprocess.formula_cdm import build_matrix_cdm_variants, sanitize_formula_for_cdm
 +
 +
@@ -274,6 +293,16 @@ index 0000000..a0bf2f4
 +    gt_cdm, pred_cdm_alt = build_matrix_cdm_variants(gt, pred)
 +
 +    assert gt_cdm == gt
++    assert pred_cdm_alt == ''
++
++
++def test_build_cdm_variant_normalizes_determinant_array_gt_to_vmatrix():
++    gt = r"\left|\begin{array}{cc}a&b\\c&d\end{array}\right|"
++    pred = r"\begin{vmatrix}a&b\\c&d\end{vmatrix}"
++
++    gt_cdm, pred_cdm_alt = build_matrix_cdm_variants(gt, pred)
++
++    assert gt_cdm == pred
 +    assert pred_cdm_alt == ''
 +
 +
