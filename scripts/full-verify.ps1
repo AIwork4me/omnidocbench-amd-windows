@@ -16,15 +16,18 @@ Order mirrors AGENTS.md's dependency chain:
   1. mirrors.env written            (detect-mirrors)
   2. WSL Ubuntu2204 reachable       (wsl-ensure)
   3. OmniDocBench code + dataset    (01-omnidocbench)
-  4. CDM environment functional     (02-cdm-environment, in WSL)
+  4. CDM environment functional     (WSL via `score-cdm.sh`, or native Windows via `verify-windows.ps1` + `score.ps1 -Config v16-cdm.yaml`)
   5. VLM server + layout model      (paddleocr-vl-1.6/01-vlm-server + 02-layout-model)
   6. Predictions present            (adapter output)
   7. Scores present + non-zero      (03-scoring)
   8. Benchmark report valid         (04-benchmark, optional)
 
 Steps that depend on optional setup (e.g. predictions exist only after the
-adapter ran; CDM scores only after score-cdm.sh) are reported as SKIP rather
-than FAIL when their inputs are absent, so the core infra check still exits 0.
+adapter ran; CDM scores only after their selected path is run: WSL via
+`score-cdm.sh`, or native Windows via `verify-windows.ps1` + `score.ps1 -Config
+v16-cdm.yaml`) are reported as SKIP rather than FAIL when their inputs are
+absent, so the core infra check still exits 0. Native full verification via
+`-SkipWsl -WindowsCdm` runs the Windows CDM gate without WSL checks.
 
 .PARAMETER SkipWsl
 Skip the WSL checks, including setup.sh/verify.sh/score-cdm.sh checks; native

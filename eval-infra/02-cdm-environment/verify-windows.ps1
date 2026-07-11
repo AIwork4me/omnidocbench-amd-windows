@@ -74,11 +74,11 @@ if ($texRoot) {
     $tlgsBin = Join-Path $texRoot "tlpkg\tlgs\bin"
     $tlgsResource = Join-Path $texRoot "tlpkg\tlgs\Resource"
     if (Test-Path $tlgsBin) { Pass "TeX Live bundled Ghostscript bin present: $tlgsBin" }
-    else { Write-Host "WARN: TeX Live bundled Ghostscript bin not found at $tlgsBin" -ForegroundColor Yellow }
+    else { Fail "TeX Live bundled Ghostscript bin not found at $tlgsBin" }
     if (Test-Path $tlgsResource) { Pass "TeX Live bundled Ghostscript Resource present: $tlgsResource" }
-    else { Write-Host "WARN: TeX Live bundled Ghostscript Resource not found at $tlgsResource" -ForegroundColor Yellow }
+    else { Fail "TeX Live bundled Ghostscript Resource not found at $tlgsResource" }
 } else {
-    Write-Host "WARN: could not resolve TeX Live root via kpsewhich SELFAUTOPARENT" -ForegroundColor Yellow
+    Fail "could not resolve TeX Live root via kpsewhich SELFAUTOPARENT for bundled Ghostscript discovery"
 }
 
 if ($ok -and (Test-Path $venvPython)) {

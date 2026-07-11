@@ -77,6 +77,11 @@ def test_verify_windows_checks_native_cdm_toolchain_and_smoke():
     assert "tlpkg" in text
     assert "tlgs" in text
     assert "GS_LIB" in text
+    assert 'Fail "TeX Live bundled Ghostscript bin not found at $tlgsBin"' in text
+    assert 'Fail "TeX Live bundled Ghostscript Resource not found at $tlgsResource"' in text
+    assert 'Fail "could not resolve TeX Live root via kpsewhich SELFAUTOPARENT' in text
+    assert "WARN: TeX Live bundled Ghostscript bin not found" not in text
+    assert "WARN: TeX Live bundled Ghostscript Resource not found" not in text
     assert "src.metrics.cdm_metric" in text
     assert "F1_score" in text
     assert "VERIFY OK: Windows native CDM environment functional." in text
@@ -117,6 +122,15 @@ def test_full_verify_help_documents_skip_wsl_native_cdm_semantics_and_command():
         "powershell -ExecutionPolicy Bypass -File "
         "scripts\\full-verify.ps1 -SkipWsl -WindowsCdm"
     ) in normalized
+
+
+def test_full_verify_help_documents_both_cdm_scoring_paths():
+    text = read(FULL_VERIFY)
+    normalized = " ".join(text.split())
+
+    assert "WSL via `score-cdm.sh`" in normalized
+    assert "native Windows via `verify-windows.ps1` + `score.ps1 -Config v16-cdm.yaml`" in normalized
+    assert "Native full verification via `-SkipWsl -WindowsCdm`" in normalized
 
 
 def test_scoring_readme_documents_native_and_wsl_cdm_scoring_paths():
