@@ -2,7 +2,7 @@
 # doc_parser adapter output (Edit_dist + TEDS; CDM disabled).
 #
 # This is a TEMPLATE: <REPO_ROOT> is replaced with the absolute repo root at
-# runtime. Use v16-cdm-official.yaml in WSL when Formula CDM is needed.
+# runtime. Use v16-cdm-official.yaml with the native Windows scorer or WSL scoring path when Formula CDM is needed.
 end2end_eval:
   metrics:
     text_block:      { metric: [Edit_dist] }

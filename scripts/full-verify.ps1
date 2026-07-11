@@ -22,12 +22,14 @@ Order mirrors AGENTS.md's dependency chain:
   7. Scores present + non-zero      (03-scoring)
   8. Benchmark report valid         (04-benchmark, optional)
 
-Steps that depend on optional setup (e.g. predictions exist only after the
-adapter ran; CDM scores only after their selected path is run: WSL via
-`score-cdm.sh`, or native Windows via `verify-windows.ps1` + `score.ps1 -Config
-v16-cdm.yaml`) are reported as SKIP rather than FAIL when their inputs are
-absent, so the core infra check still exits 0. Native full verification via
-`-SkipWsl -WindowsCdm` runs the Windows CDM gate without WSL checks.
+Unless deliberately bypassed with a skip switch, module gates are mandatory and
+fail when their prerequisites or result artifacts are absent. The benchmark
+report remains optional and is skipped when no benchmark run exists. CDM score
+verification requires the selected path's artifact: default WSL verification
+requires a WSL CDM result; native Windows verification via `-SkipWsl
+-WindowsCdm` requires a Windows CDM result; and `-WindowsCdm` with WSL enabled
+requires both. Native full verification via `-SkipWsl -WindowsCdm` runs the
+Windows CDM gate without WSL checks.
 
 .PARAMETER SkipWsl
 Skip the WSL checks, including setup.sh/verify.sh/score-cdm.sh checks; native
@@ -276,7 +278,7 @@ if ($SkipWsl) {
     [void](Invoke-Verify "03-scoring/verify-windows" $scoreVerify @("-WindowsOnly", "-RequireCdm"))
     [void](Invoke-Verify "03-scoring/verify-wsl" $scoreVerify @("-WslOnly", "-RequireCdm"))
 } else {
-    [void](Invoke-Verify "03-scoring/verify" $scoreVerify)
+    [void](Invoke-Verify "03-scoring/verify-wsl" $scoreVerify @("-WslOnly", "-RequireCdm"))
 }
 
 # --- 8. Benchmark report (optional - skip if not run) -----------------------

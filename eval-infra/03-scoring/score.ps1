@@ -1,14 +1,13 @@
 <#
 .SYNOPSIS
-Score adapter predictions with Edit_dist + TEDS or CDM (Windows-native).
+Score adapter predictions with the metrics enabled by a config.
 
 .DESCRIPTION
 Runs OmniDocBench's pdf_validation.py against a config template (from
 eval-infra/01-omnidocbench/configs/) with the `<REPO_ROOT>` placeholder resolved
 to this repo's absolute root. This Windows-native scorer runs the metrics
-enabled by the selected config: use the default configs for the fast, pure-
-Python Edit_dist + TEDS pass, or a CDM config such as `v16-cdm.yaml` after
-`windows-cdm.patch` is applied and `verify-windows.ps1` passes.
+enabled by the selected config. CDM configs such as `v16-cdm.yaml` require
+`windows-cdm.patch` and a passing `verify-windows.ps1` check first.
 
 The result files land in the OmniDocBench checkout's ./result/ directory:
     <save_name>_metric_result.json   (the scores; consumed by verify.ps1)
@@ -18,9 +17,9 @@ paddleocrvl_rocm_quick_match.
 
 .PARAMETER Config
 Config template to use (under eval-infra/01-omnidocbench/configs/). Defaults to
-"v16.yaml" (full 1651-page set, Edit_dist + TEDS). Use "v16-hard.yaml" for the
-296-page hard subset. Use "v16-cdm.yaml" to include CDM after the native
-Windows CDM prerequisites described above pass verification.
+"v16.yaml" (full 1651-page set). Use "v16-hard.yaml" for the 296-page hard
+subset. Use "v16-cdm.yaml" to include CDM after the native Windows CDM
+prerequisites described above pass verification.
 
 .PARAMETER Python
 Python executable to run pdf_validation.py with. Must be the OmniDocBench
@@ -139,7 +138,7 @@ Write-Host "PYTHONUTF8=1 set for this run. If you call pdf_validation.py directl
 Write-Host "set PYTHONUTF8=1 yourself, or see docs/pitfalls.md#pythonutf8." -ForegroundColor DarkGray
 Push-Location $odbDir
 try {
-    Write-Host "Scoring (Edit_dist + TEDS) with $Config ..." -ForegroundColor Cyan
+    Write-Host "Scoring with config $Config ..." -ForegroundColor Cyan
     & $Python $pdfValidation --config $runCfg
     if ($LASTEXITCODE -ne 0) { throw "pdf_validation.py exited $LASTEXITCODE" }
     Write-Host "Scoring complete. Results in: $odbDir\result\" -ForegroundColor Green
@@ -153,4 +152,4 @@ finally {
 # paddleocrvl_rocm_quick_match. We don't parse it here; verify.ps1 locates the
 # most recent *_metric_result.json if a save_name isn't given.
 Write-Host ""
-Write-Host "Next: run verify.ps1 to confirm metric_result.json exists and all 4 metrics are non-zero." -ForegroundColor Cyan
+Write-Host "Next: run verify.ps1 to confirm metric_result.json exists; mandatory metrics are present and non-negative; CDM must be positive when present or required." -ForegroundColor Cyan

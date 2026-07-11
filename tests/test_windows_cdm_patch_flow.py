@@ -273,6 +273,17 @@ def test_full_verify_can_run_windows_native_cdm_without_wsl():
     assert '$argumentText = $verifyArguments -join " "' in text
 
 
+def test_full_verify_default_wsl_scoring_requires_wsl_cdm_result():
+    text = read(FULL_VERIFY)
+
+    assert (
+        '} else {\n'
+        '    [void](Invoke-Verify "03-scoring/verify-wsl" $scoreVerify '
+        '@("-WslOnly", "-RequireCdm"))\n'
+        '}'
+    ) in text
+
+
 def test_full_verify_rejects_contradictory_windows_cdm_switches():
     result = run_full_verify(
         FULL_VERIFY,
@@ -376,6 +387,15 @@ def test_full_verify_help_documents_both_cdm_scoring_paths():
     assert "Native full verification via `-SkipWsl -WindowsCdm`" in normalized
 
 
+def test_full_verify_help_distinguishes_mandatory_gates_from_optional_benchmark():
+    text = read(FULL_VERIFY)
+    normalized = " ".join(text.split())
+
+    assert "module gates are mandatory and fail" in normalized
+    assert "benchmark report remains optional" in normalized
+    assert "reported as SKIP rather than FAIL when their inputs are absent" not in text
+
+
 def test_scoring_readme_documents_native_and_wsl_cdm_scoring_paths():
     text = read(SCORING_README)
 
@@ -394,13 +414,27 @@ def test_executable_scoring_guidance_describes_native_and_wsl_cdm_paths():
     score_ps1 = read(SCORE_PS1)
     score_cdm_sh = read(SCORE_CDM_SH)
 
-    assert "Edit_dist + TEDS or CDM (Windows-native)" in score_ps1
+    assert "Score adapter predictions with the metrics enabled by a config." in score_ps1
+    assert 'Write-Host "Scoring with config $Config ..."' in score_ps1
+    assert "mandatory metrics are present and non-negative; CDM must be positive when present or required" in score_ps1
+    assert "Scoring (Edit_dist + TEDS) with $Config" not in score_ps1
+    assert "all 4 metrics are non-zero" not in score_ps1
     assert "v16-cdm.yaml" in score_ps1
     assert "windows-cdm.patch" in score_ps1
     assert "verify-windows.ps1" in score_ps1
     assert "WSL compatibility/reference CDM path" in score_cdm_sh
     assert "Native Windows CDM is available via score.ps1 with a CDM config" in score_cdm_sh
     assert "verify-windows.ps1" in score_cdm_sh
+
+
+def test_official_config_describes_native_or_wsl_cdm_path():
+    text = read(
+        REPO_ROOT / "eval-infra" / "01-omnidocbench" / "configs" / "v16-official.yaml"
+    )
+    normalized = " ".join(text.split())
+
+    assert "native Windows scorer or WSL scoring path" in normalized
+    assert "in WSL when Formula CDM is needed" not in text
 
 
 def test_docs_describe_windows_native_cdm_and_keep_wsl_reference_path():
