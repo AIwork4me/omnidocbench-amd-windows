@@ -34,9 +34,17 @@ Edit_dist + TEDS path is provisioned).
 Skip the VLM-server and prediction checks (use when verifying infra without a
 model adapter provisioned yet).
 
+.PARAMETER WindowsCdm
+Run the native Windows CDM toolchain check. This is opt-in because it requires
+the local TeX Live, ImageMagick, and Ghostscript toolchain.
+
+.PARAMETER SkipWindowsCdm
+Skip the native Windows CDM toolchain check, including when -WindowsCdm is set.
+
 .EXAMPLE
   powershell -ExecutionPolicy Bypass -File scripts\full-verify.ps1
   powershell -ExecutionPolicy Bypass -File scripts\full-verify.ps1 -SkipWsl
+  powershell -ExecutionPolicy Bypass -File scripts\full-verify.ps1 -WindowsCdm
 
 Exit code 0 = all mandatory checks passed (optional ones either passed or were
 legitimately skipped); 1 = at least one mandatory check failed.
@@ -44,7 +52,9 @@ legitimately skipped); 1 = at least one mandatory check failed.
 [CmdletBinding()]
 param(
     [switch] $SkipWsl,
-    [switch] $SkipVlm
+    [switch] $SkipVlm,
+    [switch] $WindowsCdm,
+    [switch] $SkipWindowsCdm
 )
 $ErrorActionPreference = "Stop"
 
@@ -66,12 +76,22 @@ function Invoke-Verify($label, $file) {
         Add-Result $label "SKIP" "verify script missing: $file"
         return "SKIP"
     }
-    & powershell -ExecutionPolicy Bypass -File $file *> $null
-    if ($LASTEXITCODE -eq 0) {
+    # Verifiers may emit non-fatal warnings on stderr. Evaluate their declared
+    # process exit code instead of allowing PowerShell's Stop preference to
+    # turn those warnings into terminating NativeCommandError records.
+    $previousErrorActionPreference = $ErrorActionPreference
+    try {
+        $ErrorActionPreference = "Continue"
+        & powershell -ExecutionPolicy Bypass -File $file *> $null
+        $verifyExit = $LASTEXITCODE
+    } finally {
+        $ErrorActionPreference = $previousErrorActionPreference
+    }
+    if ($verifyExit -eq 0) {
         Add-Result $label "PASS" ""
         return "PASS"
     } else {
-        Add-Result $label "FAIL" "exit $LASTEXITCODE - re-run: powershell -File $file"
+        Add-Result $label "FAIL" "exit $verifyExit - re-run: powershell -File $file"
         return "FAIL"
     }
 }
@@ -155,6 +175,19 @@ if ($SkipWsl) {
     } else {
         Add-Result "02-cdm-environment/verify" "PASS" "CDM pipeline functional (VERIFY OK)"
     }
+}
+
+# --- 4b. CDM environment (Windows native) -----------------------------------
+# Windows native CDM verification is independent of the WSL CDM check above.
+Write-Host ""
+Write-Host "[4b/8] CDM environment (Windows native)" -ForegroundColor Cyan
+if ($WindowsCdm -and -not $SkipWindowsCdm) {
+    $winCdmVerify = Join-Path $rootDir "eval-infra\02-cdm-environment\verify-windows.ps1"
+    [void](Invoke-Verify "02-cdm-environment/verify-windows" $winCdmVerify)
+} elseif ($SkipWindowsCdm) {
+    Add-Result "02-cdm-environment/verify-windows" "SKIP" "-SkipWindowsCdm"
+} else {
+    Add-Result "02-cdm-environment/verify-windows" "SKIP" "native Windows CDM requires -WindowsCdm"
 }
 
 # --- 5. VLM server + layout model (reference adapter) ------------------------

@@ -56,3 +56,36 @@ def test_setup_applies_windows_cdm_patch_idempotently():
     assert "Windows native CDM patch already present" in text
     assert "git -C $odbDir apply --check $windowsCdmPatch" in text
     assert "Windows native CDM patch applied" in text
+
+
+def test_verify_windows_checks_native_cdm_toolchain_and_smoke():
+    assert VERIFY_WINDOWS.exists()
+    text = read(VERIFY_WINDOWS)
+
+    assert "patches\\omnidocbench\\windows-cdm.patch" in text
+    assert "Test-Path $windowsCdmPatch" in text
+    assert 'Fail "tracked Windows CDM patch missing' in text
+    assert "kpsewhich" in text
+    assert "upgreek.sty" in text
+    assert "magick" in text
+    assert "tlpkg" in text
+    assert "tlgs" in text
+    assert "GS_LIB" in text
+    assert "src.metrics.cdm_metric" in text
+    assert "F1_score" in text
+    assert "VERIFY OK: Windows native CDM environment functional." in text
+
+
+def test_full_verify_can_run_windows_native_cdm_without_wsl():
+    text = read(FULL_VERIFY)
+
+    assert "Windows native CDM" in text
+    assert "verify-windows.ps1" in text
+    assert "[switch] $WindowsCdm" in text
+    assert "SkipWindowsCdm" in text
+    assert "-WindowsCdm" in text
+    assert "if ($WindowsCdm -and -not $SkipWindowsCdm)" in text
+    assert '"SKIP" "native Windows CDM requires -WindowsCdm"' in text
+    assert "$previousErrorActionPreference = $ErrorActionPreference" in text
+    assert '$ErrorActionPreference = "Continue"' in text
+    assert "$ErrorActionPreference = $previousErrorActionPreference" in text
