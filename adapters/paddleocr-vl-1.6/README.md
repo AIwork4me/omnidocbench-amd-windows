@@ -142,15 +142,16 @@ Full OmniDocBench v1.6 results from this repo:
 
 | Metric | Official baseline | PaddleOCR official engine | PaddleOCR-VL-ROCm engine |
 |---|---:|---:|---:|
-| Overall | 96.33 | 95.8600 | 95.2524 |
-| Text Edit-distance | 0.033 | 0.03446 | 0.03397 |
-| Reading-order Edit-distance | 0.127 | 0.12929 | 0.12833 |
-| Table TEDS | 94.76 | 94.2187 | 94.3216 |
-| Formula CDM | 97.49 | 96.8074 | 94.8326 |
+| Overall | 96.33 | 95.7657 | 95.9475 |
+| Text Edit-distance | 0.033 | 0.03444 | 0.03402 |
+| Reading-order Edit-distance | 0.127 | 0.12949 | 0.12824 |
+| Table TEDS | 94.76 | 94.2393 | 94.3222 |
+| Formula CDM | 97.49 | 96.5022 | 96.9219 |
 
-The remaining Formula CDM gap is attributed to inference backend/model-output
-differences between the public Linux vLLM-style path and this Windows AMD
-llama.cpp/GGUF path, after the determinant-array CDM normalization fix.
+These rows use OmniDocBench's official leaderboard/notebook page-level
+aggregation convention. The remaining Formula CDM gap is attributed to
+inference backend/model-output differences between the public Linux
+vLLM-style path and this Windows AMD llama.cpp/GGUF path.
 
 ## Files
 

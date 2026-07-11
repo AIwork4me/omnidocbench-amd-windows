@@ -18,11 +18,11 @@
 
 | 指标 | 方向 | 官方基线 | PaddleOCR official engine | PaddleOCR-VL-ROCm engine |
 |---|:---:|---:|---:|---:|
-| 整体 Overall | ↑ | 96.33 | 95.8600 | 95.2524 |
-| 文本 Edit-distance | ↓ | 0.033 | 0.03446 | 0.03397 |
-| 阅读顺序 Edit-distance | ↓ | 0.127 | 0.12929 | 0.12833 |
-| 表格 TEDS | ↑ | 94.76 | 94.2187 | 94.3216 |
-| 公式 CDM | ↑ | 97.49 | 96.8074 | 94.8326 |
+| 整体 Overall | ↑ | 96.33 | 95.7657 | 95.9475 |
+| 文本 Edit-distance | ↓ | 0.033 | 0.03444 | 0.03402 |
+| 阅读顺序 Edit-distance | ↓ | 0.127 | 0.12949 | 0.12824 |
+| 表格 TEDS | ↑ | 94.76 | 94.2393 | 94.3222 |
+| 公式 CDM | ↑ | 97.49 | 96.5022 | 96.9219 |
 
 > Overall = (文本准确率 + CDM + TEDS) / 3，其中文本准确率 = (1 − Edit_dist) × 100。阅读顺序不纳入 Overall（布局指标，非内容准确率）。
 
@@ -100,11 +100,13 @@ TeX Live、ImageMagick 和 Ghostscript。WSL CDM 仍保留为兼容和 reference
 面向展示，可能因为 HTML 图片/标题包装导致 OmniDocBench Text Edit-distance
 被放大。
 
-这份 official-engine 分数保留了 Windows AMD llama.cpp/GGUF 推理路径的真实差异：
-determinant-array CDM 归一化修复后，Formula CDM 为 `96.8074`；相对官方
-`97.49` 的剩余差距，主要来自官方 Linux vLLM-style 路径与本项目 Windows AMD
-llama.cpp/GGUF 路径之间的推理后端/模型输出差异。本轮仍有 1 页稳定 VLM 500，
-已在上游记录为
+这些本地分数默认采用 OmniDocBench 官方 leaderboard notebook
+（`tools/generate_result_tables.ipynb`）一致的 page-level 聚合口径。最新
+Windows AMD llama.cpp/GGUF official-local 路线 Formula CDM 为 `96.5022`；
+最新 ROCm lightweight 路线 Formula CDM 为 `96.9219`。相对官方 `97.49`
+的剩余差距，主要来自官方 Linux vLLM-style 路径与本项目 Windows AMD
+llama.cpp/GGUF 路径之间的推理后端/模型输出差异。official-local 路线仍有
+1 页稳定 VLM 500，已在上游记录为
 [PaddleOCR issue #18248](https://github.com/PaddlePaddle/PaddleOCR/issues/18248)。
 
 ```powershell
@@ -171,11 +173,11 @@ PaddleOCR official engine 使用 `paddleocr.PaddleOCRVL`，并强制
 
 | 指标 | 方向 | 官方基线 | PaddleOCR official engine | PaddleOCR-VL-ROCm engine |
 |---|:---:|---:|---:|---:|
-| 整体 Overall | ↑ | 96.33 | 95.8600 | 95.2524 |
-| 文本 Edit-distance | ↓ | 0.033 | 0.03446 | 0.03397 |
-| 阅读顺序 Edit-distance | ↓ | 0.127 | 0.12929 | 0.12833 |
-| 表格 TEDS | ↑ | 94.76 | 94.2187 | 94.3216 |
-| 公式 CDM | ↑ | 97.49 | 96.8074 | 94.8326 |
+| 整体 Overall | ↑ | 96.33 | 95.7657 | 95.9475 |
+| 文本 Edit-distance | ↓ | 0.033 | 0.03444 | 0.03402 |
+| 阅读顺序 Edit-distance | ↓ | 0.127 | 0.12949 | 0.12824 |
+| 表格 TEDS | ↑ | 94.76 | 94.2393 | 94.3222 |
+| 公式 CDM | ↑ | 97.49 | 96.5022 | 96.9219 |
 
 > Overall = (文本准确率 + CDM + TEDS) / 3，其中文本准确率 = (1 − Edit_dist) × 100。阅读顺序不纳入 Overall（布局指标，非内容准确率）。
 
@@ -183,11 +185,13 @@ PaddleOCR official engine 使用 `paddleocr.PaddleOCRVL`，并强制
 `_to_markdown(pretty=False)` 导出 Markdown。默认 pretty Markdown 面向展示，
 会引入 HTML 图片/标题包装，可能放大 OmniDocBench Text Edit-distance。
 
-official engine 的 Formula CDM 已明显接近官方基线。determinant-array CDM
-归一化修复后，Formula CDM 为 `96.8074`；相对 `97.49` 的剩余 `0.6826`
-分差距主要来自官方 Linux vLLM-style 基线与本机 Windows AMD llama.cpp/GGUF
-server 路径的推理后端/模型输出差异。本轮 official-engine 仍有 1 个稳定
-VLM 500 页面：`newspaper_The Times UK_0801@magazinesclubnew_page_031.png`，
+这些行使用 OmniDocBench 官方 leaderboard/notebook page-level 聚合口径；
+底层 raw `metric_result` all-values 保留在对应产物中用于审计。official-local
+路线 Formula CDM 为 `96.5022`，ROCm lightweight 路线 Formula CDM 为
+`96.9219`；相对 `97.49` 的剩余差距主要来自官方 Linux vLLM-style 基线与
+本机 Windows AMD llama.cpp/GGUF server 路径的推理后端/模型输出差异。本轮
+official-local 仍有 1 个稳定 VLM 500 页面：
+`newspaper_The Times UK_0801@magazinesclubnew_page_031.png`，
 已记录为 [PaddleOCR issue #18248](https://github.com/PaddlePaddle/PaddleOCR/issues/18248)。
 CDM 环境问题见
 [`docs/pitfalls.md#mathcolor`](docs/pitfalls.md#mathcolor) 和

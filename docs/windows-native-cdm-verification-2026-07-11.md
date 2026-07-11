@@ -80,13 +80,18 @@ These fallbacks completed and did not prevent metric generation.
 `verify.ps1 -WindowsOnly -RequireCdm -SaveName paddleocrvl_rocm_cdm_quick_match`
 passed with:
 
-| Metric | Raw value | Reported scale |
+| Metric | `metric_result` all-values scale | Official notebook/page scale |
 |---|---:|---:|
 | Text Edit-distance | 0.03401597503524673 | 0.03402 |
 | Display-formula Edit-distance | 0.09136706177344286 | 0.09137 |
-| Table TEDS | 0.9313452461867218 | 93.1345 |
+| Table TEDS | 93.1345 | 94.3222 |
 | Reading-order Edit-distance | 0.1282380300787933 | 0.12824 |
-| Formula CDM | 0.9671288265306126 | 96.7129 |
+| Formula CDM | 96.7129 | 96.9219 |
+
+The project README uses OmniDocBench's official leaderboard/notebook page-level
+aggregation convention by default. The all-values column keeps the
+`metric_result.json` values after conversion to the reported 0-100 scale for
+TEDS/CDM, which is useful for audit/debugging.
 
 The verifier printed:
 

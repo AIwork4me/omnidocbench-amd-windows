@@ -258,10 +258,10 @@ Reference targets (our validated PaddleOCR-VL-1.6 results on OmniDocBench v1.6):
 
 | Metric | Direction | PaddleOCR official engine | PaddleOCR-VL-ROCm engine | Pass threshold (reported scale) |
 |---|---|---:|---:|---:|
-| Text Edit-distance | ↓ | 0.03446 | 0.03397 | < 0.10 |
-| Reading-order Edit-distance | ↓ | 0.12929 | 0.12833 | < 0.20 |
-| Table TEDS | ↑ | 94.2187 | 94.3216 | > 85.0 |
-| Formula CDM | ↑ | 96.8074 | 94.8326 | > 85.0 |
+| Text Edit-distance | ↓ | 0.03444 | 0.03402 | < 0.10 |
+| Reading-order Edit-distance | ↓ | 0.12949 | 0.12824 | < 0.20 |
+| Table TEDS | ↑ | 94.2393 | 94.3222 | > 85.0 |
+| Formula CDM | ↑ | 96.5022 | 96.9219 | > 85.0 |
 
 In raw `metric_result.json`, TEDS/CDM use 0-1 values, so the same threshold is
 `> 0.85`.
@@ -272,7 +272,7 @@ A run whose metrics clear these thresholds reproduces our results. See
 Latest local Windows-native official-engine CDM evidence:
 `C:\Users\rocm\Desktop\PaddleOCR-VL-ROCm\logs\official_cdm_rerun_20260711_092548.log`
 reports Text Edit-distance `0.034`, Reading-order Edit-distance `0.129`,
-Table TEDS `94.24`, Formula CDM `96.50`, CDM samples `2352`, metric
+Table TEDS `94.2393`, Formula CDM `96.5022`, CDM samples `2352`, metric
 `timeout_case_count` `0`, exception `0`. The same log records one page-match
 `quick_match_timeout` that fell back to chunked Hungarian matching.
 
@@ -280,9 +280,14 @@ Latest local Windows-native ROCm-engine CDM scoring evidence:
 [`docs/windows-native-cdm-verification-2026-07-11.md`](docs/windows-native-cdm-verification-2026-07-11.md)
 records `paddleocrvl_rocm_cdm_quick_match` on the local Windows path with
 Text Edit-distance `0.0340159750`, Reading-order Edit-distance `0.1282380301`,
-Table TEDS `93.1345`, Formula CDM `96.7129`, CDM samples `2352`, and
+Table TEDS `94.3222`, Formula CDM `96.9219`, CDM samples `2352`, and
 native-only `full-verify.ps1 -SkipWsl -WindowsCdm -SkipVlm` passing with
 `4 passed, 0 failed, 6 skipped`.
+
+The ROCm raw `metric_result` all-values, converted to the reported 0-100
+scale, are Table TEDS `93.1345` and Formula CDM `96.7129`; the reference table
+above uses OmniDocBench's official leaderboard/notebook page-level aggregation
+convention.
 
 ---
 

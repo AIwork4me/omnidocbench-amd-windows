@@ -19,11 +19,11 @@ model via [adapters](adapters/). PaddleOCR-VL-1.6 ships as the validated referen
 
 | Metric | Direction | Official baseline | PaddleOCR official engine | PaddleOCR-VL-ROCm engine |
 |---|:---:|---:|---:|---:|
-| Overall | ↑ | 96.33 | 95.8600 | 95.2524 |
-| Text Edit-distance | ↓ | 0.033 | 0.03446 | 0.03397 |
-| Reading-order Edit-distance | ↓ | 0.127 | 0.12929 | 0.12833 |
-| Table TEDS | ↑ | 94.76 | 94.2187 | 94.3216 |
-| Formula CDM | ↑ | 97.49 | 96.8074 | 94.8326 |
+| Overall | ↑ | 96.33 | 95.7657 | 95.9475 |
+| Text Edit-distance | ↓ | 0.033 | 0.03444 | 0.03402 |
+| Reading-order Edit-distance | ↓ | 0.127 | 0.12949 | 0.12824 |
+| Table TEDS | ↑ | 94.76 | 94.2393 | 94.3222 |
+| Formula CDM | ↑ | 97.49 | 96.5022 | 96.9219 |
 
 > Overall = (Text accuracy + CDM + TEDS) / 3, where Text accuracy = (1 − Edit_dist) × 100.
 > Reading order is excluded from Overall (layout metric, not content accuracy).
@@ -107,12 +107,14 @@ evaluation-oriented Markdown with `_to_markdown(pretty=False)`. The default
 pretty Markdown is intended for display and can inflate Text Edit-distance
 because OmniDocBench expects scorer-friendly Markdown.
 
-The published official-engine score keeps the Windows AMD llama.cpp/GGUF
-serving path honest: Formula CDM is `96.8074` after the determinant-array CDM
-normalization fix, and the remaining gap to the public `97.49` baseline is
-attributed to inference backend/model-output differences versus the official
-Linux vLLM-style path. One page still fails with a deterministic VLM 500 on
-this path and is tracked upstream in
+The published local scores use the same page-level aggregation convention as
+OmniDocBench's official leaderboard notebook (`tools/generate_result_tables.ipynb`).
+The latest Windows AMD llama.cpp/GGUF official-local route records Formula CDM
+`96.5022`; the latest ROCm lightweight route records Formula CDM `96.9219`.
+The remaining gap to the public `97.49` baseline is attributed to inference
+backend/model-output differences versus the official Linux vLLM-style path. One
+official-local page still fails with a deterministic VLM 500 and is tracked
+upstream in
 [PaddleOCR issue #18248](https://github.com/PaddlePaddle/PaddleOCR/issues/18248).
 
 ```powershell
@@ -193,11 +195,11 @@ for commands, run stats, and root-cause notes.
 
 | Metric | Direction | Official baseline | PaddleOCR official engine | PaddleOCR-VL-ROCm engine |
 |---|:---:|---:|---:|---:|
-| Overall | ↑ | 96.33 | 95.8600 | 95.2524 |
-| Text Edit-distance | ↓ | 0.033 | 0.03446 | 0.03397 |
-| Reading-order Edit-distance | ↓ | 0.127 | 0.12929 | 0.12833 |
-| Table TEDS | ↑ | 94.76 | 94.2187 | 94.3216 |
-| Formula CDM | ↑ | 97.49 | 96.8074 | 94.8326 |
+| Overall | ↑ | 96.33 | 95.7657 | 95.9475 |
+| Text Edit-distance | ↓ | 0.033 | 0.03444 | 0.03402 |
+| Reading-order Edit-distance | ↓ | 0.127 | 0.12949 | 0.12824 |
+| Table TEDS | ↑ | 94.76 | 94.2393 | 94.3222 |
+| Formula CDM | ↑ | 97.49 | 96.5022 | 96.9219 |
 
 > Overall = (Text accuracy + CDM + TEDS) / 3, where Text accuracy = (1 − Edit_dist) × 100.
 
@@ -206,12 +208,14 @@ with `_to_markdown(pretty=False)`. The default pretty Markdown is intended for
 display and can inflate Text Edit-distance because OmniDocBench expects
 evaluation-oriented Markdown.
 
-The official-engine Formula CDM result is much closer to the public baseline
-than the ROCm engine result. After the determinant-array CDM normalization fix,
-Formula CDM is `96.8074`; the remaining `0.6826` point gap is attributed to
-inference backend/model-output differences between the public Linux vLLM-style
-baseline and this Windows AMD llama.cpp/GGUF server path. The official-engine
-run also has one deterministic VLM 500 page,
+These rows use OmniDocBench's official leaderboard/notebook page-level
+aggregation convention. The raw `metric_result` all-values are retained in the
+linked artifacts for audit. The official-local route records Formula CDM
+`96.5022`; the ROCm lightweight route records Formula CDM `96.9219`. The
+remaining gap to the public `97.49` baseline is attributed to inference
+backend/model-output differences between the public Linux vLLM-style baseline
+and this Windows AMD llama.cpp/GGUF server path. The official-local run also has
+one deterministic VLM 500 page,
 `newspaper_The Times UK_0801@magazinesclubnew_page_031.png`, tracked upstream
 as [PaddleOCR issue #18248](https://github.com/PaddlePaddle/PaddleOCR/issues/18248).
 For CDM environment issues, see [`docs/pitfalls.md#mathcolor`](docs/pitfalls.md#mathcolor)
