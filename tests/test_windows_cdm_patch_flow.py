@@ -284,6 +284,25 @@ def test_full_verify_default_wsl_scoring_requires_wsl_cdm_result():
     ) in text
 
 
+def test_full_verify_wsl_cdm_verifier_temporarily_allows_stderr():
+    text = read(FULL_VERIFY)
+    wsl_cdm_block = text.split("# --- 4. CDM environment (WSL)", 1)[1].split(
+        "# --- 4b. CDM environment (Windows native)", 1
+    )[0]
+
+    expected_sequence = [
+        "$previousErrorActionPreference = $ErrorActionPreference",
+        '$ErrorActionPreference = "Continue"',
+        "$output = wsl -d Ubuntu2204 bash $wslPath 2>&1",
+        "$wslExit = $LASTEXITCODE",
+        "finally {",
+        "$ErrorActionPreference = $previousErrorActionPreference",
+    ]
+    positions = [wsl_cdm_block.index(item) for item in expected_sequence]
+
+    assert positions == sorted(positions)
+
+
 def test_full_verify_rejects_contradictory_windows_cdm_switches():
     result = run_full_verify(
         FULL_VERIFY,

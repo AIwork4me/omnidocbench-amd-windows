@@ -179,8 +179,17 @@ if ($SkipWsl) {
     # propagate, or stderr noise masked the real status). verify.sh prints the
     # literal sentinel "VERIFY OK" only on genuine success, so we require BOTH
     # a clean exit AND the sentinel in the output.
-    $output = wsl -d Ubuntu2204 bash $wslPath 2>&1
-    $wslExit = $LASTEXITCODE
+    # WSL can write benign diagnostics to stderr. On Windows PowerShell 5.1,
+    # Stop turns those into terminating NativeCommandError records before the
+    # exit code and VERIFY OK sentinel can be evaluated.
+    $previousErrorActionPreference = $ErrorActionPreference
+    try {
+        $ErrorActionPreference = "Continue"
+        $output = wsl -d Ubuntu2204 bash $wslPath 2>&1
+        $wslExit = $LASTEXITCODE
+    } finally {
+        $ErrorActionPreference = $previousErrorActionPreference
+    }
     # Normalize the captured stream to a single string for -match. @() + -join
     # keeps PS 5.1 happy when $output is a scalar or an array of lines.
     $outputText = (@($output) -join "`n")
