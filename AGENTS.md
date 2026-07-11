@@ -276,6 +276,14 @@ Table TEDS `94.24`, Formula CDM `96.50`, CDM samples `2352`, metric
 `timeout_case_count` `0`, exception `0`. The same log records one page-match
 `quick_match_timeout` that fell back to chunked Hungarian matching.
 
+Latest local Windows-native ROCm-engine CDM scoring evidence:
+[`docs/windows-native-cdm-verification-2026-07-11.md`](docs/windows-native-cdm-verification-2026-07-11.md)
+records `paddleocrvl_rocm_cdm_quick_match` on the local Windows path with
+Text Edit-distance `0.0340159750`, Reading-order Edit-distance `0.1282380301`,
+Table TEDS `93.1345`, Formula CDM `96.7129`, CDM samples `2352`, and
+native-only `full-verify.ps1 -SkipWsl -WindowsCdm -SkipVlm` passing with
+`4 passed, 0 failed, 6 skipped`.
+
 ---
 
 ## How to add a new model (after the infra is up)
