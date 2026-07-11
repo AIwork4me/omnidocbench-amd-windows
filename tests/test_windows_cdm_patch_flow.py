@@ -46,3 +46,13 @@ def test_windows_cdm_patch_contains_command_and_toolchain_fixes():
     assert "\"-output-directory={output_dir_arg}\"" in text
     assert "\"tlpkg\", \"tlgs\", \"bin\"" in text
     assert "GS_LIB" in text
+
+
+def test_setup_applies_windows_cdm_patch_idempotently():
+    text = read(SETUP)
+
+    assert "windows-cdm.patch" in text
+    assert "git -C $odbDir apply --reverse --check $windowsCdmPatch" in text
+    assert "Windows native CDM patch already present" in text
+    assert "git -C $odbDir apply --check $windowsCdmPatch" in text
+    assert "Windows native CDM patch applied" in text
