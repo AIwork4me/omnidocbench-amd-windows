@@ -168,9 +168,10 @@ powershell -ExecutionPolicy Bypass -File eval-infra\03-scoring\score.ps1 -Config
 # 4c. WSL compatibility/reference CDM pass (needs Step 2's WSL environment).
 # Replace /mnt/c/<path-to-repo> with your clone location:
 wsl -d Ubuntu2204 bash /mnt/c/<path-to-repo>/eval-infra/03-scoring/score-cdm.sh
-# 4d. Verify all four metrics are present and non-zero.
+# 4d. Verify mandatory non-CDM metrics; zero non-CDM metrics warn but can pass.
+# CDM must be positive when present or required.
 powershell -ExecutionPolicy Bypass -File eval-infra\03-scoring\verify.ps1
-#   Any "zero/non-positive" → silent run failure → see row in table below
+#   Negative non-CDM metrics fail; non-positive CDM fails.
 
 # 4e. (Optional) full chain in one command:
 powershell -ExecutionPolicy Bypass -File scripts\full-verify.ps1
@@ -197,7 +198,8 @@ powershell -ExecutionPolicy Bypass -File eval-infra\04-benchmark\run.ps1 -Stabil
 
 ## Exception lookup table
 
-When a verify fails (or a score is zero), match the symptom, read the linked
+When a verify fails, or `verify.ps1` warns about a zero non-CDM metric, match
+the symptom, read the linked
 `docs/pitfalls.md` section, apply the **Fix** described there, then re-run the
 verify that failed. Do not improvise a fix.
 
@@ -207,7 +209,7 @@ verify that failed. Do not improvise a fix.
 | `wsl --install` hangs, or distro won't start after import | `docs/pitfalls.md#wsl` (reboot first) |
 | `wsl -d Ubuntu2204` fails ("not found") but `wsl -l` shows a distro with a different name | `docs/pitfalls.md#distro-name` (name mismatch) |
 | `AttributeError: ... getargspec` / `distutils` on Python 3.12 | `docs/pitfalls.md#python-version` (use 3.10/3.11) |
-| CDM run exits 0 but `display_formula.CDM.all == 0.0` | `docs/pitfalls.md#cdm-zero` (decision tree) |
+| CDM run exits 0 but `display_formula.CDM.all` is missing, null, non-finite, or `<= 0.0` | `docs/pitfalls.md#cdm-zero` (decision tree) |
 | CDM formula PDF compiles but colors are black | `docs/pitfalls.md#mathcolor` |
 | `magick --version` shows ImageMagick 6, or formula PNG is grayscale | `docs/pitfalls.md#grayscale` |
 | `pdflatex: Font gkai not found` / CJK glyphs are tofu | `docs/pitfalls.md#gkaiu-map` |
@@ -220,7 +222,7 @@ verify that failed. Do not improvise a fix.
 | `UnicodeDecodeError` mid-scoring, or mojibake in JSON/LaTeX | `docs/pitfalls.md#pythonutf8` (`PYTHONUTF8=1`) |
 | `onnxruntime ... model file not found`, no predictions | `docs/pitfalls.md#layout` |
 | VLM server 500 / connection refused / OOM | `docs/pitfalls.md#vlm` |
-| All 4 metrics 0 (incl. Edit_dist, not just CDM) | predictions dir empty/missing/misnamed — check `config.prediction.data_path` matches your `--out-dir` (see Step 3c NOTE). `verify.ps1` "(zero/non-positive - silent run failure)" with Edit_dist=0 is this, not `#cdm-zero`. |
+| Non-CDM metrics are exactly 0 | Usually predictions dir empty/missing/misnamed on the full dataset; check `config.prediction.data_path` matches your `--out-dir` (see Step 3c NOTE). Zero non-CDM metrics warn but can pass because tiny toy subsets can legitimately score 0. Negative non-CDM metrics still fail. |
 | Benchmark report missing GPU data | `docs/pitfalls.md#benchmark-gpu` |
 | `verify.ps1` exit 1 on score mismatch | `docs/pitfalls.md#benchmark-verify` |
 
@@ -247,7 +249,10 @@ The system is fully operational when all criteria for the **selected CDM path** 
    `eval-infra/02-cdm-environment/verify.sh` prints `VERIFY OK`.
 4. `adapters/paddleocr-vl-1.6/01-vlm-server/verify.ps1` exits 0 (`curl /v1/models` 200).
 5. `predictions/paddleocrvl_rocm/` contains one `.md` per dataset page (~1651).
-6. `eval-infra/03-scoring/verify.ps1` exits 0 with all four metrics non-zero.
+6. `eval-infra/03-scoring/verify.ps1` exits 0: mandatory non-CDM metrics are
+   present and non-negative; zero non-CDM metrics warn but can pass; CDM must
+   be positive when present or required. A selected CDM scoring path requires
+   a present, finite CDM score.
 
 Reference targets (our validated PaddleOCR-VL-1.6 results on OmniDocBench v1.6):
 

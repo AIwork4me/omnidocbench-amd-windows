@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import os
 from pathlib import Path
 import shutil
 import subprocess
@@ -89,7 +90,9 @@ def write_passing_verifier(path: Path) -> None:
     path.write_text("exit 0\n", encoding="utf-8")
 
 
-def run_full_verify(script: Path, *args: str) -> subprocess.CompletedProcess[str]:
+def run_full_verify(
+    script: Path, *args: str, env: dict[str, str] | None = None
+) -> subprocess.CompletedProcess[str]:
     return subprocess.run(
         [
             "powershell",
@@ -103,6 +106,7 @@ def run_full_verify(script: Path, *args: str) -> subprocess.CompletedProcess[str
         capture_output=True,
         text=True,
         check=False,
+        env=env,
     )
 
 
@@ -183,6 +187,33 @@ def test_scoring_verifier_rejects_present_non_numeric_cdm_all(tmp_path: Path):
 
     assert result.returncode != 0
     assert "must be numeric" in result.stdout + result.stderr
+
+
+def test_scoring_verifier_rejects_raw_json_nonfinite_cdm_all(tmp_path: Path):
+    metric_result = tmp_path / "metric_result.json"
+    metric_result.write_text(
+        """
+{
+  "text_block": {"all": {"Edit_dist": {"ALL_page_avg": 0.1}}},
+  "display_formula": {
+    "all": {
+      "Edit_dist": {"ALL_page_avg": 0.1},
+      "CDM": {"all": 1e309}
+    }
+  },
+  "table": {"all": {"TEDS": {"all": 0.1}}},
+  "reading_order": {"all": {"Edit_dist": {"ALL_page_avg": 0.1}}}
+}
+""",
+        encoding="utf-8",
+    )
+
+    result = run_scoring_verify("-MetricResult", str(metric_result))
+
+    assert result.returncode != 0
+    output = result.stdout + result.stderr
+    assert "not valid JSON" in output
+    assert "1e309" in output
 
 
 def test_scoring_verifier_windows_only_excludes_wsl_candidates():
@@ -301,6 +332,59 @@ def test_full_verify_wsl_cdm_verifier_temporarily_allows_stderr():
     positions = [wsl_cdm_block.index(item) for item in expected_sequence]
 
     assert positions == sorted(positions)
+
+
+def test_full_verify_wsl_cdm_stage_accepts_benign_stderr_at_runtime(
+    tmp_path: Path,
+):
+    root = make_minimal_full_verify_tree(tmp_path)
+    write_passing_verifier(root / "eval-infra/01-omnidocbench/verify.ps1")
+    write_passing_verifier(root / "eval-infra/03-scoring/verify.ps1")
+
+    fake_bin = tmp_path / "fake-bin"
+    fake_bin.mkdir()
+    fake_wsl = fake_bin / "wsl.cmd"
+    fake_wsl.write_text(
+        "\r\n".join(
+            [
+                "@echo off",
+                "setlocal enabledelayedexpansion",
+                'if "%1"=="--list" (',
+                "  echo Ubuntu2204",
+                "  exit /b 0",
+                ")",
+                'if "%1"=="-d" if "%2"=="Ubuntu2204" if "%3"=="--" (',
+                '  if "%4"=="echo" (',
+                "    echo %5",
+                "    exit /b 0",
+                "  )",
+                ")",
+                'if "%1"=="-d" if "%2"=="Ubuntu2204" if "%3"=="bash" (',
+                "  >&2 echo benign WSL diagnostic",
+                "  echo VERIFY OK",
+                "  exit /b 0",
+                ")",
+                "echo unexpected fake wsl args: %*",
+                "exit /b 1",
+            ]
+        )
+        + "\r\n",
+        encoding="utf-8",
+    )
+    env = os.environ.copy()
+    env["PATH"] = str(fake_bin) + os.pathsep + env["PATH"]
+
+    result = run_full_verify(
+        root / "scripts/full-verify.ps1",
+        "-SkipVlm",
+        "-SkipWindowsCdm",
+        env=env,
+    )
+
+    output = result.stdout + result.stderr
+    assert result.returncode == 0, output
+    assert "02-cdm-environment/verify" in output
+    assert "CDM pipeline functional (VERIFY OK)" in output
 
 
 def test_full_verify_rejects_contradictory_windows_cdm_switches():
@@ -532,6 +616,24 @@ def test_agents_success_criteria_accepts_the_applicable_cdm_verifier():
     assert (
         "WSL path `eval-infra/02-cdm-environment/verify.sh` prints `VERIFY OK`"
     ) in normalized
+
+
+def test_docs_describe_the_implemented_zero_score_policy():
+    for text in (read(REPO_ROOT / "AGENTS.md"), read(SCORING_README)):
+        normalized = " ".join(text.split())
+        assert "mandatory non-CDM metrics are present and non-negative" in normalized
+        assert "zero non-cdm metrics warn but can pass" in normalized.lower()
+        assert "CDM must be positive when present or required" in normalized
+
+    architecture = read(REPO_ROOT / "docs" / "architecture.md")
+    assert "non-CDM >= 0" in architecture
+    assert "CDM > 0 if used" in architecture
+    assert "all 4 metrics" not in architecture
+    assert "non-zero?" not in architecture
+
+    full_verify = read(FULL_VERIFY)
+    assert "Scores valid" in full_verify
+    assert "Scores present + non-zero" not in full_verify
 
 
 def test_user_facing_docs_do_not_describe_cdm_as_wsl_only():

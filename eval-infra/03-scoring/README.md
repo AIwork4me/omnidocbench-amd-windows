@@ -3,8 +3,9 @@
 The last layer of `eval-infra/`. Consumes adapter predictions + the
 OmniDocBench dataset + the CDM environment (Tasks 2–4) and produces scores.
 
-Three scripts, one goal: a `*_metric_result.json` whose four mandatory metrics
-are all non-zero, verified by `verify.ps1`.
+Three scripts, one goal: a `*_metric_result.json` whose mandatory non-CDM
+metrics are present and non-negative, and whose CDM must be positive when
+present or required, verified by `verify.ps1`.
 
 | Script | Runs | Scores | Env |
 |---|---|---|---|
@@ -71,10 +72,14 @@ wsl -d Ubuntu2204 bash /mnt/c/<path-to-repo>/eval-infra/03-scoring/score-cdm.sh
 powershell -ExecutionPolicy Bypass -File eval-infra\03-scoring\verify.ps1
 ```
 
-Prints `OK` for each of the 4 mandatory metrics and exits 0 only if all are
-non-zero. A metric at exactly `0.0` is treated as a silent run failure (e.g.
-CDM F1=0 from the IM6 grayscale bug, or all-zeros from a missing predictions
-dir) even though `pdf_validation.py` exited 0.
+Prints `OK` for positive mandatory non-CDM metrics, `WARN` for exactly zero
+non-CDM metrics, and exits 0 when all mandatory non-CDM metrics are present and
+non-negative. Zero non-CDM metrics warn but can pass. A negative non-CDM metric
+is a hard failure. CDM must be positive when present or required; a selected
+CDM run requires `display_formula.CDM.all` to be present, numeric, finite, and
+positive. Missing, null, non-finite, or `<= 0` CDM values fail because they
+usually mean the formula rendering path silently broke even though
+`pdf_validation.py` exited 0.
 
 ## Configs and result paths
 

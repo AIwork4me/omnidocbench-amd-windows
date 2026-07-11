@@ -12,8 +12,8 @@ and the per-module READMEs.
                                               v
    +-------------------+    Markdown     +-------------------+    scores    +-------------------+
    | adapters/<model>/ |  .md per page   | eval-infra/       |  metric_     | verify.ps1       |
-   |  run_adapter.py   | ----------------| 03-scoring/       | ------------>| all 4 metrics    |
-   |  (one per model)  |  predictions/   |  score[.ps1|.sh]  |  result.json | non-zero?        |
+   |  run_adapter.py   | ----------------| 03-scoring/       | ------------>| non-CDM >= 0;    |
+   |  (one per model)  |  predictions/   |  score[.ps1|.sh]  |  result.json | CDM > 0 if used  |
    +-------------------+    <model>/     +-------------------+              +-------------------+
           ^                                ^        |
           | model weights                  | code   | CDM paths: native Windows

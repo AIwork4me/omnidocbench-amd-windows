@@ -19,7 +19,7 @@ Order mirrors AGENTS.md's dependency chain:
   4. CDM environment functional     (WSL via `score-cdm.sh`, or native Windows via `verify-windows.ps1` + `score.ps1 -Config v16-cdm.yaml`)
   5. VLM server + layout model      (paddleocr-vl-1.6/01-vlm-server + 02-layout-model)
   6. Predictions present            (adapter output)
-  7. Scores present + non-zero      (03-scoring)
+  7. Scores valid                   (03-scoring)
   8. Benchmark report valid         (04-benchmark, optional)
 
 Unless deliberately bypassed with a skip switch, module gates are mandatory and
@@ -274,7 +274,7 @@ if ($SkipVlm) {
     }
 }
 
-# --- 7. Scores present + non-zero -------------------------------------------
+# --- 7. Scores valid ---------------------------------------------------------
 Write-Host ""
 Write-Host "[7/8] scoring results" -ForegroundColor Cyan
 $scoreVerify = Join-Path $rootDir "eval-infra\03-scoring\verify.ps1"
