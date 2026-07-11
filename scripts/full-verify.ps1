@@ -43,7 +43,8 @@ the local TeX Live, ImageMagick, and Ghostscript toolchain. Without -SkipWsl,
 the scoring step requires both Windows and WSL CDM artifacts.
 
 .PARAMETER SkipWindowsCdm
-Skip the native Windows CDM toolchain check, including when -WindowsCdm is set.
+Skip the native Windows CDM toolchain check. Cannot be combined with
+`-WindowsCdm`.
 
 .EXAMPLE
   powershell -ExecutionPolicy Bypass -File scripts\full-verify.ps1
@@ -63,6 +64,11 @@ param(
 )
 $ErrorActionPreference = "Stop"
 
+if ($WindowsCdm -and $SkipWindowsCdm) {
+    Write-Host "FAIL: -WindowsCdm and -SkipWindowsCdm cannot be combined." -ForegroundColor Red
+    exit 1
+}
+
 # Repo root (this script is at <root>/scripts/full-verify.ps1). Nested Split-Path
 # so this runs on Windows PowerShell 5.1 as well as PS 7+.
 $rootDir = Split-Path -Parent $PSScriptRoot
@@ -78,8 +84,8 @@ function Add-Result($name, $status, $detail) {
 
 function Invoke-Verify($label, $file, [string[]] $verifyArguments = @()) {
     if (-not (Test-Path $file)) {
-        Add-Result $label "SKIP" "verify script missing: $file"
-        return "SKIP"
+        Add-Result $label "FAIL" "verify script missing: $file"
+        return "FAIL"
     }
     # Verifiers may emit non-fatal warnings on stderr. Evaluate their declared
     # process exit code instead of allowing PowerShell's Stop preference to
@@ -282,7 +288,7 @@ if (Test-Path $benchVerify) {
     $benchDirs = @(Get-ChildItem (Join-Path $rootDir "benchmark-results") -Directory -ErrorAction SilentlyContinue | Where-Object { $_.Name -ne "reference" } | Sort-Object LastWriteTime -Descending)
     if ($benchDirs.Count -gt 0) {
         $latestBench = $benchDirs[0].FullName
-        [void](Invoke-Verify "04-benchmark/verify" "$benchVerify -ReportDir '$latestBench'")
+        [void](Invoke-Verify "04-benchmark/verify" $benchVerify @("-ReportDir", $latestBench))
     } else {
         Add-Result "04-benchmark/verify" "SKIP" "no benchmark runs found"
     }

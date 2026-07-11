@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+import shutil
 import subprocess
 import uuid
 
@@ -34,17 +35,21 @@ def read(path: Path) -> str:
     return path.read_text(encoding="utf-8")
 
 
-def write_metric_result(path: Path, *, cdm=...):
-    display_formula = {"Edit_dist": {"ALL_page_avg": 0.1}}
+def write_metric_result(path: Path, *, cdm=..., mandatory_value=0.1):
+    display_formula = {"Edit_dist": {"ALL_page_avg": mandatory_value}}
     if cdm is not ...:
         display_formula["CDM"] = cdm
     path.write_text(
         json.dumps(
             {
-                "text_block": {"all": {"Edit_dist": {"ALL_page_avg": 0.1}}},
+                "text_block": {
+                    "all": {"Edit_dist": {"ALL_page_avg": mandatory_value}}
+                },
                 "display_formula": {"all": display_formula},
-                "table": {"all": {"TEDS": {"all": 0.1}}},
-                "reading_order": {"all": {"Edit_dist": {"ALL_page_avg": 0.1}}},
+                "table": {"all": {"TEDS": {"all": mandatory_value}}},
+                "reading_order": {
+                    "all": {"Edit_dist": {"ALL_page_avg": mandatory_value}}
+                },
             }
         ),
         encoding="utf-8",
@@ -62,6 +67,39 @@ def run_scoring_verify(*args: str) -> subprocess.CompletedProcess[str]:
             *args,
         ],
         cwd=REPO_ROOT,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+
+def make_minimal_full_verify_tree(tmp_path: Path) -> Path:
+    root = tmp_path / "repo"
+    (root / "scripts").mkdir(parents=True)
+    shutil.copy2(FULL_VERIFY, root / "scripts" / "full-verify.ps1")
+    (root / "mirrors.env").write_text(
+        "\n".join(f"SOURCE_{letter}=ok" for letter in "ABCDE"),
+        encoding="utf-8",
+    )
+    return root
+
+
+def write_passing_verifier(path: Path) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text("exit 0\n", encoding="utf-8")
+
+
+def run_full_verify(script: Path, *args: str) -> subprocess.CompletedProcess[str]:
+    return subprocess.run(
+        [
+            "powershell",
+            "-ExecutionPolicy",
+            "Bypass",
+            "-File",
+            str(script),
+            *args,
+        ],
+        cwd=script.parents[1],
         capture_output=True,
         text=True,
         check=False,
@@ -120,6 +158,21 @@ def test_scoring_verifier_accepts_edit_dist_only_result_without_require_cdm(
     result = run_scoring_verify("-MetricResult", str(metric_result))
 
     assert result.returncode == 0, result.stdout + result.stderr
+
+
+def test_scoring_verifier_success_text_matches_zero_metric_warning_policy(
+    tmp_path: Path,
+):
+    metric_result = tmp_path / "metric_result.json"
+    write_metric_result(metric_result, mandatory_value=0.0)
+
+    result = run_scoring_verify("-MetricResult", str(metric_result))
+
+    output = result.stdout + result.stderr
+    assert result.returncode == 0, output
+    assert "mandatory metrics present and non-negative" in output
+    assert "CDM positive when present or required" in output
+    assert "all 4 metrics non-zero" not in output
 
 
 def test_scoring_verifier_rejects_present_non_numeric_cdm_all(tmp_path: Path):
@@ -218,6 +271,78 @@ def test_full_verify_can_run_windows_native_cdm_without_wsl():
     assert '"-WindowsOnly", "-RequireCdm"' in text
     assert '"-WslOnly", "-RequireCdm"' in text
     assert '$argumentText = $verifyArguments -join " "' in text
+
+
+def test_full_verify_rejects_contradictory_windows_cdm_switches():
+    result = run_full_verify(
+        FULL_VERIFY,
+        "-WindowsCdm",
+        "-SkipWindowsCdm",
+        "-SkipWsl",
+        "-SkipVlm",
+    )
+
+    output = result.stdout + result.stderr
+    assert result.returncode != 0
+    assert "-WindowsCdm and -SkipWindowsCdm cannot be combined" in output
+
+
+def test_full_verify_fails_when_requested_windows_cdm_verifier_is_missing(
+    tmp_path: Path,
+):
+    root = make_minimal_full_verify_tree(tmp_path)
+    write_passing_verifier(root / "eval-infra/01-omnidocbench/verify.ps1")
+    write_passing_verifier(root / "eval-infra/03-scoring/verify.ps1")
+
+    result = run_full_verify(
+        root / "scripts/full-verify.ps1",
+        "-SkipWsl",
+        "-SkipVlm",
+        "-WindowsCdm",
+    )
+
+    output = result.stdout + result.stderr
+    assert result.returncode != 0
+    assert "02-cdm-environment/verify-windows" in output
+    assert "verify script missing" in output
+    assert "SKIP" not in next(
+        line
+        for line in output.splitlines()
+        if "02-cdm-environment/verify-windows" in line
+    )
+
+
+def test_full_verify_fails_when_scoring_verifier_is_missing(tmp_path: Path):
+    root = make_minimal_full_verify_tree(tmp_path)
+    write_passing_verifier(root / "eval-infra/01-omnidocbench/verify.ps1")
+
+    result = run_full_verify(
+        root / "scripts/full-verify.ps1",
+        "-SkipWsl",
+        "-SkipVlm",
+    )
+
+    output = result.stdout + result.stderr
+    assert result.returncode != 0
+    assert "03-scoring/verify-windows" in output
+    assert "verify script missing" in output
+    assert "SKIP" not in next(
+        line for line in output.splitlines() if "03-scoring/verify-windows" in line
+    )
+    benchmark_line = next(
+        line for line in output.splitlines() if "04-benchmark/verify" in line
+    )
+    assert "SKIP" in benchmark_line
+    assert "verify script not present" in benchmark_line
+
+
+def test_scoring_verifier_resolves_wsl_home_and_keeps_root_fallback():
+    text = read(SCORING_VERIFY)
+
+    assert "wsl -d Ubuntu2204 -- sh -lc" in text
+    assert 'printf %s "$HOME"' in text
+    assert "OmniDocBench\\result" in text
+    assert '"\\\\wsl$\\Ubuntu2204\\root\\OmniDocBench\\result"' in text
 
 
 def test_pitfalls_limits_wsl_only_warning_to_shell_scripts_and_names_native_verifier():

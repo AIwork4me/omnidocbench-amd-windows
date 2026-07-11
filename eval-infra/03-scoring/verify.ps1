@@ -24,8 +24,8 @@ Checks that:
 
 .PARAMETER MetricResult
 Path to a *_metric_result.json file. If omitted, the script searches the
-default result locations (Windows checkout and WSL /root path, mirrored to
-\\wsl$\...) and uses the most recently written one.
+default result locations (Windows checkout and the current Ubuntu2204 user's
+WSL home, mirrored to \\wsl$\...) and uses the most recently written one.
 
 .PARAMETER SaveName
 Optional save_name to disambiguate when multiple runs exist (e.g.
@@ -77,16 +77,45 @@ if ($MetricResult -ne "") {
     }
 } else {
     # Candidate result directories: Windows OmniDocBench checkout, and the WSL
-    # native checkout (reached via the \\wsl$ share). Most-recent wins unless
-    # the caller restricts discovery to one platform.
-    $winResult   = Join-Path $rootDir "eval-infra\01-omnidocbench\OmniDocBench\result"
-    $wslResult   = "\\wsl$\Ubuntu2204\root\OmniDocBench\result"
+    # native checkout (reached via the \\wsl$ share). score-cdm.sh provisions
+    # under $HOME, so resolve the active Ubuntu2204 user's home dynamically.
+    # Keep /root as a fallback for older root-provisioned environments and for
+    # cases where WSL cannot be queried from this process.
+    $winResult = Join-Path $rootDir "eval-infra\01-omnidocbench\OmniDocBench\result"
+    $wslResults = @()
+    if (-not $WindowsOnly) {
+        if (Get-Command wsl -ErrorAction SilentlyContinue) {
+            $previousErrorActionPreference = $ErrorActionPreference
+            try {
+                $ErrorActionPreference = "Continue"
+                $wslHomeOutput = wsl -d Ubuntu2204 -- sh -lc 'printf %s "$HOME"' 2>$null
+                $wslHomeExit = $LASTEXITCODE
+            } catch {
+                $wslHomeOutput = $null
+                $wslHomeExit = 1
+            } finally {
+                $ErrorActionPreference = $previousErrorActionPreference
+            }
+
+            if ($wslHomeExit -eq 0) {
+                $wslHome = ((@($wslHomeOutput) -join "") -replace "`0", "").Trim()
+                if ($wslHome -match '^/') {
+                    $wslHomeUnc = "\\wsl$\Ubuntu2204" + ($wslHome -replace '/', '\')
+                    $wslResults += Join-Path $wslHomeUnc "OmniDocBench\result"
+                }
+            }
+        }
+        $rootWslResult = "\\wsl$\Ubuntu2204\root\OmniDocBench\result"
+        if ($wslResults -notcontains $rootWslResult) {
+            $wslResults += $rootWslResult
+        }
+    }
     if ($WindowsOnly) {
         $resultDirs = @($winResult)
     } elseif ($WslOnly) {
-        $resultDirs = @($wslResult)
+        $resultDirs = @($wslResults)
     } else {
-        $resultDirs = @($winResult, $wslResult)
+        $resultDirs = @($winResult) + @($wslResults)
     }
     $candidates  = @()
     foreach ($d in $resultDirs) {
@@ -217,7 +246,7 @@ if ($null -eq $cdmProperty) {
 
 if ($ok) {
     Write-Host ""
-    Write-Host "VERIFY OK: metric_result.json valid, all 4 metrics non-zero." -ForegroundColor Green
+    Write-Host "VERIFY OK: metric_result.json valid; mandatory metrics present and non-negative; CDM positive when present or required." -ForegroundColor Green
     exit 0
 } else {
     Write-Host ""
