@@ -19,6 +19,8 @@ Checks that:
      every page matched GT exactly), a tiny toy subset could legitimately hit
      it. Negative values (which OmniDocBench never produces legitimately) are
      the real "silent run failure" signal.
+   3. When display_formula.CDM.all is present, it must be positive. CDM F1 <= 0
+      is a hard failure; Edit_dist-only runs omit the CDM node and remain valid.
 
 .PARAMETER MetricResult
 Path to a *_metric_result.json file. If omitted, the script searches the
@@ -142,13 +144,8 @@ if ($null -ne $cdmNode) {
     if ($null -ne $cdmVal) {
         $cdmNum = [double]$cdmVal
         if ($cdmNum -le 0.0) {
-            # Red (not Yellow): CDM F1=0 in a CDM run is the repo's most-deceptive
-            # failure (everything succeeds yet the score is zero), so it must NOT
-            # look like a benign SKIP. Yellow is full-verify.ps1's SKIP color; a
-            # CDM=0 here is a real problem worth investigating, not a skip.
-            Write-Host ("WARN: display_formula.CDM       = $cdmNum  (CDM F1=0 - see docs/pitfalls.md#cdm-zero)") -ForegroundColor Red
-            # Not a hard failure: the Edit_dist-only run has no CDM. But a
-            # CDM run with F1=0 is the classic IM6/\mathcolor bug.
+            Write-Host ("FAIL: display_formula.CDM       = $cdmNum  (CDM <= 0 / CDM F1=0 - see docs/pitfalls.md#cdm-zero)") -ForegroundColor Red
+            $ok = $false
         } else {
             Write-Host ("OK:   display_formula.CDM       = $cdmNum") -ForegroundColor Green
         }

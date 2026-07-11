@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import json
 from pathlib import Path
+import subprocess
 
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -28,6 +30,46 @@ DOC_FILES = [
 
 def read(path: Path) -> str:
     return path.read_text(encoding="utf-8")
+
+
+def test_scoring_verifier_rejects_present_zero_cdm_f1(tmp_path: Path):
+    metric_result = tmp_path / "metric_result.json"
+    metric_result.write_text(
+        json.dumps(
+            {
+                "text_block": {"all": {"Edit_dist": {"ALL_page_avg": 0.1}}},
+                "display_formula": {
+                    "all": {
+                        "Edit_dist": {"ALL_page_avg": 0.1},
+                        "CDM": {"all": 0.0},
+                    }
+                },
+                "table": {"all": {"TEDS": {"all": 0.1}}},
+                "reading_order": {"all": {"Edit_dist": {"ALL_page_avg": 0.1}}},
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    result = subprocess.run(
+        [
+            "powershell",
+            "-ExecutionPolicy",
+            "Bypass",
+            "-File",
+            str(REPO_ROOT / "eval-infra" / "03-scoring" / "verify.ps1"),
+            "-MetricResult",
+            str(metric_result),
+        ],
+        cwd=REPO_ROOT,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+    assert result.returncode != 0
+    output = result.stdout + result.stderr
+    assert "CDM F1=0" in output or "CDM <= 0" in output
 
 
 def test_windows_cdm_patch_exists_and_targets_only_cdm_toolchain_files():
