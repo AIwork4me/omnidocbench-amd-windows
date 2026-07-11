@@ -60,7 +60,11 @@ powershell -ExecutionPolicy Bypass -File scripts\wsl-ensure.ps1
 powershell -ExecutionPolicy Bypass -File eval-infra\01-omnidocbench\setup.ps1
 powershell -ExecutionPolicy Bypass -File eval-infra\01-omnidocbench\verify.ps1
 
-# 步骤 2：CDM 环境（WSL）—— 最难的一步
+# 可选的原生 CDM 验证（optional；需要本机 TeX Live、ImageMagick 和 Ghostscript）。
+# 使用下方 WSL 兼容/参考路径时跳过此项。
+powershell -ExecutionPolicy Bypass -File eval-infra\02-cdm-environment\verify-windows.ps1
+
+# 步骤 2：CDM 环境（WSL 兼容/参考路径）
 # 把 /mnt/c/<path-to-repo> 换成你 clone 的 WSL 路径。
 wsl -d Ubuntu2204 bash /mnt/c/<path-to-repo>/eval-infra/02-cdm-environment/setup.sh
 wsl -d Ubuntu2204 bash /mnt/c/<path-to-repo>/eval-infra/02-cdm-environment/verify.sh
@@ -75,11 +79,21 @@ python adapters\paddleocr-vl-1.6\run_adapter.py `
 
 # 步骤 4：评分 + 最终验证
 powershell -ExecutionPolicy Bypass -File eval-infra\03-scoring\score.ps1
+# 原生 Windows CDM 路径：verify-windows.ps1 通过后运行：
+powershell -ExecutionPolicy Bypass -File eval-infra\03-scoring\score.ps1 -Config v16-cdm.yaml
+# WSL CDM 兼容/参考路径：
 wsl -d Ubuntu2204 bash /mnt/c/<path-to-repo>/eval-infra/03-scoring/score-cdm.sh
 powershell -ExecutionPolicy Bypass -File eval-infra\03-scoring\verify.ps1
 # 或一次性跑完：
 powershell -ExecutionPolicy Bypass -File scripts\full-verify.ps1
 ```
+
+Windows 原生 CDM 已受支持：`eval-infra/01-omnidocbench/setup.ps1` 会自动应用
+`patches/omnidocbench/windows-cdm.patch`，并由
+`eval-infra/02-cdm-environment/verify-windows.ps1` 验证。这是可选路径，需要本机
+TeX Live、ImageMagick 和 Ghostscript。WSL CDM 仍保留为兼容和 reference 路径；
+选择 WSL 的用户无需进行原生 CDM 验证。
+`scripts/full-verify.ps1` 只有在显式传入 `-WindowsCdm` 时才检查原生路径。
 
 如果用 PaddleOCR 官方 `PaddleOCRVL` engine 跑基准评测，请用
 `_to_markdown(pretty=False)` 导出评测型 Markdown。默认 pretty Markdown
@@ -117,8 +131,8 @@ python adapters\paddleocr-vl-1.6\run_adapter.py `
 ```
 eval-infra/        ← 模型无关的基础设施，搭一次永久受益
   01-omnidocbench/    OmniDocBench 代码 + v1.6 数据集（1651 页）+ 配置模板
-  02-cdm-environment/ WSL 内的 CDM 工具链：TeX Live 2026 + ImageMagick 7 + gs + \mathcolor 修复
-  03-scoring/         score.ps1（Edit_dist+TEDS，Windows）· score-cdm.sh（+CDM，WSL）· verify.ps1
+  02-cdm-environment/ CDM 工具链：应用 windows-cdm.patch 并通过 verify-windows.ps1 的 Windows 原生路径，或 WSL 兼容/参考路径
+  03-scoring/         score.ps1（Windows；verify-windows.ps1 通过后用 CDM 配置跑 CDM）· score-cdm.sh（+CDM，WSL 兼容/参考路径）· verify.ps1
 
 adapters/          ← 模型相关，每个模型一个目录
   _template/          最小骨架，直接拷贝
@@ -134,7 +148,7 @@ docs/
   architecture.md     数据流图 + Windows/WSL 边界
 ```
 
-**唯一需要记住的架构事实：** CDM（公式渲染指标）必须在 **WSL** 里跑，因为 OmniDocBench 的 CDM 代码会 shell 调用 POSIX 专属命令（`pdflatex`、`magick`、`gs`、`kpsewhich`），而且 ImageMagick 6 会把彩色公式悄悄渲染成灰度。其余都在 Windows 原生跑。详见 [`docs/architecture.md`](docs/architecture.md) 和 [`docs/pitfalls.md#posix`](docs/pitfalls.md#posix)。
+**唯一需要记住的架构事实：** CDM 有两条受支持的工具链路径。Windows 原生 CDM 是应用 `windows-cdm.patch` 并通过 `verify-windows.ps1` 后的本地快速路径。WSL CDM 仍是兼容性/参考路径，使用隔离的 Linux TeX Live、ImageMagick 和 Ghostscript 工具链。详见 [`docs/architecture.md`](docs/architecture.md) 和 [`docs/pitfalls.md#posix`](docs/pitfalls.md#posix)。
 
 每个适配器唯一的契约：
 
@@ -193,7 +207,7 @@ CDM 环境问题见
 2. 编辑 `run_adapter.py` —— 实现 `run_adapter(img_dir, out_dir, server_url)` 调用你的模型；为每页写 `out_dir/<image_stem>.md`。捕获每页失败，避免单页出错中止整轮运行。
 3. 编辑 `setup.ps1`（或像参考适配器那样拆成编号子目录）来下载权重 / 启动服务。机器本地路径写入 gitignore 的 `.env.local`，绝不写进提交的代码。
 4. 运行（在 repo 根目录）：`python adapters\<your-model>\run_adapter.py --img-dir eval-infra\01-omnidocbench\data\images --out-dir predictions\<your-model>`
-5. 原样重跑评分器（它只读预测路径）：`eval-infra\03-scoring\score.ps1`（+ `score-cdm.sh` 跑 CDM），再跑 `verify.ps1`。
+5. 原样重跑评分器（它只读预测路径）：`eval-infra\03-scoring\score.ps1`；跑 CDM 时，在 `verify-windows.ps1` 通过后使用 `score.ps1 -Config v16-cdm.yaml`，或使用 WSL `score-cdm.sh`，再跑 `verify.ps1`。
 
 参考适配器 [`adapters/paddleocr-vl-1.6/`](adapters/paddleocr-vl-1.6/) 是一个完整、已验证的范例，可以直接参考。
 

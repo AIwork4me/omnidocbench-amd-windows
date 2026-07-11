@@ -12,17 +12,17 @@ and the per-module READMEs.
                                               v
    +-------------------+    Markdown     +-------------------+    scores    +-------------------+
    | adapters/<model>/ |  .md per page   | eval-infra/       |  metric_     | verify.ps1       |
-   |  run_adapter.py   | ----------------| 03-scoring/       | ------------>| all 4 metrics    |
-   |  (one per model)  |  predictions/   |  score[.ps1|.sh]  |  result.json | non-zero?        |
+   |  run_adapter.py   | ----------------| 03-scoring/       | ------------>| non-CDM >= 0;    |
+   |  (one per model)  |  predictions/   |  score[.ps1|.sh]  |  result.json | CDM > 0 if used  |
    +-------------------+    <model>/     +-------------------+              +-------------------+
           ^                                ^        |
-          | model weights                  | code   | CDM needs WSL:
-          | via .env.local                 | + data | LaTeX + IM7 + gs
+          | model weights                  | code   | CDM paths: native Windows
+          | via .env.local                 | + data | or WSL reference stack
           |                                |        v
    +-------------------+                   |  +-------------------+
    | 01-vlm-server/    |                   |  | 02-cdm-environment|
-   | 02-layout-model/  |                   |  | setup.sh (9 steps)|
-   | (provisioning)    |                   |  | in WSL Ubuntu 22  |
+   | 02-layout-model/  |                   |  | Win: patch+verify |
+   | (provisioning)    |                   |  | WSL: setup.sh     |
    +-------------------+                   |  +-------------------+
                                            |
                               +------------+------------+
@@ -69,8 +69,8 @@ Three numbered sub-directories, in dependency order:
 | Module | Provides | Run where |
 |---|---|---|
 | [`01-omnidocbench`](../eval-infra/01-omnidocbench/) | OmniDocBench eval code (`pdf_validation.py`) + v1.6 dataset (GT manifest + 1651 page images) + config templates | Windows (`setup.ps1`) |
-| [`02-cdm-environment`](../eval-infra/02-cdm-environment/) | A WSL environment where CDM (the formula-rendering metric) actually works: TeX Live 2026 + IM7 + gs + the `\mathcolor` fix | WSL (`setup.sh`, 9 steps) |
-| [`03-scoring`](../eval-infra/03-scoring/) | The scoring scripts themselves + result verification | `score.ps1` Windows, `score-cdm.sh` WSL |
+| [`02-cdm-environment`](../eval-infra/02-cdm-environment/) | CDM toolchains: Windows-native after `windows-cdm.patch` + `verify-windows.ps1`, and the WSL TeX Live 2026 + IM7 + gs reference path | Windows PowerShell or WSL (`setup.sh`, 9 steps) |
+| [`03-scoring`](../eval-infra/03-scoring/) | The scoring scripts themselves + result verification | Native Windows: `score.ps1 -Config v16-cdm.yaml` after `verify-windows.ps1`; WSL compatibility/reference: `score-cdm.sh` |
 | [`04-benchmark`](../eval-infra/04-benchmark/) | Capability reports with GPU/RAM profiling + stability statistics | Windows (`run.ps1`) |
 
 The numbering encodes the dependency: `02-cdm-environment` copies the
@@ -87,8 +87,10 @@ OmniDocBench code that `01-omnidocbench` cloned; `03-scoring` consumes both.
 
 ## The Windows / WSL boundary
 
-The single most important architectural fact: **CDM runs in WSL, everything
-else runs Windows-native.** Why is in
+CDM has two supported toolchain paths. Windows-native CDM is the local fast path
+when `windows-cdm.patch` is applied and `verify-windows.ps1` passes. WSL CDM
+remains the compatibility/reference path with an isolated Linux TeX Live,
+ImageMagick, and Ghostscript stack. Why is in
 [`pitfalls.md#posix`](pitfalls.md#posix) and [`pitfalls.md#grayscale`](pitfalls.md#grayscale).
 
 ```
@@ -104,13 +106,15 @@ else runs Windows-native.** Why is in
      download dataset (1651 imgs) ────────────────┼──>  /root/odb-venv
                                                   │       TL2026 + IM7 + gs
    03-scoring/score.ps1:                          │
-     Edit_dist + TEDS  (pure Python) ◄────────────┼──── 03-scoring/score-cdm.sh:
+     Edit_dist + TEDS, or + CDM after              │
+     verify-windows.ps1 ◄─────────────────────────┼──── 03-scoring/score-cdm.sh:
                                                   │       Edit_dist + TEDS + CDM
    03-scoring/verify.ps1:                         │       (clean Linux PATH, no /mnt/c)
      reads metric_result.json (win or \\wsl$) ◄───┘
 ```
 
-The boundary is crossed exactly twice per CDM run:
+The WSL CDM compatibility/reference path crosses the boundary exactly twice per
+CDM run:
 
 1. **Down:** `score-cdm.sh` is launched from PowerShell via
    `wsl -d Ubuntu2204 bash .../score-cdm.sh`. The script sets a clean Linux
@@ -119,8 +123,10 @@ The boundary is crossed exactly twice per CDM run:
    OmniDocBench checkout or from the WSL checkout via the `\\wsl$\Ubuntu2204\`
    share.
 
-Everything in between (LaTeX compilation, PDF rasterization, CDM matching)
-stays entirely on the Linux side.
+For that WSL path, LaTeX compilation, PDF rasterization, and CDM matching stay
+entirely on the Linux side. The native Windows path instead uses the
+`windows-cdm.patch`-enabled checkout and is validated by
+`verify-windows.ps1`, without requiring WSL.
 
 ## Config → save_name → result mapping
 

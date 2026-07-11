@@ -9,11 +9,14 @@ ground-truth formula and a predicted one. Every step of that pipeline has a
 landmine on Windows/WSL, and we stepped on all of them. This module is the
 single idempotent installer that encodes the full set of fixes.
 
-It produces exactly one thing: **a WSL environment where `verify.sh` prints
-`VERIFY OK`**, meaning the CDM F1 score for two identical formulas is > 0.5
-(the canary that catches every known failure mode at once).
+It supports two CDM toolchain paths. The native Windows path applies
+`windows-cdm.patch` during `01-omnidocbench/setup.ps1` and passes
+`verify-windows.ps1`. The WSL compatibility/reference path provisions the
+9-step environment and passes `verify.sh`. Each verifier checks that the CDM
+F1 score for two identical formulas is > 0.5, the canary that catches every
+known failure mode at once.
 
-Two scripts:
+Three scripts:
 
 - **`setup.sh`** — the 9-step installer. Run inside WSL:
   `wsl -d Ubuntu2204 bash setup.sh`. Each step self-checks and is idempotent, so
@@ -22,10 +25,14 @@ Two scripts:
   `wsl -d Ubuntu2204 bash verify.sh`. Compiles a CJK color formula → PDF → PNG,
   confirms the PNG is genuinely multi-color (not grayscale), then runs the real
   `CDM.evaluate` on two identical formulas and asserts F1 > 0.5.
+- **`verify-windows.ps1`** - native Windows CDM verifier. Run from PowerShell
+  after `eval-infra/01-omnidocbench/setup.ps1`; it checks patch sentinels,
+  TeX Live, ImageMagick, Ghostscript discovery, and a real CDM smoke test.
 
 > These scripts were distilled from 20+ throwaway `cdm_*.sh` debug scripts. If
-> you change anything here, re-run `verify.sh` first. For the full narrative of
-> each pitfall, see [`docs/pitfalls.md`](../../docs/pitfalls.md).
+> you change the selected CDM path, re-run its applicable verifier first:
+> `verify-windows.ps1` for native Windows or `verify.sh` for WSL. For the full
+> narrative of each pitfall, see [`docs/pitfalls.md`](../../docs/pitfalls.md).
 
 ## Why it's a separate module
 
@@ -42,6 +49,15 @@ Python and just works. Isolating CDM setup behind its own module means:
 ## Usage
 
 ```powershell
+# Native Windows path: setup.ps1 applies windows-cdm.patch. Verify this path
+# with native TeX Live, ImageMagick, and Ghostscript on PATH.
+powershell -ExecutionPolicy Bypass -File ..\01-omnidocbench\setup.ps1
+powershell -ExecutionPolicy Bypass -File verify-windows.ps1
+```
+
+Or use the WSL compatibility/reference path:
+
+```powershell
 # In WSL, this repo is at /mnt/c/<your-clone-path>/omnidocbench-amd-windows.
 # Replace the path below with your actual clone location:
 wsl -d Ubuntu2204 bash /mnt/c/<path-to-repo>/eval-infra/02-cdm-environment/setup.sh
@@ -54,7 +70,7 @@ wsl -d Ubuntu2204 bash /mnt/c/<path-to-repo>/eval-infra/02-cdm-environment/verif
 for `CTAN_MIRROR`, `GITHUB_PROXY`, and `PYPI_INDEX`. If `mirrors.env` is absent
 it falls back to USTC's CTAN mirror and a public GitHub proxy with a warning.
 
-## Prerequisites
+## WSL path prerequisites
 
 - **WSL Ubuntu 22.04 installed and bootstrapped** — from Task 1's
   `scripts/wsl-ensure.ps1`. `setup.sh` assumes `apt-get` works and that `/root`

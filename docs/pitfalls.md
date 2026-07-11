@@ -103,9 +103,9 @@ NUL bytes; PowerShell 5.1 captures the NULs and `-match` silently fails to find
 the distro name. `wsl-ensure.ps1` strips NULs (`-replace "`0"`) before matching.
 If you write your own WSL detection, do the same.
 
-**If you skip it.** Nothing in `eval-infra/02-cdm-environment` (the CDM
-environment) or `score-cdm.sh` can run — they all assume a working WSL
-Ubuntu 22.04.
+**If you skip it.** The WSL-only scripts `setup.sh`, `verify.sh`, and
+`score-cdm.sh` require a working WSL Ubuntu 22.04. The native Windows path
+uses `verify-windows.ps1` as its verifier and does not require WSL.
 
 ---
 
@@ -422,16 +422,20 @@ output. Edit_dist + TEDS work fine; only CDM breaks.
 paths, `shlex` quoting, and coreutils-style command behavior. On Windows these
 either aren't on `PATH`, behave differently, or get mis-quoted.
 
-**Fix.** Run CDM in WSL, never Windows-native. `eval-infra/03-scoring/score-cdm.sh`
-runs `pdf_validation.py` inside WSL Ubuntu 22.04 with a clean Linux `PATH`
-(no `/mnt/c` Windows interop leakage). Use `eval-infra/03-scoring/score.ps1`
-for the Edit_dist + TEDS-only pass on Windows.
+**Fix.** First run `powershell -ExecutionPolicy Bypass -File
+eval-infra\02-cdm-environment\verify-windows.ps1`. If it fails, follow the
+reported missing tool or use the WSL CDM path. The native verifier confirms the
+tracked `windows-cdm.patch` is applied and that TeX Live, ImageMagick, and
+Ghostscript can complete a real CDM smoke test. For the compatibility/reference
+path, `eval-infra/03-scoring/score-cdm.sh` runs `pdf_validation.py` inside WSL
+Ubuntu 22.04 with a clean Linux `PATH` (no `/mnt/c` Windows interop leakage).
 
-**Verify.** `score-cdm.sh` completes and `display_formula.CDM.all > 0` in
-`metric_result.json`.
+**Verify.** `verify-windows.ps1` passes before drawing native-CDM conclusions,
+or `score-cdm.sh` completes and `display_formula.CDM.all > 0` in
+`metric_result.json` for the WSL path.
 
-**If you skip it.** Hours lost trying to make CDM work on Windows. It can be
-forced but every subprocess call is a new edge case. WSL is the supported path.
+**If you skip it.** Native Windows CDM may fail because its toolchain or patch
+is missing. WSL CDM remains the supported compatibility/reference path.
 
 ---
 

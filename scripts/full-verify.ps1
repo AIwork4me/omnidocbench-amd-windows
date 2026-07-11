@@ -16,27 +16,43 @@ Order mirrors AGENTS.md's dependency chain:
   1. mirrors.env written            (detect-mirrors)
   2. WSL Ubuntu2204 reachable       (wsl-ensure)
   3. OmniDocBench code + dataset    (01-omnidocbench)
-  4. CDM environment functional     (02-cdm-environment, in WSL)
+  4. CDM environment functional     (WSL via `score-cdm.sh`, or native Windows via `verify-windows.ps1` + `score.ps1 -Config v16-cdm.yaml`)
   5. VLM server + layout model      (paddleocr-vl-1.6/01-vlm-server + 02-layout-model)
   6. Predictions present            (adapter output)
-  7. Scores present + non-zero      (03-scoring)
+  7. Scores valid                   (03-scoring)
   8. Benchmark report valid         (04-benchmark, optional)
 
-Steps that depend on optional setup (e.g. predictions exist only after the
-adapter ran; CDM scores only after score-cdm.sh) are reported as SKIP rather
-than FAIL when their inputs are absent, so the core infra check still exits 0.
+Unless deliberately bypassed with a skip switch, module gates are mandatory and
+fail when their prerequisites or result artifacts are absent. The benchmark
+report remains optional and is skipped when no benchmark run exists. CDM score
+verification requires the selected path's artifact: default WSL verification
+requires a WSL CDM result; native Windows verification via `-SkipWsl
+-WindowsCdm` requires a Windows CDM result; and `-WindowsCdm` with WSL enabled
+requires both. Native full verification via `-SkipWsl -WindowsCdm` runs the
+Windows CDM gate without WSL checks.
 
 .PARAMETER SkipWsl
-Skip the WSL/CDM checks (use on a machine where only the Windows-native
-Edit_dist + TEDS path is provisioned).
+Skip the WSL checks, including setup.sh/verify.sh/score-cdm.sh checks; native
+CDM can still be requested with `-WindowsCdm`.
 
 .PARAMETER SkipVlm
 Skip the VLM-server and prediction checks (use when verifying infra without a
 model adapter provisioned yet).
 
+.PARAMETER WindowsCdm
+Run the native Windows CDM toolchain check. This is opt-in because it requires
+the local TeX Live, ImageMagick, and Ghostscript toolchain. Without -SkipWsl,
+the scoring step requires both Windows and WSL CDM artifacts.
+
+.PARAMETER SkipWindowsCdm
+Skip the native Windows CDM toolchain check. Cannot be combined with
+`-WindowsCdm`.
+
 .EXAMPLE
   powershell -ExecutionPolicy Bypass -File scripts\full-verify.ps1
   powershell -ExecutionPolicy Bypass -File scripts\full-verify.ps1 -SkipWsl
+  powershell -ExecutionPolicy Bypass -File scripts\full-verify.ps1 -WindowsCdm
+  powershell -ExecutionPolicy Bypass -File scripts\full-verify.ps1 -SkipWsl -WindowsCdm
 
 Exit code 0 = all mandatory checks passed (optional ones either passed or were
 legitimately skipped); 1 = at least one mandatory check failed.
@@ -44,9 +60,16 @@ legitimately skipped); 1 = at least one mandatory check failed.
 [CmdletBinding()]
 param(
     [switch] $SkipWsl,
-    [switch] $SkipVlm
+    [switch] $SkipVlm,
+    [switch] $WindowsCdm,
+    [switch] $SkipWindowsCdm
 )
 $ErrorActionPreference = "Stop"
+
+if ($WindowsCdm -and $SkipWindowsCdm) {
+    Write-Host "FAIL: -WindowsCdm and -SkipWindowsCdm cannot be combined." -ForegroundColor Red
+    exit 1
+}
 
 # Repo root (this script is at <root>/scripts/full-verify.ps1). Nested Split-Path
 # so this runs on Windows PowerShell 5.1 as well as PS 7+.
@@ -61,17 +84,30 @@ function Add-Result($name, $status, $detail) {
     Write-Host ("  [{0,-4}] {1,-42} {2}" -f $status, $name, $detail) -ForegroundColor $color
 }
 
-function Invoke-Verify($label, $file) {
+function Invoke-Verify($label, $file, [string[]] $verifyArguments = @()) {
     if (-not (Test-Path $file)) {
-        Add-Result $label "SKIP" "verify script missing: $file"
-        return "SKIP"
+        Add-Result $label "FAIL" "verify script missing: $file"
+        return "FAIL"
     }
-    & powershell -ExecutionPolicy Bypass -File $file *> $null
-    if ($LASTEXITCODE -eq 0) {
+    # Verifiers may emit non-fatal warnings on stderr. Evaluate their declared
+    # process exit code instead of allowing PowerShell's Stop preference to
+    # turn those warnings into terminating NativeCommandError records.
+    $previousErrorActionPreference = $ErrorActionPreference
+    try {
+        $ErrorActionPreference = "Continue"
+        & powershell -ExecutionPolicy Bypass -File $file @verifyArguments *> $null
+        $verifyExit = $LASTEXITCODE
+    } finally {
+        $ErrorActionPreference = $previousErrorActionPreference
+    }
+    if ($verifyExit -eq 0) {
         Add-Result $label "PASS" ""
         return "PASS"
     } else {
-        Add-Result $label "FAIL" "exit $LASTEXITCODE - re-run: powershell -File $file"
+        $argumentText = $verifyArguments -join " "
+        $rerunCommand = "powershell -File $file"
+        if ($argumentText) { $rerunCommand += " $argumentText" }
+        Add-Result $label "FAIL" "exit $verifyExit - re-run: $rerunCommand"
         return "FAIL"
     }
 }
@@ -143,8 +179,17 @@ if ($SkipWsl) {
     # propagate, or stderr noise masked the real status). verify.sh prints the
     # literal sentinel "VERIFY OK" only on genuine success, so we require BOTH
     # a clean exit AND the sentinel in the output.
-    $output = wsl -d Ubuntu2204 bash $wslPath 2>&1
-    $wslExit = $LASTEXITCODE
+    # WSL can write benign diagnostics to stderr. On Windows PowerShell 5.1,
+    # Stop turns those into terminating NativeCommandError records before the
+    # exit code and VERIFY OK sentinel can be evaluated.
+    $previousErrorActionPreference = $ErrorActionPreference
+    try {
+        $ErrorActionPreference = "Continue"
+        $output = wsl -d Ubuntu2204 bash $wslPath 2>&1
+        $wslExit = $LASTEXITCODE
+    } finally {
+        $ErrorActionPreference = $previousErrorActionPreference
+    }
     # Normalize the captured stream to a single string for -match. @() + -join
     # keeps PS 5.1 happy when $output is a scalar or an array of lines.
     $outputText = (@($output) -join "`n")
@@ -155,6 +200,19 @@ if ($SkipWsl) {
     } else {
         Add-Result "02-cdm-environment/verify" "PASS" "CDM pipeline functional (VERIFY OK)"
     }
+}
+
+# --- 4b. CDM environment (Windows native) -----------------------------------
+# Windows native CDM verification is independent of the WSL CDM check above.
+Write-Host ""
+Write-Host "[4b/8] CDM environment (Windows native)" -ForegroundColor Cyan
+if ($WindowsCdm -and -not $SkipWindowsCdm) {
+    $winCdmVerify = Join-Path $rootDir "eval-infra\02-cdm-environment\verify-windows.ps1"
+    [void](Invoke-Verify "02-cdm-environment/verify-windows" $winCdmVerify)
+} elseif ($SkipWindowsCdm) {
+    Add-Result "02-cdm-environment/verify-windows" "SKIP" "-SkipWindowsCdm"
+} else {
+    Add-Result "02-cdm-environment/verify-windows" "SKIP" "native Windows CDM requires -WindowsCdm"
 }
 
 # --- 5. VLM server + layout model (reference adapter) ------------------------
@@ -216,11 +274,21 @@ if ($SkipVlm) {
     }
 }
 
-# --- 7. Scores present + non-zero -------------------------------------------
+# --- 7. Scores valid ---------------------------------------------------------
 Write-Host ""
 Write-Host "[7/8] scoring results" -ForegroundColor Cyan
 $scoreVerify = Join-Path $rootDir "eval-infra\03-scoring\verify.ps1"
-[void](Invoke-Verify "03-scoring/verify" $scoreVerify)
+$runWindowsCdm = $WindowsCdm -and -not $SkipWindowsCdm
+if ($SkipWsl) {
+    $scoreArguments = @("-WindowsOnly")
+    if ($runWindowsCdm) { $scoreArguments += "-RequireCdm" }
+    [void](Invoke-Verify "03-scoring/verify-windows" $scoreVerify $scoreArguments)
+} elseif ($runWindowsCdm) {
+    [void](Invoke-Verify "03-scoring/verify-windows" $scoreVerify @("-WindowsOnly", "-RequireCdm"))
+    [void](Invoke-Verify "03-scoring/verify-wsl" $scoreVerify @("-WslOnly", "-RequireCdm"))
+} else {
+    [void](Invoke-Verify "03-scoring/verify-wsl" $scoreVerify @("-WslOnly", "-RequireCdm"))
+}
 
 # --- 8. Benchmark report (optional - skip if not run) -----------------------
 Write-Host ""
@@ -231,7 +299,7 @@ if (Test-Path $benchVerify) {
     $benchDirs = @(Get-ChildItem (Join-Path $rootDir "benchmark-results") -Directory -ErrorAction SilentlyContinue | Where-Object { $_.Name -ne "reference" } | Sort-Object LastWriteTime -Descending)
     if ($benchDirs.Count -gt 0) {
         $latestBench = $benchDirs[0].FullName
-        [void](Invoke-Verify "04-benchmark/verify" "$benchVerify -ReportDir '$latestBench'")
+        [void](Invoke-Verify "04-benchmark/verify" $benchVerify @("-ReportDir", $latestBench))
     } else {
         Add-Result "04-benchmark/verify" "SKIP" "no benchmark runs found"
     }

@@ -97,6 +97,8 @@ if (-not (Test-Path $probe)) {
 $patchDir = Join-Path $PSScriptRoot "patches"
 $formulaPatch = Join-Path $patchDir "0001-formula-cdm-normalization.patch"
 $timeoutPatch = Join-Path $patchDir "0002-timeout-fallback-long-text-span.patch"
+$rootPatchDir = Join-Path $rootDir "patches\omnidocbench"
+$windowsCdmPatch = Join-Path $rootPatchDir "windows-cdm.patch"
 if (Test-Path $formulaPatch) {
     $formulaFile = Join-Path $odbDir "src\core\preprocess\formula_cdm.py"
     $formulaTest = Join-Path $odbDir "tests\test_formula_cdm_normalization.py"
@@ -142,6 +144,24 @@ if (Test-Path $timeoutPatch) {
         if ($LASTEXITCODE -ne 0) { throw "Timeout fallback long-text span patch failed." }
         Write-Host "Timeout fallback long-text span patch applied." -ForegroundColor Green
     }
+}
+
+if (Test-Path $windowsCdmPatch) {
+    git -C $odbDir apply --reverse --check $windowsCdmPatch
+    if ($LASTEXITCODE -eq 0) {
+        Write-Host "Windows native CDM patch already present." -ForegroundColor Green
+    } else {
+        Write-Host "Applying Windows native CDM patch ..." -ForegroundColor Cyan
+        git -C $odbDir apply --check $windowsCdmPatch
+        if ($LASTEXITCODE -ne 0) {
+            throw "Windows native CDM patch does not apply cleanly. Inspect $windowsCdmPatch and $odbDir."
+        }
+        git -C $odbDir apply $windowsCdmPatch
+        if ($LASTEXITCODE -ne 0) { throw "Windows native CDM patch failed." }
+        Write-Host "Windows native CDM patch applied." -ForegroundColor Green
+    }
+} else {
+    Write-Host "WARN: Windows native CDM patch missing: $windowsCdmPatch" -ForegroundColor Yellow
 }
 
 # --- 1b. Create repo-root .venv + install OmniDocBench deps ---

@@ -61,6 +61,7 @@ absent it falls back to GitHub + ModelScope with a warning.
 | Artifact | Location | Check |
 |---|---|---|
 | Eval code | `OmniDocBench/pdf_validation.py` | present |
+| Windows CDM patch | `patches/omnidocbench/windows-cdm.patch` | auto-applied by `setup.ps1`; verified by `verify-windows.ps1` |
 | GT manifest | `data/OmniDocBench.json` | present |
 | Page images | `data/images/*.png` | ~1651 files |
 | Hard manifest | `data/OmniDocBench_hard296.json` | **derivative** (auto-derived by `score.ps1 -Config v16-hard.yaml`); absence is a WARNING, not a failure |
