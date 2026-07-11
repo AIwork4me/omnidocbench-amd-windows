@@ -1,13 +1,10 @@
 #!/bin/bash
 set -euo pipefail
-# Score adapter predictions with the FULL metric set INCLUDING CDM (WSL).
+# Score adapter predictions with the FULL metric set INCLUDING CDM in WSL.
 #
-# This is the CDM-enabled counterpart to score.ps1. CDM (the formula-rendering
-# metric) cannot run Windows-native: OmniDocBench's CDM code shells out to
-# POSIX-only commands (kpsewhich, magick, gs, pdflatex) and needs a working
-# LaTeX + ImageMagick 7 + Ghostscript toolchain that renders color correctly.
-# That environment is provisioned by eval-infra/02-cdm-environment (Task 3) and
-# lives in WSL. So we run the CDM config here.
+# This is the WSL compatibility/reference CDM path. Native Windows CDM is available via score.ps1 with a CDM config such as v16-cdm.yaml after windows-cdm.patch is applied and verify-windows.ps1 passes.
+# This script keeps the isolated WSL TeX Live + ImageMagick 7 + Ghostscript
+# toolchain available for compatibility/reference scoring.
 #
 # Run from PowerShell (replace /mnt/c/<path-to-repo> with your clone location):
 #   wsl -d Ubuntu2204 bash /mnt/c/<path-to-repo>/eval-infra/03-scoring/score-cdm.sh

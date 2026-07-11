@@ -31,7 +31,10 @@ Include:
 - Which phase failed (Step 0 = scripts/detect-mirrors.ps1 + scripts/wsl-ensure.ps1, then 01-omnidocbench through 03-scoring)
 - The exact error message
 - Output of `scripts/detect-mirrors.ps1` (network environment)
-- WSL or Windows? (CDM runs in WSL)
+- WSL or Windows? Windows-native CDM is supported when
+  `patches/omnidocbench/windows-cdm.patch` is applied and
+  `eval-infra/02-cdm-environment/verify-windows.ps1` passes; WSL CDM remains
+  the compatibility/reference path.
 
 ### New Pitfall
 

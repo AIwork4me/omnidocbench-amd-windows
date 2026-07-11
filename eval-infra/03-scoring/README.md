@@ -8,26 +8,27 @@ are all non-zero, verified by `verify.ps1`.
 
 | Script | Runs | Scores | Env |
 |---|---|---|---|
-| [`score.ps1`](score.ps1) | Windows-native | Edit_dist + TEDS (text_block, display_formula, table, reading_order) | Windows + Python 3.10/3.11 |
+| [`score.ps1`](score.ps1) | Windows-native | Edit_dist + TEDS, or **+ CDM** with a CDM config | Windows + Python 3.10/3.11; native CDM also needs the verified Task 3 toolchain |
 | [`score-cdm.sh`](score-cdm.sh) | WSL | Edit_dist + TEDS **+ CDM** (display_formula gets a CDM score too) | WSL + CDM env (Task 3) |
 | [`verify.ps1`](verify.ps1) | Windows | — (reads result JSON) | Windows |
 
 ## Why two scoring scripts
 
 CDM (the formula-rendering metric) is the only OmniDocBench metric that shells
-out to non-Python tools (`pdflatex`, `magick`, `gs`, `kpsewhich`). On Windows
-three things break:
+out to non-Python tools (`pdflatex`, `magick`, `gs`, `kpsewhich`). The original
+upstream Windows path had three problems:
 
 1. The CDM code calls POSIX shell commands (`shlex`, `os.path` POSIX semantics).
 2. ImageMagick 6 silently renders color formulas as **grayscale** → CDM F1 = 0
    with no error.
 3. TeX Live on Windows can't reliably compile the CDM template's `\mathcolor`.
 
-So CDM must run in WSL, where `eval-infra/02-cdm-environment` provisions the
-working LaTeX + ImageMagick 7 + Ghostscript toolchain. Everything else
-(Edit_dist, TEDS, reading order) runs fine Windows-native. Splitting them lets
-you iterate fast on the pure-Python metrics (seconds per run on the hard
-subset) and only pay the WSL round-trip when you need CDM.
+Historically CDM had to run in WSL. This repo now also supports Windows-native
+CDM after `windows-cdm.patch` is applied and `verify-windows.ps1` passes. WSL
+CDM remains the compatibility/reference path. The WSL toolchain provisions the
+working LaTeX + ImageMagick 7 + Ghostscript stack, while the Windows-native
+path is an explicit verification opt-in rather than the default full-verify
+behavior.
 
 ## Usage
 
@@ -41,7 +42,18 @@ powershell -ExecutionPolicy Bypass -File eval-infra\03-scoring\score.ps1
 powershell -ExecutionPolicy Bypass -File eval-infra\03-scoring\score.ps1 -Config v16-hard.yaml
 ```
 
-### + CDM (slow, WSL — needs the CDM environment from Task 3)
+### + CDM (native Windows)
+
+```powershell
+# Native CDM requires the windows-cdm.patch-enabled checkout and native TeX
+# Live, ImageMagick 7, and Ghostscript. Run the verifier before scoring.
+powershell -ExecutionPolicy Bypass -File eval-infra\02-cdm-environment\verify-windows.ps1
+
+# Then score with a CDM config (v16-cdm.yaml; ~40 min on the full set).
+powershell -ExecutionPolicy Bypass -File eval-infra\03-scoring\score.ps1 -Config v16-cdm.yaml
+```
+
+### + CDM (WSL compatibility/reference path)
 
 ```powershell
 # In WSL, this repo is at /mnt/c/<your-clone-path>/omnidocbench-amd-windows.
@@ -122,7 +134,9 @@ version:
 1. Is `magick --version` showing IM7 (not IM6)? → `#grayscale`
 2. Is `\mathcolor` actually emitting color in the rendered PNG? → `#mathcolor`
 3. Are CJK glyphs present (not tofu) in the formula PDF? → `#gkaiu-map`
-4. Did you run in WSL (not Windows)? → `#posix`
+4. Native path: did `verify-windows.ps1` pass with `windows-cdm.patch`, native
+   TeX Live, ImageMagick 7, and Ghostscript? WSL path: rerun `score-cdm.sh` →
+   `#posix`
 
 ## Prerequisites
 
@@ -131,7 +145,10 @@ version:
 - **A predictions directory** — from an adapter in
   [`../../adapters/`](../../adapters/) (Task 4).
 - **CDM environment (CDM runs only)** — from
-  [`../02-cdm-environment`](../02-cdm-environment/README.md) (Task 3).
+  [`../02-cdm-environment`](../02-cdm-environment/README.md) (Task 3). Native
+  Windows scoring requires `windows-cdm.patch`, native TeX Live, ImageMagick 7,
+  Ghostscript, and a passing `verify-windows.ps1`; otherwise use `score-cdm.sh`
+  in WSL.
 - **Python 3.10/3.11** — OmniDocBench is not 3.12-compatible
   (`#python-version`). The venv created by `02-omnidocbench/setup.ps1` pins 3.11.
 

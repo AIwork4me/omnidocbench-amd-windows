@@ -1,14 +1,14 @@
 <#
 .SYNOPSIS
-Score adapter predictions with Edit_dist + TEDS (Windows-native; CDM disabled).
+Score adapter predictions with Edit_dist + TEDS or CDM (Windows-native).
 
 .DESCRIPTION
 Runs OmniDocBench's pdf_validation.py against a config template (from
 eval-infra/01-omnidocbench/configs/) with the `<REPO_ROOT>` placeholder resolved
-to this repo's absolute root. CDM is intentionally OFF — it needs the WSL
-LaTeX/ImageMagick toolchain (see score-cdm.sh). Use this for the fast, pure-
-Python Edit_dist + TEDS pass over text_block / display_formula / table /
-reading_order.
+to this repo's absolute root. This Windows-native scorer runs the metrics
+enabled by the selected config: use the default configs for the fast, pure-
+Python Edit_dist + TEDS pass, or a CDM config such as `v16-cdm.yaml` after
+`windows-cdm.patch` is applied and `verify-windows.ps1` passes.
 
 The result files land in the OmniDocBench checkout's ./result/ directory:
     <save_name>_metric_result.json   (the scores; consumed by verify.ps1)
@@ -19,7 +19,8 @@ paddleocrvl_rocm_quick_match.
 .PARAMETER Config
 Config template to use (under eval-infra/01-omnidocbench/configs/). Defaults to
 "v16.yaml" (full 1651-page set, Edit_dist + TEDS). Use "v16-hard.yaml" for the
-296-page hard subset.
+296-page hard subset. Use "v16-cdm.yaml" to include CDM after the native
+Windows CDM prerequisites described above pass verification.
 
 .PARAMETER Python
 Python executable to run pdf_validation.py with. Must be the OmniDocBench
@@ -30,6 +31,7 @@ back to "python" on PATH only if that venv is absent.
 .EXAMPLE
   powershell -ExecutionPolicy Bypass -File score.ps1
   powershell -ExecutionPolicy Bypass -File score.ps1 -Config v16-hard.yaml
+  powershell -ExecutionPolicy Bypass -File score.ps1 -Config v16-cdm.yaml
   powershell -ExecutionPolicy Bypass -File score.ps1 -Python C:\path\to\.venv\Scripts\python.exe
 #>
 [CmdletBinding()]

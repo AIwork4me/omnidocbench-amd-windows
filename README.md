@@ -66,7 +66,11 @@ powershell -ExecutionPolicy Bypass -File scripts\wsl-ensure.ps1
 powershell -ExecutionPolicy Bypass -File eval-infra\01-omnidocbench\setup.ps1
 powershell -ExecutionPolicy Bypass -File eval-infra\01-omnidocbench\verify.ps1
 
-# Step 2: CDM environment (WSL) — the hardest step
+# Optional native-CDM verification (requires native TeX Live, ImageMagick, and Ghostscript).
+# Skip this when using the WSL compatibility/reference path below.
+powershell -ExecutionPolicy Bypass -File eval-infra\02-cdm-environment\verify-windows.ps1
+
+# Step 2: CDM environment (WSL compatibility/reference path)
 # Replace /mnt/c/<path-to-repo> with your clone's WSL path.
 wsl -d Ubuntu2204 bash /mnt/c/<path-to-repo>/eval-infra/02-cdm-environment/setup.sh
 wsl -d Ubuntu2204 bash /mnt/c/<path-to-repo>/eval-infra/02-cdm-environment/verify.sh
@@ -81,11 +85,22 @@ python adapters\paddleocr-vl-1.6\run_adapter.py `
 
 # Step 4: scoring + final verification
 powershell -ExecutionPolicy Bypass -File eval-infra\03-scoring\score.ps1
+# Native CDM path, after verify-windows.ps1 passes:
+powershell -ExecutionPolicy Bypass -File eval-infra\03-scoring\score.ps1 -Config v16-cdm.yaml
+# WSL CDM compatibility/reference path:
 wsl -d Ubuntu2204 bash /mnt/c/<path-to-repo>/eval-infra/03-scoring/score-cdm.sh
 powershell -ExecutionPolicy Bypass -File eval-infra\03-scoring\verify.ps1
 # Or all-at-once:
 powershell -ExecutionPolicy Bypass -File scripts\full-verify.ps1
 ```
+
+Windows-native CDM is supported when `patches/omnidocbench/windows-cdm.patch`
+has been applied by `eval-infra/01-omnidocbench/setup.ps1` and
+`eval-infra/02-cdm-environment/verify-windows.ps1` passes. This optional path
+requires native TeX Live, ImageMagick, and Ghostscript. WSL CDM remains the
+compatibility/reference path; users choosing WSL do not need native-CDM
+verification. `scripts/full-verify.ps1` runs the native check only with the
+explicit `-WindowsCdm` opt-in.
 
 For benchmark scoring with PaddleOCR's official `PaddleOCRVL` engine, export
 evaluation-oriented Markdown with `_to_markdown(pretty=False)`. The default
@@ -133,8 +148,8 @@ Three layers. Only `adapters/` is per-model; everything else is shared.
 ```
 eval-infra/        ← model-agnostic infrastructure, set up once
   01-omnidocbench/    OmniDocBench code + v1.6 dataset (1651 pages) + config templates
-  02-cdm-environment/ CDM toolchain in WSL: TeX Live 2026 + ImageMagick 7 + gs + the \mathcolor fix
-  03-scoring/         score.ps1 (Edit_dist+TEDS, Windows) · score-cdm.sh (+CDM, WSL) · verify.ps1
+  02-cdm-environment/ CDM toolchains: native Windows after windows-cdm.patch + verify-windows.ps1, or the WSL compatibility/reference stack
+  03-scoring/         score.ps1 (Windows; +CDM with a CDM config after verify-windows.ps1) · score-cdm.sh (+CDM, WSL compatibility/reference) · verify.ps1
 
 adapters/          ← model-specific, one directory per model
   _template/          minimal skeleton to copy
@@ -150,11 +165,11 @@ docs/
   architecture.md     data-flow diagrams + the Windows/WSL boundary
 ```
 
-**The one architectural fact to remember:** CDM (the formula-rendering metric)
-runs in **WSL** because OmniDocBench's CDM code shells out to POSIX-only
-commands (`pdflatex`, `magick`, `gs`, `kpsewhich`) and ImageMagick 6 silently
-flattens color formulas to grayscale. Everything else runs Windows-native. See
-[`docs/architecture.md`](docs/architecture.md) and
+**The one architectural fact to remember:** CDM has two supported toolchain
+paths. Windows-native CDM is the local fast path after `windows-cdm.patch` is
+applied and `verify-windows.ps1` passes. WSL CDM remains the
+compatibility/reference path with an isolated Linux TeX Live, ImageMagick, and
+Ghostscript stack. See [`docs/architecture.md`](docs/architecture.md) and
 [`docs/pitfalls.md#posix`](docs/pitfalls.md#posix).
 
 Each adapter's only contract:
@@ -223,7 +238,8 @@ You only touch `adapters/`. Five steps (full detail in
    a gitignored `.env.local`, never into committed code.
 4. Run it (from the repo root): `python adapters\<your-model>\run_adapter.py --img-dir eval-infra\01-omnidocbench\data\images --out-dir predictions\<your-model>`
 5. Re-run the scorer unchanged (it only reads the prediction path):
-   `eval-infra\03-scoring\score.ps1` (+ `score-cdm.sh` for CDM), then `verify.ps1`.
+   `eval-infra\03-scoring\score.ps1`; for CDM, use `score.ps1 -Config v16-cdm.yaml`
+   after `verify-windows.ps1`, or use WSL `score-cdm.sh`, then run `verify.ps1`.
 
 The reference adapter [`adapters/paddleocr-vl-1.6/`](adapters/paddleocr-vl-1.6/)
 is a complete, proven example to copy from.

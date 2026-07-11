@@ -27,8 +27,8 @@ adapter ran; CDM scores only after score-cdm.sh) are reported as SKIP rather
 than FAIL when their inputs are absent, so the core infra check still exits 0.
 
 .PARAMETER SkipWsl
-Skip the WSL/CDM checks (use on a machine where only the Windows-native
-Edit_dist + TEDS path is provisioned).
+Skip the WSL checks, including setup.sh/verify.sh/score-cdm.sh checks; native
+CDM can still be requested with `-WindowsCdm`.
 
 .PARAMETER SkipVlm
 Skip the VLM-server and prediction checks (use when verifying infra without a
@@ -45,6 +45,7 @@ Skip the native Windows CDM toolchain check, including when -WindowsCdm is set.
   powershell -ExecutionPolicy Bypass -File scripts\full-verify.ps1
   powershell -ExecutionPolicy Bypass -File scripts\full-verify.ps1 -SkipWsl
   powershell -ExecutionPolicy Bypass -File scripts\full-verify.ps1 -WindowsCdm
+  powershell -ExecutionPolicy Bypass -File scripts\full-verify.ps1 -SkipWsl -WindowsCdm
 
 Exit code 0 = all mandatory checks passed (optional ones either passed or were
 legitimately skipped); 1 = at least one mandatory check failed.
