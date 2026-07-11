@@ -1,6 +1,7 @@
 # OmniDocBench v1.6 full-set eval config for the PaddleOCR official engine
 # after forcing evaluation-oriented Markdown with _to_markdown(pretty=False).
-# CDM is disabled here because Formula CDM runs in WSL via the paired config.
+# CDM is disabled here; use the paired CDM config with either the verified
+# Windows-native toolchain or the WSL compatibility/reference toolchain.
 end2end_eval:
   metrics:
     text_block:      { metric: [Edit_dist] }

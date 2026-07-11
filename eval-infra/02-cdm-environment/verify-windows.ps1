@@ -32,6 +32,21 @@ Write-Host "=== Windows native CDM verify ===" -ForegroundColor Cyan
 if (-not (Test-Path $windowsCdmPatch)) { Fail "tracked Windows CDM patch missing at $windowsCdmPatch" }
 else { Pass "tracked Windows CDM patch present" }
 
+if ((Test-Path $windowsCdmPatch) -and (Test-Path $odbDir)) {
+    $previousErrorActionPreference = $ErrorActionPreference
+    try {
+        $ErrorActionPreference = "Continue"
+        git -C $odbDir apply --reverse --check $windowsCdmPatch *> $null
+        $patchCheckExit = $LASTEXITCODE
+    } finally {
+        $ErrorActionPreference = $previousErrorActionPreference
+    }
+    if ($patchCheckExit -eq 0) { Pass "tracked Windows CDM patch is applied" }
+    else { Fail "tracked Windows CDM patch is not applied cleanly; re-run eval-infra\01-omnidocbench\setup.ps1" }
+} elseif (-not (Test-Path $odbDir)) {
+    Fail "OmniDocBench checkout missing at $odbDir"
+}
+
 if (-not (Test-Path $latexColorFile)) { Fail "latex2bbox_color.py missing at $latexColorFile" }
 elseif (
     (Select-String -LiteralPath $latexColorFile -Pattern "_safe_temp_prefix" -SimpleMatch -Quiet) -and

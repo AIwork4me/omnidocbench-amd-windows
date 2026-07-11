@@ -32,6 +32,17 @@ Optional save_name to disambiguate when multiple runs exist (e.g.
 paddleocrvl_rocm_quick_match vs paddleocrvl_rocm_hard_quick_match). Ignored if
 -MetricResult is given.
 
+.PARAMETER WindowsOnly
+Search only the Windows OmniDocBench result directory. Ignored when
+-MetricResult is given. Cannot be combined with -WslOnly.
+
+.PARAMETER WslOnly
+Search only the WSL OmniDocBench result directory. Ignored when -MetricResult
+is given. Cannot be combined with -WindowsOnly.
+
+.PARAMETER RequireCdm
+Require display_formula.CDM.all to be present, numeric, finite, and positive.
+
 .EXAMPLE
   powershell -ExecutionPolicy Bypass -File verify.ps1
   powershell -ExecutionPolicy Bypass -File verify.ps1 -SaveName paddleocrvl_rocm_cdm_quick_match
@@ -42,9 +53,17 @@ Exit code 0 = OK, 1 = FAIL. Suitable for chaining in full-verify.ps1 (Task 7).
 [CmdletBinding()]
 param(
     [string] $MetricResult = "",
-    [string] $SaveName = ""
+    [string] $SaveName = "",
+    [switch] $WindowsOnly,
+    [switch] $WslOnly,
+    [switch] $RequireCdm
 )
 $ErrorActionPreference = "Stop"
+
+if (($MetricResult -eq "") -and $WindowsOnly -and $WslOnly) {
+    Write-Host "FAIL: -WindowsOnly and -WslOnly cannot be combined." -ForegroundColor Red
+    exit 1
+}
 
 $rootDir = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
 
@@ -58,11 +77,19 @@ if ($MetricResult -ne "") {
     }
 } else {
     # Candidate result directories: Windows OmniDocBench checkout, and the WSL
-    # native checkout (reached via the \\wsl$ share). Most-recent wins.
+    # native checkout (reached via the \\wsl$ share). Most-recent wins unless
+    # the caller restricts discovery to one platform.
     $winResult   = Join-Path $rootDir "eval-infra\01-omnidocbench\OmniDocBench\result"
     $wslResult   = "\\wsl$\Ubuntu2204\root\OmniDocBench\result"
+    if ($WindowsOnly) {
+        $resultDirs = @($winResult)
+    } elseif ($WslOnly) {
+        $resultDirs = @($wslResult)
+    } else {
+        $resultDirs = @($winResult, $wslResult)
+    }
     $candidates  = @()
-    foreach ($d in @($winResult, $wslResult)) {
+    foreach ($d in $resultDirs) {
         if (Test-Path $d) {
             if ($SaveName -ne "") {
                 $named = Join-Path $d "${SaveName}_metric_result.json"
@@ -74,7 +101,7 @@ if ($MetricResult -ne "") {
     }
     if ($candidates.Count -eq 0) {
         Write-Host "FAIL: no metric_result.json found." -ForegroundColor Red
-        Write-Host "      Searched: $winResult , $wslResult" -ForegroundColor DarkGray
+        Write-Host ("      Searched: " + ($resultDirs -join " , ")) -ForegroundColor DarkGray
         Write-Host "      Run score.ps1 (or score-cdm.sh) first." -ForegroundColor DarkGray
         exit 1
     }
@@ -136,18 +163,54 @@ foreach ($c in $checks) {
     }
 }
 
-# --- 3. Optional: CDM score (only present for CDM runs) ---------------------
-$cdmNode = $json.display_formula.all.CDM
-if ($null -ne $cdmNode) {
-    # CDM uses "all" for the aggregate F1.
-    $cdmVal = $cdmNode.all
-    if ($null -ne $cdmVal) {
-        $cdmNum = [double]$cdmVal
-        if ($cdmNum -le 0.0) {
-            Write-Host ("FAIL: display_formula.CDM       = $cdmNum  (CDM <= 0 / CDM F1=0 - see docs/pitfalls.md#cdm-zero)") -ForegroundColor Red
+# --- 3. Optional/required: CDM score ----------------------------------------
+# Property lookup distinguishes an omitted CDM metric (valid for Edit_dist-only
+# runs) from a present but incomplete/null CDM node (always invalid).
+$displayAll = $json.display_formula.all
+$cdmProperty = $null
+if ($null -ne $displayAll) {
+    $cdmProperty = $displayAll.PSObject.Properties["CDM"]
+}
+
+if ($null -eq $cdmProperty) {
+    if ($RequireCdm) {
+        Write-Host "FAIL: CDM metric required but display_formula.CDM is missing." -ForegroundColor Red
+        $ok = $false
+    }
+} else {
+    $cdmNode = $cdmProperty.Value
+    $cdmAllProperty = $null
+    if ($null -ne $cdmNode) {
+        $cdmAllProperty = $cdmNode.PSObject.Properties["all"]
+    }
+
+    if (($null -eq $cdmAllProperty) -or ($null -eq $cdmAllProperty.Value)) {
+        Write-Host "FAIL: display_formula.CDM.all is missing or null." -ForegroundColor Red
+        $ok = $false
+    } else {
+        $cdmVal = $cdmAllProperty.Value
+        $isNumeric = (
+            ($cdmVal -is [byte]) -or ($cdmVal -is [sbyte]) -or
+            ($cdmVal -is [int16]) -or ($cdmVal -is [uint16]) -or
+            ($cdmVal -is [int32]) -or ($cdmVal -is [uint32]) -or
+            ($cdmVal -is [int64]) -or ($cdmVal -is [uint64]) -or
+            ($cdmVal -is [single]) -or ($cdmVal -is [double]) -or
+            ($cdmVal -is [decimal])
+        )
+        if (-not $isNumeric) {
+            Write-Host "FAIL: display_formula.CDM.all must be numeric." -ForegroundColor Red
             $ok = $false
         } else {
-            Write-Host ("OK:   display_formula.CDM       = $cdmNum") -ForegroundColor Green
+            $cdmNum = [double]$cdmVal
+            if ([double]::IsNaN($cdmNum) -or [double]::IsInfinity($cdmNum)) {
+                Write-Host "FAIL: display_formula.CDM.all must be finite." -ForegroundColor Red
+                $ok = $false
+            } elseif ($cdmNum -le 0.0) {
+                Write-Host ("FAIL: display_formula.CDM       = $cdmNum  (CDM <= 0 / CDM F1=0 - see docs/pitfalls.md#cdm-zero)") -ForegroundColor Red
+                $ok = $false
+            } else {
+                Write-Host ("OK:   display_formula.CDM       = $cdmNum") -ForegroundColor Green
+            }
         }
     }
 }

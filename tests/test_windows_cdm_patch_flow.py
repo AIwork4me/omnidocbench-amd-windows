@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 import subprocess
+import uuid
 
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -13,6 +14,7 @@ FULL_VERIFY = REPO_ROOT / "scripts" / "full-verify.ps1"
 SCORING_README = REPO_ROOT / "eval-infra" / "03-scoring" / "README.md"
 SCORE_PS1 = REPO_ROOT / "eval-infra" / "03-scoring" / "score.ps1"
 SCORE_CDM_SH = REPO_ROOT / "eval-infra" / "03-scoring" / "score-cdm.sh"
+SCORING_VERIFY = REPO_ROOT / "eval-infra" / "03-scoring" / "verify.ps1"
 DOC_FILES = [
     REPO_ROOT / "README.md",
     REPO_ROOT / "README.zh-CN.md",
@@ -32,18 +34,15 @@ def read(path: Path) -> str:
     return path.read_text(encoding="utf-8")
 
 
-def test_scoring_verifier_rejects_present_zero_cdm_f1(tmp_path: Path):
-    metric_result = tmp_path / "metric_result.json"
-    metric_result.write_text(
+def write_metric_result(path: Path, *, cdm=...):
+    display_formula = {"Edit_dist": {"ALL_page_avg": 0.1}}
+    if cdm is not ...:
+        display_formula["CDM"] = cdm
+    path.write_text(
         json.dumps(
             {
                 "text_block": {"all": {"Edit_dist": {"ALL_page_avg": 0.1}}},
-                "display_formula": {
-                    "all": {
-                        "Edit_dist": {"ALL_page_avg": 0.1},
-                        "CDM": {"all": 0.0},
-                    }
-                },
+                "display_formula": {"all": display_formula},
                 "table": {"all": {"TEDS": {"all": 0.1}}},
                 "reading_order": {"all": {"Edit_dist": {"ALL_page_avg": 0.1}}},
             }
@@ -51,15 +50,16 @@ def test_scoring_verifier_rejects_present_zero_cdm_f1(tmp_path: Path):
         encoding="utf-8",
     )
 
-    result = subprocess.run(
+
+def run_scoring_verify(*args: str) -> subprocess.CompletedProcess[str]:
+    return subprocess.run(
         [
             "powershell",
             "-ExecutionPolicy",
             "Bypass",
             "-File",
-            str(REPO_ROOT / "eval-infra" / "03-scoring" / "verify.ps1"),
-            "-MetricResult",
-            str(metric_result),
+            str(SCORING_VERIFY),
+            *args,
         ],
         cwd=REPO_ROOT,
         capture_output=True,
@@ -67,9 +67,80 @@ def test_scoring_verifier_rejects_present_zero_cdm_f1(tmp_path: Path):
         check=False,
     )
 
+
+def test_scoring_verifier_rejects_present_zero_cdm_f1(tmp_path: Path):
+    metric_result = tmp_path / "metric_result.json"
+    write_metric_result(metric_result, cdm={"all": 0.0})
+
+    result = run_scoring_verify("-MetricResult", str(metric_result))
+
     assert result.returncode != 0
     output = result.stdout + result.stderr
     assert "CDM F1=0" in output or "CDM <= 0" in output
+
+
+def test_scoring_verifier_rejects_present_cdm_without_all(tmp_path: Path):
+    metric_result = tmp_path / "metric_result.json"
+    write_metric_result(metric_result, cdm={})
+
+    result = run_scoring_verify("-MetricResult", str(metric_result))
+
+    assert result.returncode != 0
+    assert "display_formula.CDM.all" in result.stdout + result.stderr
+
+
+def test_scoring_verifier_rejects_present_null_cdm_all(tmp_path: Path):
+    metric_result = tmp_path / "metric_result.json"
+    write_metric_result(metric_result, cdm={"all": None})
+
+    result = run_scoring_verify("-MetricResult", str(metric_result))
+
+    assert result.returncode != 0
+    assert "display_formula.CDM.all" in result.stdout + result.stderr
+
+
+def test_scoring_verifier_require_cdm_rejects_edit_dist_only_result(tmp_path: Path):
+    metric_result = tmp_path / "metric_result.json"
+    write_metric_result(metric_result)
+
+    result = run_scoring_verify(
+        "-MetricResult", str(metric_result), "-RequireCdm"
+    )
+
+    assert result.returncode != 0
+    assert "CDM metric required" in result.stdout + result.stderr
+
+
+def test_scoring_verifier_accepts_edit_dist_only_result_without_require_cdm(
+    tmp_path: Path,
+):
+    metric_result = tmp_path / "metric_result.json"
+    write_metric_result(metric_result)
+
+    result = run_scoring_verify("-MetricResult", str(metric_result))
+
+    assert result.returncode == 0, result.stdout + result.stderr
+
+
+def test_scoring_verifier_rejects_present_non_numeric_cdm_all(tmp_path: Path):
+    metric_result = tmp_path / "metric_result.json"
+    write_metric_result(metric_result, cdm={"all": "not-a-number"})
+
+    result = run_scoring_verify("-MetricResult", str(metric_result))
+
+    assert result.returncode != 0
+    assert "must be numeric" in result.stdout + result.stderr
+
+
+def test_scoring_verifier_windows_only_excludes_wsl_candidates():
+    save_name = f"windows_only_missing_{uuid.uuid4().hex}"
+
+    result = run_scoring_verify("-WindowsOnly", "-SaveName", save_name)
+
+    assert result.returncode != 0
+    output = result.stdout + result.stderr
+    assert "eval-infra\\01-omnidocbench\\OmniDocBench\\result" in output
+    assert "\\\\wsl$" not in output
 
 
 def test_windows_cdm_patch_exists_and_targets_only_cdm_toolchain_files():
@@ -113,6 +184,8 @@ def test_verify_windows_checks_native_cdm_toolchain_and_smoke():
     assert "patches\\omnidocbench\\windows-cdm.patch" in text
     assert "Test-Path $windowsCdmPatch" in text
     assert 'Fail "tracked Windows CDM patch missing' in text
+    assert "git -C $odbDir apply --reverse --check $windowsCdmPatch" in text
+    assert 'Fail "tracked Windows CDM patch is not applied' in text
     assert "kpsewhich" in text
     assert "upgreek.sty" in text
     assert "magick" in text
@@ -142,6 +215,9 @@ def test_full_verify_can_run_windows_native_cdm_without_wsl():
     assert "$previousErrorActionPreference = $ErrorActionPreference" in text
     assert '$ErrorActionPreference = "Continue"' in text
     assert "$ErrorActionPreference = $previousErrorActionPreference" in text
+    assert '"-WindowsOnly", "-RequireCdm"' in text
+    assert '"-WslOnly", "-RequireCdm"' in text
+    assert '$argumentText = $verifyArguments -join " "' in text
 
 
 def test_pitfalls_limits_wsl_only_warning_to_shell_scripts_and_names_native_verifier():

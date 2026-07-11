@@ -39,7 +39,8 @@ model adapter provisioned yet).
 
 .PARAMETER WindowsCdm
 Run the native Windows CDM toolchain check. This is opt-in because it requires
-the local TeX Live, ImageMagick, and Ghostscript toolchain.
+the local TeX Live, ImageMagick, and Ghostscript toolchain. Without -SkipWsl,
+the scoring step requires both Windows and WSL CDM artifacts.
 
 .PARAMETER SkipWindowsCdm
 Skip the native Windows CDM toolchain check, including when -WindowsCdm is set.
@@ -75,7 +76,7 @@ function Add-Result($name, $status, $detail) {
     Write-Host ("  [{0,-4}] {1,-42} {2}" -f $status, $name, $detail) -ForegroundColor $color
 }
 
-function Invoke-Verify($label, $file) {
+function Invoke-Verify($label, $file, [string[]] $verifyArguments = @()) {
     if (-not (Test-Path $file)) {
         Add-Result $label "SKIP" "verify script missing: $file"
         return "SKIP"
@@ -86,7 +87,7 @@ function Invoke-Verify($label, $file) {
     $previousErrorActionPreference = $ErrorActionPreference
     try {
         $ErrorActionPreference = "Continue"
-        & powershell -ExecutionPolicy Bypass -File $file *> $null
+        & powershell -ExecutionPolicy Bypass -File $file @verifyArguments *> $null
         $verifyExit = $LASTEXITCODE
     } finally {
         $ErrorActionPreference = $previousErrorActionPreference
@@ -95,7 +96,10 @@ function Invoke-Verify($label, $file) {
         Add-Result $label "PASS" ""
         return "PASS"
     } else {
-        Add-Result $label "FAIL" "exit $verifyExit - re-run: powershell -File $file"
+        $argumentText = $verifyArguments -join " "
+        $rerunCommand = "powershell -File $file"
+        if ($argumentText) { $rerunCommand += " $argumentText" }
+        Add-Result $label "FAIL" "exit $verifyExit - re-run: $rerunCommand"
         return "FAIL"
     }
 }
@@ -257,7 +261,17 @@ if ($SkipVlm) {
 Write-Host ""
 Write-Host "[7/8] scoring results" -ForegroundColor Cyan
 $scoreVerify = Join-Path $rootDir "eval-infra\03-scoring\verify.ps1"
-[void](Invoke-Verify "03-scoring/verify" $scoreVerify)
+$runWindowsCdm = $WindowsCdm -and -not $SkipWindowsCdm
+if ($SkipWsl) {
+    $scoreArguments = @("-WindowsOnly")
+    if ($runWindowsCdm) { $scoreArguments += "-RequireCdm" }
+    [void](Invoke-Verify "03-scoring/verify-windows" $scoreVerify $scoreArguments)
+} elseif ($runWindowsCdm) {
+    [void](Invoke-Verify "03-scoring/verify-windows" $scoreVerify @("-WindowsOnly", "-RequireCdm"))
+    [void](Invoke-Verify "03-scoring/verify-wsl" $scoreVerify @("-WslOnly", "-RequireCdm"))
+} else {
+    [void](Invoke-Verify "03-scoring/verify" $scoreVerify)
+}
 
 # --- 8. Benchmark report (optional - skip if not run) -----------------------
 Write-Host ""
