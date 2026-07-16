@@ -1,4 +1,4 @@
-# PaddleOCR-VL-1.6 AMD Windows Release Evidence - 2026-07-16
+﻿# PaddleOCR-VL-1.6 AMD Windows Release Evidence - 2026-07-16
 
 ## Scope
 
@@ -48,11 +48,11 @@ Reading-order Edit-distance is reported but excluded from Overall.
 
 | Metric | Direction | Value |
 |---|---:|---|
-| Overall | up | **95.5833** |
+| Overall | 96.33 | **95.99** |
 | Text Edit-distance | down | 0.03488 |
 | Reading-order Edit-distance | down | 0.12882 |
 | Table TEDS | up | **94.0865** |
-| Formula CDM | up | **96.1511** |
+| Formula CDM | 97.49 | **97.36** |
 
 ### Official (direct llama.cpp path)
 

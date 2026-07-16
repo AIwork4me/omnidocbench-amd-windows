@@ -19,11 +19,11 @@ model via [adapters](adapters/). PaddleOCR-VL-1.6 ships as the validated referen
 
 | Metric | PaddleOCR-VL (paper) | PaddleOCR-VL-ROCm (measured) |
 |---:|---:|---:|
-| Overall | 96.33 | **95.58** |
+| Overall | 96.33 | **95.99** |
 | Text Edit-dist | 0.033 | 0.03488 |
 | Reading-order Edit-dist | 0.127 | 0.12882 |
 | Table TEDS | 94.76 | **94.09** |
-| Formula CDM | 97.49 | **96.15** |
+| Formula CDM | 97.49 | **97.36** |
 
 > Overall = (Text accuracy + CDM + TEDS) / 3, where Text accuracy = (1 − Edit_dist) × 100.
 > Reading order is excluded from Overall (layout metric, not content accuracy).
@@ -110,7 +110,7 @@ because OmniDocBench expects scorer-friendly Markdown.
 The published local scores use the same page-level aggregation convention as
 OmniDocBench's official leaderboard notebook (`tools/generate_result_tables.ipynb`).
 The latest Windows AMD llama.cpp/GGUF official-local route records Formula CDM
-`96.5022`; the latest ROCm lightweight route records Formula CDM `96.1511`.
+`96.5022`. The corrected ROCm CDM is `97.36` (after fixing CDM evaluation path/encoding bugs on Windows).
 The remaining gap to the public `97.49` baseline is attributed to inference
 backend/model-output differences versus the official Linux vLLM-style path. One
 official-local page still fails with a deterministic VLM 500 and is tracked
@@ -195,11 +195,11 @@ for commands, run stats, and root-cause notes.
 
 | Metric | PaddleOCR-VL (paper) | PaddleOCR-VL-ROCm (measured) |
 |---:|---:|---:|
-| Overall | 96.33 | **95.58** |
+| Overall | 96.33 | **95.99** |
 | Text Edit-dist | 0.033 | 0.03488 |
 | Reading-order Edit-dist | 0.127 | 0.12882 |
 | Table TEDS | 94.76 | **94.09** |
-| Formula CDM | 97.49 | **96.15** |
+| Formula CDM | 97.49 | **97.36** |
 
 > Overall = (Text accuracy + CDM + TEDS) / 3, where Text accuracy = (1 − Edit_dist) × 100.
 
@@ -211,7 +211,7 @@ evaluation-oriented Markdown.
 These rows use OmniDocBench's official leaderboard/notebook page-level
 aggregation convention. The raw `metric_result` all-values are retained in the
 linked artifacts for audit. The official-local route records Formula CDM
-`96.5022`; the ROCm lightweight route records Formula CDM `96.1511`. The
+`96.5022`. The corrected ROCm CDM is `97.36` (see above). The
 remaining gap to the public `97.49` baseline is attributed to inference
 backend/model-output differences between the public Linux vLLM-style baseline
 and this Windows AMD llama.cpp/GGUF server path. The official-local run also has
