@@ -25,7 +25,7 @@ model via [adapters](adapters/). PaddleOCR-VL-1.6 ships as the validated referen
 | Table TEDS | 94.76 | **94.09** |
 | Formula CDM | 97.49 | **97.36** |
 
-> G4 inference speedup: **1.7x** (27-page stratified benchmark, 9 categories, 0 structural mismatches). The default lm_max_workers=8 in PaddleOCR-VL-ROCm enables this automatically. | Overall = (Text accuracy + CDM + TEDS) / 3, where Text accuracy = (1 − Edit_dist) × 100.
+> G4 inference speedup: **1.7x** (27-page stratified benchmark, 9 categories, 0 structural mismatches). The default `vlm_max_workers=8` in PaddleOCR-VL-ROCm enables this automatically. | Overall = (Text accuracy + CDM + TEDS) / 3, where Text accuracy = (1 − Edit_dist) × 100.
 > Reading order is excluded from Overall (layout metric, not content accuracy).
 
 ## System Requirements
@@ -201,7 +201,7 @@ for commands, run stats, and root-cause notes.
 | Table TEDS | 94.76 | **94.09** |
 | Formula CDM | 97.49 | **97.36** |
 
-> G4 inference speedup: **1.7x** (27-page stratified benchmark, 9 categories, 0 structural mismatches). The default lm_max_workers=8 in PaddleOCR-VL-ROCm enables this automatically. | Overall = (Text accuracy + CDM + TEDS) / 3, where Text accuracy = (1 − Edit_dist) × 100.
+> G4 inference speedup: **1.7x** (27-page stratified benchmark, 9 categories, 0 structural mismatches). The default `vlm_max_workers=8` in PaddleOCR-VL-ROCm enables this automatically. | Overall = (Text accuracy + CDM + TEDS) / 3, where Text accuracy = (1 − Edit_dist) × 100.
 
 For benchmark scoring, the official PaddleOCRVL engine must export Markdown
 with `_to_markdown(pretty=False)`. The default pretty Markdown is intended for
