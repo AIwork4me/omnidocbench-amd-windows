@@ -48,7 +48,7 @@ Reading-order Edit-distance is reported but excluded from Overall.
 
 | Metric | Direction | Value |
 |---|---:|---|
-| Overall | up | **95.8335** |
+| Overall | up | **95.5833** |
 | Text Edit-distance | down | 0.03488 |
 | Reading-order Edit-distance | down | 0.12882 |
 | Table TEDS | up | **94.0865** |

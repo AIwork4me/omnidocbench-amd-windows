@@ -17,13 +17,13 @@ model via [adapters](adapters/). PaddleOCR-VL-1.6 ships as the validated referen
 
 ![OmniDocBench AMD Windows overview](overview.jpg)
 
-| Metric | Direction | Official baseline | PaddleOCR official engine | PaddleOCR-VL-ROCm engine |
-|---|:---:|---:|---:|---:|
-| Overall | ↑ | 96.33 | 95.7657 | 95.8335 |
-| Text Edit-distance | ↓ | 0.033 | 0.03444 | 0.03488 |
-| Reading-order Edit-distance | ↓ | 0.127 | 0.12949 | 0.12882 |
-| Table TEDS | ↑ | 94.76 | 94.2393 | 94.0865 |
-| Formula CDM | ↑ | 97.49 | 96.5022 | 96.1511 |
+| Metric | PaddleOCR-VL (paper) | PaddleOCR-VL-ROCm (measured) |
+|---:|---:|---:|
+| Overall | 96.33 | **95.58** |
+| Text Edit-dist | 0.033 | 0.03488 |
+| Reading-order Edit-dist | 0.127 | 0.12882 |
+| Table TEDS | 94.76 | **94.09** |
+| Formula CDM | 97.49 | **96.15** |
 
 > Overall = (Text accuracy + CDM + TEDS) / 3, where Text accuracy = (1 − Edit_dist) × 100.
 > Reading order is excluded from Overall (layout metric, not content accuracy).
@@ -193,13 +193,13 @@ The PaddleOCR-VL-ROCm engine is the default local AMD Windows reference path.
 See [`docs/release-paddleocr-vl-1.6-amd-windows-2026-07-09.md`](docs/release-paddleocr-vl-1.6-amd-windows-2026-07-09.md)
 for commands, run stats, and root-cause notes.
 
-| Metric | Direction | Official baseline | PaddleOCR official engine | PaddleOCR-VL-ROCm engine |
-|---|:---:|---:|---:|---:|
-| Overall | ↑ | 96.33 | 95.7657 | 95.8335 |
-| Text Edit-distance | ↓ | 0.033 | 0.03444 | 0.03488 |
-| Reading-order Edit-distance | ↓ | 0.127 | 0.12949 | 0.12882 |
-| Table TEDS | ↑ | 94.76 | 94.2393 | 94.0865 |
-| Formula CDM | ↑ | 97.49 | 96.5022 | 96.1511 |
+| Metric | PaddleOCR-VL (paper) | PaddleOCR-VL-ROCm (measured) |
+|---:|---:|---:|
+| Overall | 96.33 | **95.58** |
+| Text Edit-dist | 0.033 | 0.03488 |
+| Reading-order Edit-dist | 0.127 | 0.12882 |
+| Table TEDS | 94.76 | **94.09** |
+| Formula CDM | 97.49 | **96.15** |
 
 > Overall = (Text accuracy + CDM + TEDS) / 3, where Text accuracy = (1 − Edit_dist) × 100.
 
