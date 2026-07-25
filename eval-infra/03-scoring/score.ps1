@@ -27,6 +27,12 @@ venv (Python 3.10/3.11 — OmniDocBench is not 3.12-compatible). Defaults to
 the repo-root .venv created by eval-infra/01-omnidocbench/setup.ps1; falls
 back to "python" on PATH only if that venv is absent.
 
+.PARAMETER PredictionDir
+Optional prediction directory override. Relative paths resolve from the repo
+root. The directory must exist and contain at least one Markdown file. This is
+used by benchmark/custom-adapter runs so inference and scoring consume the
+same explicit output directory.
+
 .EXAMPLE
   powershell -ExecutionPolicy Bypass -File score.ps1
   powershell -ExecutionPolicy Bypass -File score.ps1 -Config v16-hard.yaml
@@ -36,13 +42,44 @@ back to "python" on PATH only if that venv is absent.
 [CmdletBinding()]
 param(
     [string] $Config = "v16.yaml",
-    [string] $Python = ""
+    [string] $Python = "",
+    [string] $PredictionDir = ""
 )
 $ErrorActionPreference = "Stop"
 
 # Resolve repo root (this script is at <root>/eval-infra/03-scoring/score.ps1).
 # Nested Join-Path so this works on Windows PowerShell 5.1 as well as PS 7+.
 $rootDir = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
+
+function Get-ShortRepoRoot {
+    param([string]$RepoRoot)
+    $normalizedRoot = [System.IO.Path]::GetFullPath($RepoRoot)
+    $sha = [System.Security.Cryptography.SHA256]::Create()
+    try {
+        $hashBytes = $sha.ComputeHash([System.Text.Encoding]::UTF8.GetBytes($normalizedRoot.ToLowerInvariant()))
+    } finally {
+        $sha.Dispose()
+    }
+    $hash = ([System.BitConverter]::ToString($hashBytes) -replace "-", "").ToLowerInvariant().Substring(0, 12)
+    $alias = Join-Path (Join-Path (Join-Path $env:LOCALAPPDATA "OmniDocBenchAMD") $hash) "repo"
+    if (Test-Path -LiteralPath $alias) { return $alias }
+    return $normalizedRoot
+}
+
+function ConvertTo-ShortRepoPath {
+    param([string]$Path, [string]$RepoRoot)
+    $fullPath = [System.IO.Path]::GetFullPath($Path)
+    $fullRoot = [System.IO.Path]::GetFullPath($RepoRoot).TrimEnd('\')
+    if ($fullPath.Equals($fullRoot, [System.StringComparison]::OrdinalIgnoreCase)) {
+        return Get-ShortRepoRoot -RepoRoot $RepoRoot
+    }
+    $rootPrefix = $fullRoot + "\"
+    if ($fullPath.StartsWith($rootPrefix, [System.StringComparison]::OrdinalIgnoreCase)) {
+        $relative = $fullPath.Substring($rootPrefix.Length)
+        return Join-Path (Get-ShortRepoRoot -RepoRoot $RepoRoot) $relative
+    }
+    return $fullPath
+}
 
 # Default to the repo-root .venv (created by 01-omnidocbench/setup.ps1) so a
 # bare `python` that happens to be 3.13 doesn't crash OmniDocBench mid-score.
@@ -59,11 +96,50 @@ if ([string]::IsNullOrWhiteSpace($Python)) {
     }
 }
 
+try {
+    $pythonVersion = & $Python --version 2>&1
+} catch {
+    throw "Python executable could not be started: $Python`nRun 'uv sync --locked --all-groups' first."
+}
+if ($LASTEXITCODE -ne 0 -or $pythonVersion -notmatch "Python 3\.(10|11)\.") {
+    throw "OmniDocBench scoring requires Python 3.10 or 3.11 (found: '$pythonVersion'). Run 'uv sync --locked --all-groups' first."
+}
+
 # --- 1. Locate inputs -------------------------------------------------------
 $cfgTemplate = Join-Path $rootDir "eval-infra\01-omnidocbench\configs\$Config"
 if (-not (Test-Path $cfgTemplate)) {
     throw "Config template not found: $cfgTemplate`nAvailable templates include: v16.yaml, v16-official.yaml, v16-hard.yaml, v16-cdm.yaml, v16-cdm-official.yaml"
 }
+
+$configRoot = Get-ShortRepoRoot -RepoRoot $rootDir
+$rootPosix = $configRoot -replace '\\', '/'
+$template = Get-Content -Raw -LiteralPath $cfgTemplate
+$rendered = $template -replace [regex]::Escape("<REPO_ROOT>"), $rootPosix
+$predictionPattern = '(?m)^(\s*)prediction:\s*\{\s*data_path:\s*([^}\r\n]+?)\s*\}\s*$'
+$predictionMatches = [regex]::Matches($rendered, $predictionPattern)
+if ($predictionMatches.Count -ne 1) {
+    throw "Config must contain exactly one inline prediction.data_path (found $($predictionMatches.Count)): $cfgTemplate"
+}
+if (-not [string]::IsNullOrWhiteSpace($PredictionDir)) {
+    if (-not [System.IO.Path]::IsPathRooted($PredictionDir)) {
+        $PredictionDir = Join-Path $rootDir $PredictionDir
+    }
+    $PredictionDir = ConvertTo-ShortRepoPath -Path $PredictionDir -RepoRoot $rootDir
+    $predictionPosix = $PredictionDir -replace '\\', '/'
+    $indent = $predictionMatches[0].Groups[1].Value
+    $replacement = "${indent}prediction:   { data_path: $predictionPosix }"
+    $rendered = $rendered.Replace($predictionMatches[0].Value, $replacement)
+}
+
+$configuredPrediction = [regex]::Match($rendered, $predictionPattern).Groups[2].Value.Trim()
+if (-not (Test-Path -LiteralPath $configuredPrediction -PathType Container)) {
+    throw "Prediction directory not found: $configuredPrediction`nRun the adapter with --out-dir matching the scoring config, or pass -PredictionDir."
+}
+$predictionCount = @(Get-ChildItem -LiteralPath $configuredPrediction -Filter "*.md" -File -ErrorAction SilentlyContinue).Count
+if ($predictionCount -eq 0) {
+    throw "Prediction directory contains no Markdown files: $configuredPrediction`nRun the adapter before scoring."
+}
+Write-Host "Predictions: $configuredPrediction ($predictionCount Markdown files)" -ForegroundColor DarkGray
 
 $odbDir = Join-Path $rootDir "eval-infra\01-omnidocbench\OmniDocBench"
 $pdfValidation = Join-Path $odbDir "pdf_validation.py"
@@ -83,21 +159,19 @@ $hardMan   = Join-Path $dataDir "OmniDocBench_hard296.json"
 if ($Config -match "hard" -and (Test-Path $fullMan) -and -not (Test-Path $hardMan)) {
     Write-Host "Deriving hard-subset manifest from OmniDocBench.json ..." -ForegroundColor DarkGray
     try {
-        $manifest = Get-Content -Raw -LiteralPath $fullMan | ConvertFrom-Json
-        # OmniDocBench.json is a list of page objects each with a "subset" field.
-        # Keep only the hard-subset pages.
+        $manifest = Get-Content -Raw -Encoding UTF8 -LiteralPath $fullMan | ConvertFrom-Json
+        # OmniDocBench.json stores the subset under
+        # page_info.page_attribute.subset. Keep only hard-subset pages.
         $hardSets = @("equation_hard", "layout_hard", "table_hard")
-        $hardPages = @($manifest | Where-Object { $hardSets -contains $_.subset })
+        $hardPages = @($manifest | Where-Object { $hardSets -contains $_.page_info.page_attribute.subset })
         if ($hardPages.Count -eq 0) {
-            Write-Host "WARN: 0 hard pages found in manifest (expected ~296)." -ForegroundColor Yellow
-            Write-Host "      The upstream manifest schema may have changed; check the 'subset' field." -ForegroundColor Yellow
+            throw "Hard-subset derivation produced 0 pages (expected approximately 296). The upstream manifest schema may have changed; check page_info.page_attribute.subset."
         } else {
             $hardPages | ConvertTo-Json -Depth 10 | Set-Content -LiteralPath $hardMan -Encoding UTF8
             Write-Host "Wrote $hardMan ($($hardPages.Count) hard pages)." -ForegroundColor Green
         }
     } catch {
-        Write-Host "WARN: could not auto-derive $hardMan : $($_.Exception.Message)" -ForegroundColor Yellow
-        Write-Host "      Create it manually by filtering OmniDocBench.json for subset in {equation_hard, layout_hard, table_hard}." -ForegroundColor Yellow
+        throw "Could not derive $hardMan from $fullMan. $($_.Exception.Message)"
     }
 }
 
@@ -113,13 +187,6 @@ if ($Config -match "hard" -and (Test-Path $fullMan) -and -not (Test-Path $hardMa
 # two scorers' rendered YAML path-style identical means a future cross-boundary
 # config consumer won't break on a backslash/forward-slash mismatch.
 #
-# NB: -replace's REPLACEMENT string is .NET-regex semantics, where backslash is
-# literal (no escaping needed) and '$' is special. We convert $rootDir to
-# forward-slash form BEFORE the replace so the YAML contains C:/Users/... .
-# (If $rootDir ever contained a '$', we would need to escape it as $$.)
-$rootPosix = $rootDir -replace '\\', '/'
-$template = Get-Content -Raw -LiteralPath $cfgTemplate
-$rendered = $template -replace [regex]::Escape("<REPO_ROOT>"), $rootPosix
 $runCfg = Join-Path $odbDir "run_$([System.IO.Path]::GetFileNameWithoutExtension($Config)).yaml"
 Set-Content -LiteralPath $runCfg -Value $rendered -Encoding UTF8
 Write-Host "Rendered run config: $runCfg" -ForegroundColor DarkGray

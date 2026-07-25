@@ -1,6 +1,9 @@
 """Tests for report.py benchmark report generator."""
 import json
+import math
 from pathlib import Path
+
+import pytest
 
 import report
 
@@ -36,6 +39,14 @@ class TestExtractScores:
         assert scores["formula_cdm"] is None
         assert scores["text_edit_dist"] == 0.035
 
+    @pytest.mark.parametrize("invalid_value", ["NaN", math.nan, math.inf])
+    def test_rejects_non_numeric_or_nonfinite_metric(self, invalid_value):
+        metric = _load_json(FIXTURE_DIR / "mock_metric_result.json")
+        metric["text_block"]["all"]["Edit_dist"]["ALL_page_avg"] = invalid_value
+
+        with pytest.raises(ValueError, match="text_edit_dist"):
+            report.extract_scores(metric)
+
 
 class TestSingleRunReport:
     """Single-run mode: report contains no stability chapter."""
@@ -59,6 +70,7 @@ class TestSingleRunReport:
         assert "generate" in result.lower() or "<!-- generated" in result
         assert "# " in result
         assert "Test Platform" in result
+        assert "# OmniDocBench v1.6 -- Test Platform Capability Report" in result
         assert "test_q4km" in result
 
     def test_single_run_has_generated_marker(self):
@@ -78,6 +90,13 @@ class TestSingleRunReport:
         )
 
         assert "<!-- generated: true" in result
+
+    def test_empty_platform_is_rejected(self):
+        metric = _load_json(FIXTURE_DIR / "mock_metric_result.json")
+        stats = _load_json(FIXTURE_DIR / "mock_run_stats.json")
+
+        with pytest.raises(ValueError, match="platform"):
+            report.generate_report(scores=metric, stats=stats, platform="   ")
 
 
 class TestResourceRendering:

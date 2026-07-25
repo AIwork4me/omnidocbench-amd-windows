@@ -63,11 +63,19 @@ PowerShell scripts with `powershell -ExecutionPolicy Bypass -File ...`.
 ### Step 0 — environment + network + WSL  (Windows)
 
 ```powershell
-# 0a. Probe reachable mirrors → writes mirrors.env (consumed by everything).
+# 0a. Install the supported Python through uv and sync the locked local venv.
+winget install --id astral-sh.uv -e
+uv python install 3.11
+uv sync --locked --all-groups
+
+# 0b. Probe reachable mirrors → writes mirrors.env (consumed by everything).
 powershell -ExecutionPolicy Bypass -File scripts\detect-mirrors.ps1
 #   On failure → ⚠️ 4 / docs/pitfalls.md#network
 
-# 0b. Guarantee a WSL Ubuntu 22.04 distro exists (handles Store-blocked case).
+# 0c. Fail fast on common + selected-path prerequisites before long downloads.
+powershell -ExecutionPolicy Bypass -File scripts\preflight.ps1 -CdmPath Wsl -Variant hip
+
+# 0d. Guarantee a WSL Ubuntu 22.04 distro exists (handles Store-blocked case).
 powershell -ExecutionPolicy Bypass -File scripts\wsl-ensure.ps1
 wsl -d Ubuntu2204 -- echo OK
 #   If "missing kernel component" or distro won't start → ⚠️ 1 (reboot)
@@ -126,7 +134,7 @@ powershell -ExecutionPolicy Bypass -File adapters\paddleocr-vl-1.6\00-install-de
 # NOTE: --out-dir must match the prediction path the scoring configs read
 # (eval-infra\01-omnidocbench\configs\v16*.yaml -> predictions/paddleocrvl_rocm).
 # A different name here means score.ps1 finds no predictions and every metric is 0.
-python adapters\paddleocr-vl-1.6\run_adapter.py `
+.\.venv\Scripts\python.exe adapters\paddleocr-vl-1.6\run_adapter.py `
     --img-dir  eval-infra\01-omnidocbench\data\images `
     --out-dir  predictions\paddleocrvl_rocm
 #   → produces predictions\paddleocrvl_rocm\<stem>.md per page
@@ -141,6 +149,11 @@ python adapters\paddleocr-vl-1.6\run_adapter.py `
 #     CPU; faster on hip). The VLM server must stay up the whole time.
 #   - run_adapter.py exits non-zero / few predictions → docs/pitfalls.md#vlm
 #     (server down) or docs/pitfalls.md#layout (model missing).
+# Validate names, UTF-8, non-empty content, error logs, and >=95% coverage:
+.\.venv\Scripts\python.exe scripts\validate_predictions.py `
+   --img-dir eval-infra\01-omnidocbench\data\images `
+   --pred-dir predictions\paddleocrvl_rocm `
+   --min-coverage 0.95
 ```
 
 For the PaddleOCR official doc_parser score-comparison path, run the same
@@ -149,7 +162,7 @@ Markdown with `_to_markdown(pretty=False)` and writes to the explicit
 official prediction directory:
 
 ```powershell
-python adapters\paddleocr-vl-1.6\run_adapter.py `
+.\.venv\Scripts\python.exe adapters\paddleocr-vl-1.6\run_adapter.py `
     --engine official `
     --img-dir eval-infra\01-omnidocbench\data\images `
     --out-dir predictions\paddleocr_official_prettyfalse_full_2026-07-09

@@ -14,6 +14,7 @@ Inputs (all via CLI):
 from __future__ import annotations
 
 import json
+import math
 import statistics
 from datetime import datetime, timezone
 from pathlib import Path
@@ -77,6 +78,13 @@ def extract_scores(metric_result: dict) -> dict[str, float | None]:
     scores["table_teds"] = metric_result["table"]["all"]["TEDS"]["all"]
     cdm_node = metric_result.get("display_formula", {}).get("all", {}).get("CDM")
     scores["formula_cdm"] = cdm_node["all"] if cdm_node else None
+    for name, value in scores.items():
+        if value is None:
+            continue
+        if isinstance(value, bool) or not isinstance(value, (int, float)):
+            raise ValueError(f"{name} must be numeric, got {value!r}")
+        if not math.isfinite(value):
+            raise ValueError(f"{name} must be finite, got {value!r}")
     return scores
 
 
@@ -166,7 +174,10 @@ def generate_report(
 
     lines.append(f"<!-- generated: true {now} -->")
     lines.append("")
-    lines.append(f"# OmniDocBench v1.6 -- AI MAX+ 395 Capability Report")
+    report_platform = platform.strip()
+    if not report_platform:
+        raise ValueError("platform must be a non-empty hardware identifier")
+    lines.append(f"# OmniDocBench v1.6 -- {report_platform} Capability Report")
     lines.append("")
     lines.append(
         f"> Platform: {platform} | Qualifier: {qualifier} | "
@@ -374,6 +385,7 @@ def main():
     p.add_argument("--platform", default="AMD Ryzen AI Max+ 395", help="Hardware identifier")
     p.add_argument("--qualifier", default="", help="Quantization x backend label")
     p.add_argument("--run-id", default="", help="Unique run identifier")
+    p.add_argument("--runs-manifest", default="", help="Stability runs manifest JSON")
     args = p.parse_args()
 
     scores_data = json.loads(Path(args.scores).read_text(encoding="utf-8"))
@@ -381,6 +393,9 @@ def main():
     phase_data = None
     if args.phase_log and Path(args.phase_log).exists():
         phase_data = json.loads(Path(args.phase_log).read_text(encoding="utf-8"))
+    runs_manifest = None
+    if args.runs_manifest:
+        runs_manifest = json.loads(Path(args.runs_manifest).read_text(encoding="utf-8"))
 
     report_md = generate_report(
         scores=scores_data,
@@ -391,6 +406,7 @@ def main():
         platform=args.platform,
         qualifier=args.qualifier,
         run_id=args.run_id,
+        runs_manifest=runs_manifest,
     )
     Path(args.output).write_text(report_md, encoding="utf-8")
     print(f"Report written to {args.output}")

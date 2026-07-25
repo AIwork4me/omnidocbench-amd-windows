@@ -40,6 +40,7 @@ model via [adapters](adapters/). PaddleOCR-VL-1.6 ships as the validated referen
 | CPU cores | 4 (TEDS/CDM workers scale with cores) | 8+ |
 | WSL | Ubuntu 22.04 (rootfs import or Store) | Same |
 | Python | 3.10 or 3.11 (**not** 3.12/3.13 — OmniDocBench breaks) | 3.11 |
+| Python environment | [uv](https://docs.astral.sh/uv/) | Latest stable |
 | PowerShell | Windows PowerShell 5.1 (built in) or PowerShell 7+ | Same |
 
 Wall-clock estimates for the full 1651-page run: Step 1 (dataset download) ~15-20 min
@@ -58,8 +59,12 @@ cd omnidocbench-amd-windows
 ```
 
 ```powershell
-# Step 0: environment + network + WSL
+# Step 0: reproducible local Python + network + WSL
+winget install --id astral-sh.uv -e
+uv python install 3.11
+uv sync --locked --all-groups
 powershell -ExecutionPolicy Bypass -File scripts\detect-mirrors.ps1
+powershell -ExecutionPolicy Bypass -File scripts\preflight.ps1 -CdmPath Wsl -Variant hip
 powershell -ExecutionPolicy Bypass -File scripts\wsl-ensure.ps1
 
 # Step 1: OmniDocBench code + dataset
@@ -79,7 +84,7 @@ wsl -d Ubuntu2204 bash /mnt/c/<path-to-repo>/eval-infra/02-cdm-environment/verif
 powershell -ExecutionPolicy Bypass -File adapters\paddleocr-vl-1.6\01-vlm-server\setup.ps1 -Variant hip
 powershell -ExecutionPolicy Bypass -File adapters\paddleocr-vl-1.6\02-layout-model\setup.ps1
 powershell -ExecutionPolicy Bypass -File adapters\paddleocr-vl-1.6\00-install-deps\setup.ps1
-python adapters\paddleocr-vl-1.6\run_adapter.py `
+.\.venv\Scripts\python.exe adapters\paddleocr-vl-1.6\run_adapter.py `
     --img-dir  eval-infra\01-omnidocbench\data\images `
     --out-dir  predictions\paddleocrvl_rocm
 
@@ -118,7 +123,7 @@ upstream in
 [PaddleOCR issue #18248](https://github.com/PaddlePaddle/PaddleOCR/issues/18248).
 
 ```powershell
-python adapters\paddleocr-vl-1.6\run_adapter.py `
+.\.venv\Scripts\python.exe adapters\paddleocr-vl-1.6\run_adapter.py `
     --engine official `
     --img-dir eval-infra\01-omnidocbench\data\images `
     --out-dir predictions\paddleocr_official_prettyfalse_full_2026-07-09

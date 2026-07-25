@@ -41,7 +41,15 @@ powershell -ExecutionPolicy Bypass -File eval-infra\03-scoring\score.ps1
 
 # 296-page hard subset (v16-hard.yaml). ~5 min.
 powershell -ExecutionPolicy Bypass -File eval-infra\03-scoring\score.ps1 -Config v16-hard.yaml
+
+# Custom adapter/benchmark output: consume this exact directory.
+powershell -ExecutionPolicy Bypass -File eval-infra\03-scoring\score.ps1 `
+  -Config v16.yaml `
+  -PredictionDir predictions\my-adapter
 ```
+
+The scorer validates Python 3.10/3.11 and requires the selected prediction
+directory to contain Markdown before it launches OmniDocBench.
 
 ### + CDM (native Windows)
 
@@ -64,6 +72,10 @@ wsl -d Ubuntu2204 bash /mnt/c/<path-to-repo>/eval-infra/02-cdm-environment/setup
 
 # Then score with CDM (uses v16-cdm.yaml; ~40 min on the full set):
 wsl -d Ubuntu2204 bash /mnt/c/<path-to-repo>/eval-infra/03-scoring/score-cdm.sh
+
+# Optional argument 2 overrides prediction.data_path for a custom run:
+wsl -d Ubuntu2204 bash /mnt/c/<path-to-repo>/eval-infra/03-scoring/score-cdm.sh `
+  v16-cdm.yaml predictions/my-adapter
 ```
 
 ### Verify
@@ -111,8 +123,9 @@ predictions dir (`paddleocrvl_rocm_cdm`) so its `save_name`
 | `v16-cdm-official-prettyfalse-full-2026-07-09.yaml` | `predictions/paddleocr_official_prettyfalse_full_2026-07-09` | `paddleocr_official_prettyfalse_full_2026-07-09_quick_match` |
 
 > The prediction dir name comes from whichever adapter produced the Markdown.
-> To score a different adapter, point the config's `prediction.data_path` at
-> that adapter's predictions dir (see [`adapters/README.md`](../../adapters/README.md)).
+> Prefer `score.ps1 -PredictionDir` or the second `score-cdm.sh` argument for a
+> custom run. Editing a config template remains available for a permanent named
+> evaluation path (see [`adapters/README.md`](../../adapters/README.md)).
 
 The `official-prettyfalse` configs are the published PaddleOCR official engine
 score-comparison path. They consume Markdown exported by

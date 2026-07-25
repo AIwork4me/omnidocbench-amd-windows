@@ -44,6 +44,13 @@ powershell -ExecutionPolicy Bypass -File eval-infra\04-benchmark\verify.ps1 -Rep
 | `-Variant` | `hip` | `hip` or `cpu` |
 | `-Stability` | `1` | Number of full runs; `>1` produces reference report |
 | `-Config` | `config/default.yaml` | YAML config path |
+| `-Platform` | Auto-detected CPU/GPU/RAM | Hardware identity written to the report |
+
+Each repetition writes to a unique directory under `predictions/benchmark/`.
+Both Windows and WSL scoring receive that exact directory, and the report uses
+the exact verified CDM result copied into the run folder. The orchestrator stops
+when inference, scoring, verification, statistics, or report generation fails;
+it does not fall back to a previous run's artifacts.
 
 ## How to interpret the report
 

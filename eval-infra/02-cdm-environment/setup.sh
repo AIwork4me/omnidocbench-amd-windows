@@ -23,7 +23,7 @@ ODB_CODE="$REPO_ROOT/eval-infra/01-omnidocbench/OmniDocBench"
 # Parse mirrors.env (CTAN_MIRROR, GITHUB_PROXY, PYPI_INDEX, ...).
 CTAN_MIRROR="https://mirrors.ustc.edu.cn/CTAN/systems/texlive/tlnet"
 if [ -f "$REPO_ROOT/mirrors.env" ]; then
-    source <(grep -E "^[A-Z_]+=." "$REPO_ROOT/mirrors.env" | sed 's/^/export /')
+    source <(tr -d '\r' < "$REPO_ROOT/mirrors.env" | grep -E "^[A-Z_]+=." | sed 's/^/export /')
 fi
 
 # Resolve install locations relative to $HOME (not a hardcoded /root/...) so
@@ -51,21 +51,36 @@ dpkg -s texlive-lang-chinese >/dev/null 2>&1 && ok "already installed" || {
 step 2 "TeX Live 2026 (official — has \\mathcolor + complete CJK package)"
 TLBIN="/usr/local/texlive/2026/bin/x86_64-linux"
 if [ -x "$TLBIN/pdflatex" ]; then ok "TL2026 already installed"; else
-    cd "$HOME"
-    curl -sL --retry 3 --retry-delay 5 -m 180 -o install-tl.tar.gz "${CTAN_MIRROR}/install-tl-unx.tar.gz"
-    tar xzf install-tl.tar.gz && cd install-tl-2*
-    cat > tl.profile <<'PROF'
-selected_scheme scheme-medium
+    if [ -x "$TLBIN/tlmgr" ]; then
+        ok "partial TL2026 detected; resuming required collections"
+    else
+        cd "$HOME"
+        curl -sL --retry 3 --retry-delay 5 -m 180 -o install-tl.tar.gz "${CTAN_MIRROR}/install-tl-unx.tar.gz"
+        tar xzf install-tl.tar.gz && cd install-tl-2*
+        cat > tl.profile <<'PROF'
+selected_scheme scheme-infraonly
 instopt_adjustpath 0
 instopt_adjustrepo 0
 instopt_letter 0
 instopt_portable 0
+collection-basic 1
+collection-latex 1
+collection-latexrecommended 1
+collection-latexextra 1
+collection-fontsrecommended 1
+collection-mathscience 1
 collection-langcjk 1
 collection-langchinese 1
 tlpdbopt_install_docfiles 0
 tlpdbopt_install_srcfiles 0
 PROF
-    ./install-tl --no-interaction --profile tl.profile --repository "$CTAN_MIRROR" 2>&1 | tail -3
+        ./install-tl --no-interaction --profile tl.profile --repository "$CTAN_MIRROR" > install-tl-output.log 2>&1
+        tail -3 install-tl-output.log
+    fi
+    "$TLBIN/tlmgr" install collection-basic collection-latex collection-latexrecommended \
+        collection-latexextra collection-fontsrecommended collection-mathscience \
+        collection-langcjk collection-langchinese --repository "$CTAN_MIRROR" >/root/tlmgr-cdm-collections.log 2>&1
+    "$TLBIN/fmtutil-sys" --all >/root/fmtutil-cdm.log 2>&1
     [ -x "$TLBIN/pdflatex" ] && ok "TL2026 installed" || fail "TL2026 install"
 fi
 export PATH="$TLBIN:$PATH"

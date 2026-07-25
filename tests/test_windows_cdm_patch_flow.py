@@ -16,6 +16,7 @@ FULL_VERIFY = REPO_ROOT / "scripts" / "full-verify.ps1"
 SCORING_README = REPO_ROOT / "eval-infra" / "03-scoring" / "README.md"
 SCORE_PS1 = REPO_ROOT / "eval-infra" / "03-scoring" / "score.ps1"
 SCORE_CDM_SH = REPO_ROOT / "eval-infra" / "03-scoring" / "score-cdm.sh"
+CDM_SETUP_SH = REPO_ROOT / "eval-infra" / "02-cdm-environment" / "setup.sh"
 SCORING_VERIFY = REPO_ROOT / "eval-infra" / "03-scoring" / "verify.ps1"
 DOC_FILES = [
     REPO_ROOT / "README.md",
@@ -65,6 +66,23 @@ def run_scoring_verify(*args: str) -> subprocess.CompletedProcess[str]:
             "Bypass",
             "-File",
             str(SCORING_VERIFY),
+            *args,
+        ],
+        cwd=REPO_ROOT,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+
+def run_score(*args: str) -> subprocess.CompletedProcess[str]:
+    return subprocess.run(
+        [
+            "powershell",
+            "-ExecutionPolicy",
+            "Bypass",
+            "-File",
+            str(SCORE_PS1),
             *args,
         ],
         cwd=REPO_ROOT,
@@ -189,6 +207,30 @@ def test_scoring_verifier_rejects_present_non_numeric_cdm_all(tmp_path: Path):
     assert "must be numeric" in result.stdout + result.stderr
 
 
+def test_scoring_verifier_rejects_non_numeric_mandatory_metric(tmp_path: Path):
+    metric_result = tmp_path / "metric_result.json"
+    write_metric_result(metric_result, mandatory_value="not-a-number")
+
+    result = run_scoring_verify("-MetricResult", str(metric_result))
+
+    assert result.returncode != 0
+    output = result.stdout + result.stderr
+    assert "text_block.Edit_dist" in output
+    assert "must be numeric" in output
+
+
+def test_scoring_verifier_rejects_nan_string_mandatory_metric(tmp_path: Path):
+    metric_result = tmp_path / "metric_result.json"
+    write_metric_result(metric_result, mandatory_value="NaN")
+
+    result = run_scoring_verify("-MetricResult", str(metric_result))
+
+    assert result.returncode != 0
+    output = result.stdout + result.stderr
+    assert "text_block.Edit_dist" in output
+    assert "must be numeric" in output
+
+
 def test_scoring_verifier_rejects_raw_json_nonfinite_cdm_all(tmp_path: Path):
     metric_result = tmp_path / "metric_result.json"
     metric_result.write_text(
@@ -225,6 +267,53 @@ def test_scoring_verifier_windows_only_excludes_wsl_candidates():
     output = result.stdout + result.stderr
     assert "eval-infra\\01-omnidocbench\\OmniDocBench\\result" in output
     assert "\\\\wsl$" not in output
+
+
+def test_score_rejects_empty_prediction_override_before_scoring(tmp_path: Path):
+    prediction_dir = tmp_path / "empty-predictions"
+    prediction_dir.mkdir()
+
+    result = run_score("-PredictionDir", str(prediction_dir))
+
+    assert result.returncode != 0
+    output = result.stdout + result.stderr
+    assert "contains no Markdown files" in output
+    assert prediction_dir.name in output
+    assert "Run the adapter before scoring" in output
+
+
+def test_hard_subset_derivation_cannot_degrade_to_warning():
+    text = read(SCORE_PS1)
+
+    assert "Hard-subset derivation produced 0 pages" in text
+    assert "$_.page_info.page_attribute.subset" in text
+    assert "Could not derive $hardMan from $fullMan" in text
+    assert "WARN: 0 hard pages found" not in text
+    assert "WARN: could not auto-derive" not in text
+
+
+def test_windows_scorer_routes_explicit_predictions_through_short_repo_path():
+    text = read(SCORE_PS1)
+
+    assert "function ConvertTo-ShortRepoPath" in text
+    assert "ConvertTo-ShortRepoPath -Path $PredictionDir -RepoRoot $rootDir" in text
+
+
+def test_wsl_cdm_setup_strips_crlf_before_sourcing_mirror_values():
+    text = read(CDM_SETUP_SH)
+
+    assert "tr -d '\\r' < \"$REPO_ROOT/mirrors.env\"" in text
+
+
+def test_wsl_cdm_setup_uses_explicit_resumable_tex_collections():
+    text = read(CDM_SETUP_SH)
+
+    assert "selected_scheme scheme-infraonly" in text
+    assert "collection-latex 1" in text
+    assert "collection-latexextra 1" in text
+    assert 'if [ -x "$TLBIN/tlmgr" ]' in text
+    assert '"$TLBIN/tlmgr" install collection-basic collection-latex' in text
+    assert "2>&1 | tail -3" not in text
 
 
 def test_windows_cdm_patch_exists_and_targets_only_cdm_toolchain_files():

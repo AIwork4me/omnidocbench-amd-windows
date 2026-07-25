@@ -38,6 +38,7 @@ G4 推理加速比: **1.7x** (27 页分层抽样，9 类别、0 结构错配)。
 | CPU 核数 | 4（TEDS/CDM 的 worker 数随核数扩展） | 8+ |
 | WSL | Ubuntu 22.04（rootfs 导入或商店安装） | 同左 |
 | Python | 3.10 或 3.11（**不可** 3.12/3.13——OmniDocBench 会报错） | 3.11 |
+| Python 环境 | [uv](https://docs.astral.sh/uv/) | 最新稳定版 |
 | PowerShell | Windows PowerShell 5.1（自带）或 PowerShell 7+ | 同左 |
 
 全量 1651 页运行的时间估算：步骤 1（数据集下载）国内网络约 15-20 分钟；步骤 2（CDM 环境）约 30 分钟（TeX Live 是大头）；步骤 3（适配器推理）取决于 GPU（CPU 数小时，Radeon HIP 数十分钟）；步骤 4（评分）约 5 分钟（Edit_dist+TEDS）+ 20-30 分钟（CDM，每条公式都要跑 LaTeX）。
@@ -52,8 +53,12 @@ cd omnidocbench-amd-windows
 ```
 
 ```powershell
-# 步骤 0：环境 + 网络 + WSL
+# 步骤 0：可复现的本地 Python + 网络 + WSL
+winget install --id astral-sh.uv -e
+uv python install 3.11
+uv sync --locked --all-groups
 powershell -ExecutionPolicy Bypass -File scripts\detect-mirrors.ps1
+powershell -ExecutionPolicy Bypass -File scripts\preflight.ps1 -CdmPath Wsl -Variant hip
 powershell -ExecutionPolicy Bypass -File scripts\wsl-ensure.ps1
 
 # 步骤 1：OmniDocBench 代码 + 数据集
@@ -73,7 +78,7 @@ wsl -d Ubuntu2204 bash /mnt/c/<path-to-repo>/eval-infra/02-cdm-environment/verif
 powershell -ExecutionPolicy Bypass -File adapters\paddleocr-vl-1.6\01-vlm-server\setup.ps1 -Variant hip
 powershell -ExecutionPolicy Bypass -File adapters\paddleocr-vl-1.6\02-layout-model\setup.ps1
 powershell -ExecutionPolicy Bypass -File adapters\paddleocr-vl-1.6\00-install-deps\setup.ps1
-python adapters\paddleocr-vl-1.6\run_adapter.py `
+.\.venv\Scripts\python.exe adapters\paddleocr-vl-1.6\run_adapter.py `
     --img-dir  eval-infra\01-omnidocbench\data\images `
     --out-dir  predictions\paddleocrvl_rocm
 
@@ -110,7 +115,7 @@ llama.cpp/GGUF 路径之间的推理后端/模型输出差异。official-local �
 [PaddleOCR issue #18248](https://github.com/PaddlePaddle/PaddleOCR/issues/18248)。
 
 ```powershell
-python adapters\paddleocr-vl-1.6\run_adapter.py `
+.\.venv\Scripts\python.exe adapters\paddleocr-vl-1.6\run_adapter.py `
     --engine official `
     --img-dir eval-infra\01-omnidocbench\data\images `
     --out-dir predictions\paddleocr_official_prettyfalse_full_2026-07-09

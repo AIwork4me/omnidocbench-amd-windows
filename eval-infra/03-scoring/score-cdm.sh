@@ -15,10 +15,11 @@ set -euo pipefail
 # where <save_name> = paddleocrvl_rocm_cdm_quick_match (the cdm-named
 # predictions dir in v16-cdm.yaml prevents clobbering the Edit_dist-only run).
 
-# Config template (under eval-infra/01-omnidocbench/configs/). v16-cdm.yaml is
-# the only CDM-enabled template; allow override for future CDM + hard-subset
-# configs.
+# Config template (under eval-infra/01-omnidocbench/configs/) and optional
+# prediction-directory override. Relative prediction paths resolve from the
+# repository root so Windows callers can pass e.g. predictions/paddleocrvl_rocm.
 CONFIG="${1:-v16-cdm.yaml}"
+PREDICTION_DIR="${2:-}"
 
 # --- Resolve paths ----------------------------------------------------------
 # This script lives at <root>/eval-infra/03-scoring/score-cdm.sh; repo root is
@@ -57,7 +58,56 @@ fi
 # manifest and the predictions dir.
 RUN_CFG="$ODB_LOCAL/run_${CONFIG%.yaml}.yaml"
 sed "s|<REPO_ROOT>|$REPO_ROOT|g" "$CFG_TEMPLATE" > "$RUN_CFG"
+if [ -n "$PREDICTION_DIR" ]; then
+    case "$PREDICTION_DIR" in
+        /*) ;;
+        *) PREDICTION_DIR="$REPO_ROOT/$PREDICTION_DIR" ;;
+    esac
+    PREDICTION_DIR="$(cd "$(dirname "$PREDICTION_DIR")" 2>/dev/null && pwd)/$(basename "$PREDICTION_DIR")"
+    python3 - "$RUN_CFG" "$PREDICTION_DIR" <<'PY'
+from pathlib import Path
+import re
+import sys
+
+config_path = Path(sys.argv[1])
+prediction_dir = sys.argv[2]
+text = config_path.read_text(encoding="utf-8")
+pattern = r"(?m)^(\s*)prediction:\s*\{\s*data_path:\s*[^}\r\n]+\s*\}\s*$"
+text, count = re.subn(
+    pattern,
+    lambda match: f"{match.group(1)}prediction:   {{ data_path: {prediction_dir} }}",
+    text,
+)
+if count != 1:
+    raise SystemExit(f"FAIL: expected one prediction.data_path, found {count}")
+config_path.write_text(text, encoding="utf-8")
+PY
+fi
+
+CONFIGURED_PREDICTION="$(python3 - "$RUN_CFG" <<'PY'
+from pathlib import Path
+import re
+import sys
+
+text = Path(sys.argv[1]).read_text(encoding="utf-8")
+match = re.search(r"(?m)^\s*prediction:\s*\{\s*data_path:\s*([^}\r\n]+?)\s*\}\s*$", text)
+if not match:
+    raise SystemExit("FAIL: prediction.data_path missing from rendered config")
+print(match.group(1).strip())
+PY
+)"
+if [ ! -d "$CONFIGURED_PREDICTION" ]; then
+    echo "FAIL: prediction directory not found: $CONFIGURED_PREDICTION" >&2
+    echo "  Run the adapter with the matching --out-dir, or pass a prediction path as argument 2." >&2
+    exit 1
+fi
+PREDICTION_COUNT=$(find "$CONFIGURED_PREDICTION" -maxdepth 1 -type f -name '*.md' | wc -l)
+if [ "$PREDICTION_COUNT" -eq 0 ]; then
+    echo "FAIL: prediction directory contains no Markdown files: $CONFIGURED_PREDICTION" >&2
+    exit 1
+fi
 echo "Rendered run config: $RUN_CFG"
+echo "Predictions: $CONFIGURED_PREDICTION ($PREDICTION_COUNT Markdown files)"
 
 # --- Clean Linux PATH (no Windows interop leakage) -------------------------
 # This exact PATH combo is the one that produced our verified CDM scores

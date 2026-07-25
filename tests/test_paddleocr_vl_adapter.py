@@ -74,6 +74,27 @@ def test_expected_md_name_preserves_stem():
     assert adapter.expected_md_name("abc.page-01.png") == "abc.page-01.md"
 
 
+def test_repo_paths_are_routed_through_windows_short_alias(monkeypatch):
+    adapter = load_adapter()
+    calls = []
+
+    def fake_short_path(path, repo_root):
+        calls.append((Path(path), repo_root))
+        return Path("C:/short") / Path(path).name
+
+    def fake_lightweight(**kwargs):
+        return kwargs
+
+    monkeypatch.setattr(adapter, "through_short_repo", fake_short_path)
+    monkeypatch.setattr(adapter, "run_lightweight_folder", fake_lightweight)
+
+    result = adapter.run_adapter("images", "predictions")
+
+    assert result["img_dir"] == Path("C:/short/images")
+    assert result["out_dir"] == Path("C:/short/predictions")
+    assert len(calls) == 2
+
+
 def test_official_result_to_markdown_reads_markdown_attribute():
     adapter = load_adapter()
 

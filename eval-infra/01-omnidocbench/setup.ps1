@@ -14,7 +14,7 @@ Steps:
      into OmniDocBench/  -- skipped if pdf_validation.py already present.
   3. Download the v1.6 dataset into data/ -- skipped if OmniDocBench.json present.
      - modelscope: `modelscope download --dataset OpenDataLab/OmniDocBench --local_dir data`
-     - huggingface: `huggingface-cli download opendatalab/OmniDocBench --repo-type dataset --local-dir data`
+    - huggingface: locked `.venv\Scripts\hf.exe download ...`
   4. Create a repo-root .venv (Python 3.10/3.11 -- OmniDocBench is NOT 3.12+
      compatible) and pip install the OmniDocBench runtime deps into it. The
      venv is what eval-infra/03-scoring/score.ps1 runs pdf_validation.py with.
@@ -37,10 +37,52 @@ param(
 )
 $ErrorActionPreference = "Stop"
 
+function ConvertTo-ExtendedPath {
+    param([string]$Path)
+    $fullPath = [System.IO.Path]::GetFullPath($Path)
+    if ($fullPath.StartsWith("\\")) {
+        return "\\?\UNC\" + $fullPath.Substring(2)
+    }
+    return "\\?\" + $fullPath
+}
+
+function Test-FileExtended {
+    param([string]$Path)
+    return [System.IO.File]::Exists((ConvertTo-ExtendedPath -Path $Path))
+}
+
+function Ensure-ShortRepoRoot {
+    param([string]$RepoRoot)
+    $normalizedRoot = [System.IO.Path]::GetFullPath($RepoRoot)
+    $sha = [System.Security.Cryptography.SHA256]::Create()
+    try {
+        $hashBytes = $sha.ComputeHash([System.Text.Encoding]::UTF8.GetBytes($normalizedRoot.ToLowerInvariant()))
+    } finally {
+        $sha.Dispose()
+    }
+    $hash = ([System.BitConverter]::ToString($hashBytes) -replace "-", "").ToLowerInvariant().Substring(0, 12)
+    $alias = Join-Path (Join-Path (Join-Path $env:LOCALAPPDATA "OmniDocBenchAMD") $hash) "repo"
+    $aliasParent = Split-Path -Parent $alias
+    New-Item -ItemType Directory -Force -Path $aliasParent | Out-Null
+    if (Test-Path -LiteralPath $alias) {
+        $item = Get-Item -LiteralPath $alias -Force
+        $target = (@($item.Target) -join "")
+        if ([System.IO.Path]::GetFullPath($target) -ne $normalizedRoot) {
+            Remove-Item -LiteralPath $alias -Force
+        }
+    }
+    if (-not (Test-Path -LiteralPath $alias)) {
+        New-Item -ItemType Junction -Path $alias -Target $normalizedRoot | Out-Null
+    }
+    return $alias
+}
+
 # NOTE: Join-Path is nested (rather than the PS 7+ 3-arg form) so this runs on
 # Windows PowerShell 5.1 as well as PowerShell 7+.
 $rootDir  = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)  # repo root
 $envFile  = Join-Path $rootDir "mirrors.env"
+$shortRoot = Ensure-ShortRepoRoot -RepoRoot $rootDir
+Write-Host "Windows short repository path: $shortRoot" -ForegroundColor DarkGray
 
 # --- Parse mirrors.env (KEY=VALUE lines; ignore comments / blanks) ---
 $cfg = @{}
@@ -166,8 +208,9 @@ if (Test-Path $windowsCdmPatch) {
 
 # --- 1b. Create repo-root .venv + install OmniDocBench deps ---
 # OmniDocBench is NOT Python 3.12+ compatible (uses inspect.getargspec /
-# distutils removed in 3.12). Prefer 3.11, then 3.10; fall back to the default
-# `python` only if neither launcher exists (and warn).
+# distutils removed in 3.12). Prefer uv + the repo's pinned Python 3.11 so a
+# fresh machine does not depend on the Windows `py` launcher. Retain py/python
+# as compatibility fallbacks, but never create a known-incompatible venv.
 #
 # The venv lives at <repo>/.venv so eval-infra/03-scoring/score.ps1 can target
 # .venv\Scripts\python.exe directly instead of relying on a bare `python` that
@@ -176,7 +219,12 @@ if (Test-Path $windowsCdmPatch) {
 $venvDir = Join-Path $rootDir ".venv"
 $venvPython = Join-Path $venvDir "Scripts\python.exe"
 $venvReady = $false
+$venvExists = Test-Path $venvPython
 if (Test-Path $venvPython) {
+    $venvVersion = & $venvPython --version 2>&1
+    if ($LASTEXITCODE -ne 0 -or $venvVersion -notmatch "Python 3\.(10|11)\.") {
+        throw "Existing .venv must use Python 3.10 or 3.11 (found: '$venvVersion'). Remove $venvDir and re-run setup.ps1."
+    }
     # Probe: can the venv import the core OmniDocBench deps?
     $probePy = "import importlib; [importlib.import_module(m) for m in ('pylatexenc','PIL','numpy','pandas','yaml','Levenshtein','apted')]"
     & $venvPython -c $probePy *> $null
@@ -186,49 +234,76 @@ if (Test-Path $venvPython) {
 if ($venvReady) {
     Write-Host ".venv already provisioned with OmniDocBench deps: $venvPython" -ForegroundColor Green
 } else {
-    # Pick a Python 3.10/3.11 interpreter via the `py` launcher (Windows-only,
-    # ships with python.org installers). -p selects the highest installed that
-    # matches the version spec.
-    $basePy = $null
-    foreach ($ver in @("-3.11", "-3.10")) {
-        $test = & py $ver --version 2>$null
-        if ($LASTEXITCODE -eq 0 -and $test -match "Python 3\.(10|11)\.") {
-            $basePy = "py $ver"
-            Write-Host "Using Python $ver for venv: $test" -ForegroundColor DarkGray
-            break
-        }
+    # Locate uv from PATH or its standard per-user install location. Using an
+    # explicit path also handles a terminal opened before uv updated PATH.
+    $uvExe = $null
+    $uvCommand = Get-Command uv -ErrorAction SilentlyContinue
+    if ($uvCommand) {
+        $uvExe = $uvCommand.Source
+    } else {
+        $uvUserExe = Join-Path $env:USERPROFILE ".local\bin\uv.exe"
+        if (Test-Path $uvUserExe) { $uvExe = $uvUserExe }
     }
-    if (-not $basePy) {
-        $sysVer = & python --version 2>$null
-        if ($LASTEXITCODE -eq 0 -and $sysVer -match "Python 3\.(10|11)\.") {
-            $basePy = "python"
+
+    if (-not $venvExists) {
+        if ($uvExe) {
+            Write-Host "Creating .venv with uv-managed Python 3.11 ..." -ForegroundColor Cyan
+            & $uvExe venv --python 3.11 --seed $venvDir
+            if ($LASTEXITCODE -ne 0) { throw "uv venv failed. Run 'uv python install 3.11' and retry." }
         } else {
-            Write-Host "WARN: no Python 3.10/3.11 found via 'py'/'python' (got: '$sysVer')." -ForegroundColor Yellow
-            Write-Host "      OmniDocBench needs Python < 3.12 (see docs/pitfalls.md#python-version)." -ForegroundColor Yellow
-            Write-Host "      Creating venv from the default python anyway -- scoring may fail with import errors." -ForegroundColor Yellow
-            $basePy = "python"
+            # Compatibility fallback for users who already manage Python with
+            # python.org. Guard command discovery before invoking either tool.
+            $basePy = $null
+            if (Get-Command py -ErrorAction SilentlyContinue) {
+                foreach ($ver in @("-3.11", "-3.10")) {
+                    $test = & py $ver --version 2>$null
+                    if ($LASTEXITCODE -eq 0 -and $test -match "Python 3\.(10|11)\.") {
+                        $basePy = "py $ver"
+                        Write-Host "Using Python $ver for venv: $test" -ForegroundColor DarkGray
+                        break
+                    }
+                }
+            }
+            if (-not $basePy -and (Get-Command python -ErrorAction SilentlyContinue)) {
+                $sysVer = & python --version 2>&1
+                if ($LASTEXITCODE -eq 0 -and $sysVer -match "Python 3\.(10|11)\.") {
+                    $basePy = "python"
+                }
+            }
+            if (-not $basePy) {
+                throw "OmniDocBench requires Python 3.10 or 3.11. Install uv, run 'uv python install 3.11', and re-run setup.ps1."
+            }
+
+            Write-Host "Creating .venv at $venvDir ..." -ForegroundColor Cyan
+            Invoke-Expression "$basePy -m venv `"$venvDir`""
+            if ($LASTEXITCODE -ne 0) { throw "venv creation failed (interpreter: $basePy)" }
         }
     }
 
-    Write-Host "Creating .venv at $venvDir ..." -ForegroundColor Cyan
-    Invoke-Expression "$basePy -m venv `"$venvDir`""
-    if ($LASTEXITCODE -ne 0) { throw "venv creation failed (interpreter: $basePy)" }
-
-    # Upgrade pip first (some old bundled pip chokes on newer wheels).
-    & $venvPython -m pip install --upgrade pip -i $pypiIndex *> $null
-    if ($LASTEXITCODE -ne 0) {
-        Write-Host "WARN: pip self-upgrade failed; continuing with the bundled pip." -ForegroundColor Yellow
-    }
-
-    # OmniDocBench runtime deps (mirrors the list used by the WSL CDM venv in
-    # eval-infra/02-cdm-environment/setup.sh step 9). Unpinned so a fresh
-    # install gets currently-working versions.
-    $deps = "apted beautifulsoup4 evaluate func-timeout Levenshtein loguru lxml numpy pandas Pillow pylatexenc PyYAML scipy tabulate tqdm nltk matplotlib"
-    Write-Host "Installing OmniDocBench deps into .venv (index: $pypiIndex) ..." -ForegroundColor Cyan
-    $depsArgs = $deps -split ' '
-    & $venvPython -m pip install -i $pypiIndex $depsArgs
-    if ($LASTEXITCODE -ne 0) {
-        throw "pip install of OmniDocBench deps failed (index: $pypiIndex). Re-run setup.ps1; if it persists see docs/pitfalls.md#network."
+    if ($uvExe -and (Test-Path (Join-Path $rootDir "uv.lock"))) {
+        Write-Host "Syncing locked OmniDocBench environment with uv (index: $pypiIndex) ..." -ForegroundColor Cyan
+        $previousUvIndex = $env:UV_DEFAULT_INDEX
+        try {
+            $env:UV_DEFAULT_INDEX = $pypiIndex
+            # --inexact preserves model-adapter packages installed by later
+            # setup phases when this idempotent infrastructure step is rerun.
+            & $uvExe sync --locked --all-groups --inexact --python $venvPython
+        } finally {
+            $env:UV_DEFAULT_INDEX = $previousUvIndex
+        }
+        if ($LASTEXITCODE -ne 0) {
+            throw "uv sync failed (index: $pypiIndex). Re-run setup.ps1; if it persists see docs/pitfalls.md#network."
+        }
+    } else {
+        # Compatibility path for source archives or older clones without the
+        # lock file. Keep the dependency list aligned with pyproject.toml.
+        $deps = "apted beautifulsoup4 evaluate func-timeout Levenshtein loguru lxml numpy pandas Pillow psutil pylatexenc PyYAML scipy tabulate tqdm nltk matplotlib"
+        Write-Host "Installing OmniDocBench deps into .venv (index: $pypiIndex) ..." -ForegroundColor Cyan
+        $depsArgs = $deps -split ' '
+        & $venvPython -m pip install -i $pypiIndex $depsArgs
+        if ($LASTEXITCODE -ne 0) {
+            throw "pip install of OmniDocBench deps failed (index: $pypiIndex). Re-run setup.ps1; if it persists see docs/pitfalls.md#network."
+        }
     }
     Write-Host "OmniDocBench deps installed into .venv" -ForegroundColor Green
 }
@@ -243,24 +318,76 @@ if ($SkipDataset) {
 $dataDir  = Join-Path $PSScriptRoot "data"
 $manifest = Join-Path $dataDir "OmniDocBench.json"
 if (Test-Path $manifest) {
-    $imgCount = 0
     $imgDir = Join-Path $dataDir "images"
-    if (Test-Path $imgDir) {
-        # @() for PS 5.1: a single-file dir unwraps to a scalar (empty .Count).
-        $imgCount = @(Get-ChildItem $imgDir -File -ErrorAction SilentlyContinue).Count
+    try {
+        $manifestPages = @(Get-Content -Raw -Encoding UTF8 -LiteralPath $manifest | ConvertFrom-Json)
+        $imagePaths = @($manifestPages | ForEach-Object { $_.page_info.image_path } | Where-Object { $_ })
+    } catch {
+        throw "Dataset manifest is invalid JSON: $manifest. $($_.Exception.Message)"
     }
-    Write-Host "Dataset already present: $manifest ($imgCount images in images/)." -ForegroundColor Green
-    Write-Host "OmniDocBench setup complete." -ForegroundColor Green
-    exit 0
+    if ($imagePaths.Count -eq 0) {
+        throw "Dataset manifest contains no page_info.image_path entries: $manifest"
+    }
+    $missingImages = @($imagePaths | Where-Object { -not (Test-FileExtended -Path (Join-Path $imgDir $_)) })
+    if ($missingImages.Count -eq 0) {
+        Write-Host "Dataset already complete: $manifest ($($imagePaths.Count)/$($imagePaths.Count) referenced images)." -ForegroundColor Green
+        Write-Host "OmniDocBench setup complete." -ForegroundColor Green
+        exit 0
+    }
+    Write-Host "Partial dataset detected: $($imagePaths.Count - $missingImages.Count)/$($imagePaths.Count) referenced images present; resuming download." -ForegroundColor Yellow
 }
 
 New-Item -ItemType Directory -Force -Path $dataDir | Out-Null
 
 if ($hfOrMs -eq "huggingface") {
     Write-Host "Downloading OmniDocBench v1.6 dataset from HuggingFace ..." -ForegroundColor Cyan
-    huggingface-cli download opendatalab/OmniDocBench `
-        --repo-type dataset --local-dir $dataDir
-    if ($LASTEXITCODE -ne 0) { throw "huggingface-cli download failed" }
+    $hfCli = Join-Path $venvDir "Scripts\hf.exe"
+    if (-not (Test-Path -LiteralPath $hfCli)) {
+        $legacyHfCli = Join-Path $venvDir "Scripts\huggingface-cli.exe"
+        if (Test-Path -LiteralPath $legacyHfCli) { $hfCli = $legacyHfCli }
+    }
+    if (-not (Test-Path -LiteralPath $hfCli)) {
+        throw "Hugging Face CLI missing from the locked environment. Run 'uv sync --locked --all-groups' and retry."
+    }
+    $previousDisableXet = $env:HF_HUB_DISABLE_XET
+    try {
+        # Xet token endpoints are prone to anonymous 429 responses on large
+        # snapshots. Ordinary HTTP is resumable and avoids that extra token
+        # request; modest concurrency is friendlier to public rate limits.
+        $env:HF_HUB_DISABLE_XET = "1"
+        & $hfCli download opendatalab/OmniDocBench `
+            --repo-type dataset --local-dir $dataDir --max-workers 4
+    } finally {
+        $env:HF_HUB_DISABLE_XET = $previousDisableXet
+    }
+    if ($LASTEXITCODE -ne 0) { throw "Hugging Face dataset download failed; re-run setup.ps1 to resume, or see docs/pitfalls.md#network." }
+
+    # On systems with LongPathsEnabled=0, the Hub client can report success
+    # while skipping files whose full destination exceeds MAX_PATH. Recover
+    # only those manifest references through a short temp root, then copy via
+    # the Win32 extended-path prefix. This avoids requiring admin registry
+    # changes or forcing users to relocate a OneDrive clone.
+    if (Test-Path -LiteralPath $manifest) {
+        $manifestPages = @(Get-Content -Raw -Encoding UTF8 -LiteralPath $manifest | ConvertFrom-Json)
+        $imagePaths = @($manifestPages | ForEach-Object { $_.page_info.image_path } | Where-Object { $_ })
+        $imgDir = Join-Path $dataDir "images"
+        $missingImages = @($imagePaths | Where-Object { -not (Test-FileExtended -Path (Join-Path $imgDir $_)) })
+        $longMissing = @($missingImages | Where-Object { (Join-Path $imgDir $_).Length -ge 260 })
+        if ($longMissing.Count -gt 0) {
+            $recoveryRoot = Join-Path $env:TEMP "omnidocbench-hf-longpath"
+            Write-Host "Recovering $($longMissing.Count) MAX_PATH dataset files through $recoveryRoot ..." -ForegroundColor Yellow
+            foreach ($imagePath in $longMissing) {
+                $remotePath = "images/$imagePath"
+                & $hfCli download opendatalab/OmniDocBench $remotePath `
+                    --repo-type dataset --local-dir $recoveryRoot
+                if ($LASTEXITCODE -ne 0) { throw "Long-path recovery download failed: $remotePath" }
+                $sourcePath = Join-Path (Join-Path $recoveryRoot "images") $imagePath
+                if (-not (Test-Path -LiteralPath $sourcePath)) { throw "Long-path recovery source missing: $sourcePath" }
+                $targetPath = Join-Path $imgDir $imagePath
+                [System.IO.File]::Copy($sourcePath, (ConvertTo-ExtendedPath -Path $targetPath), $true)
+            }
+        }
+    }
 } else {
     Write-Host "Downloading OmniDocBench v1.6 dataset from ModelScope ..." -ForegroundColor Cyan
     Write-Host "(~1651 images; this can take ~18 minutes on a slow link.)" -ForegroundColor DarkGray
@@ -271,7 +398,14 @@ if ($hfOrMs -eq "huggingface") {
 if (-not (Test-Path $manifest)) {
     throw "Download reported success but $manifest is missing. Inspect $dataDir."
 }
+$manifestPages = @(Get-Content -Raw -Encoding UTF8 -LiteralPath $manifest | ConvertFrom-Json)
+$imagePaths = @($manifestPages | ForEach-Object { $_.page_info.image_path } | Where-Object { $_ })
+$imgDir = Join-Path $dataDir "images"
+$missingImages = @($imagePaths | Where-Object { -not (Test-FileExtended -Path (Join-Path $imgDir $_)) })
+if ($imagePaths.Count -eq 0 -or $missingImages.Count -gt 0) {
+    throw "Dataset download is incomplete: $($imagePaths.Count - $missingImages.Count)/$($imagePaths.Count) manifest-referenced images present. Re-run setup.ps1 to resume."
+}
 
-Write-Host "Dataset downloaded to $dataDir" -ForegroundColor Green
+Write-Host "Dataset downloaded to $dataDir ($($imagePaths.Count) referenced images verified)" -ForegroundColor Green
 Write-Host "OmniDocBench setup complete." -ForegroundColor Green
 exit 0

@@ -37,6 +37,7 @@ import shutil
 import time
 import traceback
 from pathlib import Path
+import sys
 
 # NOTE: paddleocr_vl_rocm is the proven pipeline package from the
 # PaddleOCR-VL-ROCm project. Install it once (see README.md); this adapter
@@ -51,6 +52,8 @@ IMAGE_EXTENSIONS = (".jpg", ".jpeg", ".png", ".bmp", ".tiff", ".gif")
 ADAPTER_DIR = Path(__file__).resolve().parent
 REPO_ROOT = ADAPTER_DIR.parents[1]
 DEFAULT_ENGINE = "lightweight"
+sys.path.insert(0, str(REPO_ROOT))
+from scripts.windows_paths import through_short_repo  # noqa: E402
 
 
 def _read_env_local(repo_root: Path) -> dict[str, str]:
@@ -474,6 +477,8 @@ def run_adapter(
         :func:`process_folder`). The eval-infra ignores this; it only consumes
         the written ``.md`` files.
     """
+    img_dir = through_short_repo(Path(img_dir), REPO_ROOT)
+    out_dir = through_short_repo(Path(out_dir), REPO_ROOT)
     env = _read_adapter_env()
     repo_root = REPO_ROOT
 
@@ -503,8 +508,8 @@ def run_adapter(
     engine = (engine or DEFAULT_ENGINE).strip().lower()
     if engine == "lightweight":
         return run_lightweight_folder(
-            img_dir=Path(img_dir),
-            out_dir=Path(out_dir),
+            img_dir=img_dir,
+            out_dir=out_dir,
             layout_model=default_layout,
             server_url=resolved_server,
             api_model_name=default_api_model,
@@ -512,8 +517,8 @@ def run_adapter(
         )
     if engine == "official":
         return run_official_folder(
-            img_dir=Path(img_dir),
-            out_dir=Path(out_dir),
+            img_dir=img_dir,
+            out_dir=out_dir,
             server_url=resolved_server,
             api_model_name=default_api_model,
             page_retries=page_retries,

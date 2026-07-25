@@ -1,0 +1,31 @@
+[project]
+name = "omnidocbench-amd-windows"
+version = "0.0.0"
+description = "Reproducible local environment for OmniDocBench on AMD Windows"
+requires-python = ">=3.10,<3.12"
+dependencies = [
+    "apted",
+    "beautifulsoup4",
+    "evaluate",
+    "func-timeout",
+    "levenshtein",
+    "loguru",
+    "lxml",
+    "matplotlib",
+    "nltk",
+    "numpy",
+    "pandas",
+    "pillow",
+    "psutil",
+    "pylatexenc",
+    "pyyaml",
+    "scipy",
+    "tabulate",
+    "tqdm",
+]
+
+[dependency-groups]
+dev = [
+    "psutil>=7.0",
+    "pytest>=9.0",
+]
