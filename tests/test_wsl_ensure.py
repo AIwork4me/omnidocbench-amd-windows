@@ -31,3 +31,12 @@ def test_wsl_start_probe_is_direct_and_checked():
     assert '$cleaned -eq "OK"' in function
     assert "-- bash -c" not in text
     assert "registered but cannot start" in text
+
+
+def test_rootfs_fallback_rejects_content_that_does_not_match_lock():
+    text = WSL_ENSURE.read_text(encoding="utf-8")
+
+    assert "upstream-lock.json" in text
+    assert "-Component UbuntuRootfs -Path $tarball" in text
+    assert "downloaded content failed upstream lock verification" in text
+    assert "Remove-Item -LiteralPath $tarball" in text

@@ -43,6 +43,11 @@ $ErrorActionPreference = "Stop"
 # Nested Split-Path so this runs on Windows PowerShell 5.1 as well as PS 7+.
 $adapterRoot = Split-Path -Parent $PSScriptRoot
 $repoRoot    = Split-Path -Parent (Split-Path -Parent $adapterRoot)
+$lockFile = Join-Path $repoRoot "upstream-lock.json"
+$lockVerify = Join-Path $repoRoot "scripts\verify-upstream-lock.ps1"
+if (-not (Test-Path -LiteralPath $lockFile)) { throw "Upstream lock missing: $lockFile" }
+$upstreamLock = Get-Content -Raw -Encoding UTF8 -LiteralPath $lockFile | ConvertFrom-Json
+$pipelineCommit = [string]$upstreamLock.git.paddleocr_vl_rocm.commit
 
 # --- mirrors.env (GITHUB_BASE; respects China-firewall proxies) ---
 $mirrorsFile = Join-Path $repoRoot "mirrors.env"
@@ -72,6 +77,7 @@ if ([string]::IsNullOrWhiteSpace($CloneDir)) {
     # repoRoot's parent holds sibling checkouts; clone there.
     $CloneDir = Join-Path (Split-Path -Parent $repoRoot) "PaddleOCR-VL-ROCm"
 }
+$probe = Join-Path $CloneDir "pyproject.toml"
 
 # --- Phase 0: already installed? (idempotent fast-path) ---
 Write-Host "Checking for paddleocr_vl_rocm in $Python ..." -ForegroundColor Cyan
@@ -83,22 +89,25 @@ try {
 } finally {
     $ErrorActionPreference = $previousErrorActionPreference
 }
-if ($importExit -eq 0) {
+if ($importExit -eq 0 -and (Test-Path -LiteralPath $probe)) {
+    & powershell -ExecutionPolicy Bypass -File $lockVerify -Component Pipeline -Path $CloneDir
+    if ($LASTEXITCODE -ne 0) { throw "Installed PaddleOCR-VL-ROCm checkout does not match upstream-lock.json" }
     Write-Host "paddleocr_vl_rocm already importable in $Python -- nothing to do." -ForegroundColor Green
     exit 0
 }
 
 # --- Phase 1: clone PaddleOCR-VL-ROCm ---
-$probe = Join-Path $CloneDir "pyproject.toml"
 if (Test-Path $probe) {
     Write-Host "[1/2] PaddleOCR-VL-ROCm already cloned: $CloneDir" -ForegroundColor Green
 } else {
     $repoUrl = "$githubBase/AIwork4me/PaddleOCR-VL-ROCm.git"
-    Write-Host "[1/2] Cloning PaddleOCR-VL-ROCm from $repoUrl ..." -ForegroundColor Cyan
+    Write-Host "[1/2] Fetching locked PaddleOCR-VL-ROCm commit $pipelineCommit from $repoUrl ..." -ForegroundColor Cyan
     Write-Host "      Destination: $CloneDir"
-    # --depth 1 keeps it small; the adapter only needs the current source.
     if (Test-Path $CloneDir) { Remove-Item -Recurse -Force $CloneDir }
-    git clone --depth 1 $repoUrl $CloneDir
+    git init -q $CloneDir
+    git -C $CloneDir remote add origin $repoUrl
+    git -C $CloneDir fetch --depth 1 origin $pipelineCommit
+    if ($LASTEXITCODE -eq 0) { git -C $CloneDir checkout --detach FETCH_HEAD }
     if ($LASTEXITCODE -ne 0) {
         throw "git clone failed for PaddleOCR-VL-ROCm (URL: $repoUrl). See docs/pitfalls.md#network."
     }
@@ -107,6 +116,8 @@ if (Test-Path $probe) {
     }
     Write-Host "      Cloned to $CloneDir" -ForegroundColor Green
 }
+& powershell -ExecutionPolicy Bypass -File $lockVerify -Component Pipeline -Path $CloneDir
+if ($LASTEXITCODE -ne 0) { throw "PaddleOCR-VL-ROCm checkout does not match upstream-lock.json" }
 
 # --- Phase 2: pip install -e (editable) ---
 Write-Host "[2/2] pip install -e $CloneDir[gpu] (index: $pypiIndex) ..." -ForegroundColor Cyan

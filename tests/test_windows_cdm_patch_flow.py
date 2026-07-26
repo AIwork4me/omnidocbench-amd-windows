@@ -320,6 +320,12 @@ def test_wsl_cdm_setup_rejects_truncated_imagemagick_appimage():
     text = read(CDM_SETUP_SH)
 
     assert "appimage_valid()" in text
+    assert "IM7_EXPECTED_SIZE" in text
+    assert "IM7_EXPECTED_SHA" in text
+    assert "sha256sum" in text
+    assert "TLPDB_EXPECTED_SHA" in text
+    assert "--require-hashes" in text
+    assert "requirements.lock.txt" in text
     assert 'stat -c%s "$1"' in text
     assert '"7f454c46"' in text
     assert "magick7.AppImage.part" in text
@@ -334,8 +340,9 @@ def test_wsl_cdm_setup_recovers_incomplete_python_venv():
     assert "python3-venv" in text
     assert 'if [ ! -x "$ODB_VENV/bin/python" ]' in text
     assert 'rm -rf "$ODB_VENV"' in text
-    assert 'if ! "$ODB_VENV/bin/python" -c "$IMPORT_PROBE"' in text
     assert '"$ODB_VENV/bin/python" -m ensurepip --upgrade' in text
+    assert '"$ODB_VENV/bin/python" -m pip install -q --require-hashes' in text
+    assert "requirements.lock.txt" in text
     assert "venv dependencies synchronized" in text
     assert "venv imports verified" in text
 
@@ -344,6 +351,7 @@ def test_wsl_cdm_verifier_uses_venv_python_without_activation():
     verifier = read(REPO_ROOT / "eval-infra" / "02-cdm-environment" / "verify.sh")
 
     assert '"$ODB_VENV/bin/python" -c' in verifier
+    assert "verify_requirements_lock.py" in verifier
     assert 'source "$ODB_VENV/bin/activate"' not in verifier
 
 

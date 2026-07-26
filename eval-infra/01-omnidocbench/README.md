@@ -79,6 +79,8 @@ absent it falls back to GitHub + ModelScope with a warning.
 | `v16-cdm-official-prettyfalse-full-2026-07-09.yaml` | Edit_dist + TEDS **+ CDM** | full (1651) | `paddleocr_official_prettyfalse_full_2026-07-09` | WSL CDM pair for the published official-engine score |
 | `v16-cpu-200.yaml` | Edit_dist + TEDS (no CDM) | exact CPU subset (200) | `paddleocrvl_cpu_860m_200` | constrained-hardware capability evidence; not a full-set score |
 | `v16-cdm-cpu-200.yaml` | Edit_dist + TEDS **+ CDM** | exact CPU subset (200) | `paddleocrvl_cpu_860m_200` | same subset with CDM; not a full-set score |
+| `v16-cpu-smoke-10.yaml` | Edit_dist + TEDS (no CDM) | exact smoke subset (10) | `paddleocrvl_cpu_smoke_10` | clean-room provisioning capability only |
+| `v16-cdm-cpu-smoke-10.yaml` | Edit_dist + TEDS **+ CDM** | exact smoke subset (10) | `paddleocrvl_cpu_smoke_10` | canonical `scripts/reproduce.ps1` profile |
 
 The hard-subset manifest (`OmniDocBench_hard296.json`) is **not** part of the
 dataset download; `score.ps1 -Config v16-hard.yaml` auto-derives it from the

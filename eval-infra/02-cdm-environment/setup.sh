@@ -33,6 +33,13 @@ fi
 # read the same $HOME-relative paths.
 ODB_LOCAL="${HOME}/OmniDocBench"
 ODB_VENV="${HOME}/odb-venv"
+LOCK_FILE="$REPO_ROOT/upstream-lock.json"
+[ -f "$LOCK_FILE" ] || { echo "Missing upstream lock: $LOCK_FILE" >&2; exit 1; }
+IM7_EXPECTED_SIZE=$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1], encoding="utf-8"))["downloads"]["imagemagick_appimage"]["bytes"])' "$LOCK_FILE")
+IM7_EXPECTED_SHA=$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1], encoding="utf-8"))["downloads"]["imagemagick_appimage"]["sha256"])' "$LOCK_FILE")
+TLPDB_EXPECTED_SIZE=$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1], encoding="utf-8"))["wsl_cdm"]["texlive_tlpdb_bytes"])' "$LOCK_FILE")
+TLPDB_EXPECTED_SHA=$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1], encoding="utf-8"))["wsl_cdm"]["texlive_tlpdb_sha256"])' "$LOCK_FILE")
+WSL_REQUIREMENTS="$REPO_ROOT/eval-infra/02-cdm-environment/requirements.lock.txt"
 
 step() { echo ""; echo "=== Step $1: $2 ==="; }
 ok()   { echo "  ✓ $1"; }
@@ -90,6 +97,12 @@ PROF
     [ -x "$TLBIN/pdflatex" ] && ok "TL2026 installed" || fail "TL2026 install"
 fi
 export PATH="$TLBIN:$PATH"
+TLPDB="/usr/local/texlive/2026/tlpkg/texlive.tlpdb"
+[ "$(stat -c%s "$TLPDB" 2>/dev/null || echo 0)" = "$TLPDB_EXPECTED_SIZE" ] \
+    || fail "TeX Live package database size differs from upstream-lock.json"
+[ "$(sha256sum "$TLPDB" | awk '{print $1}')" = "$TLPDB_EXPECTED_SHA" ] \
+    || fail "TeX Live package database SHA-256 differs from upstream-lock.json"
+ok "TeX Live package database lock verified"
 
 # ── Step 2b: Install CDM-critical LaTeX packages missing from scheme-medium ──
 step 2b "Install CDM-critical LaTeX packages (standalone, was/upgreek)"
@@ -146,8 +159,9 @@ else
     IM7_URL="https://github.com/ImageMagick/ImageMagick/releases/download/7.1.2-26/ImageMagick-7.1.2-26-gcc-x86_64.AppImage"
     appimage_valid() {
         [ -f "$1" ] \
-            && [ "$(stat -c%s "$1" 2>/dev/null || echo 0)" -ge 30000000 ] \
-            && [ "$(od -An -tx1 -N4 "$1" 2>/dev/null | tr -d ' \n')" = "7f454c46" ]
+            && [ "$(stat -c%s "$1" 2>/dev/null || echo 0)" = "$IM7_EXPECTED_SIZE" ] \
+            && [ "$(od -An -tx1 -N4 "$1" 2>/dev/null | tr -d ' \n')" = "7f454c46" ] \
+            && [ "$(sha256sum "$1" | awk '{print $1}')" = "$IM7_EXPECTED_SHA" ]
     }
     if ! appimage_valid magick7.AppImage; then
         rm -f magick7.AppImage.part
@@ -282,18 +296,15 @@ else
     ok "venv already exists at $ODB_VENV"
 fi
 IMPORT_PROBE="import apted, bs4, evaluate, Levenshtein, lxml, numpy, pandas, PIL, pylatexenc, yaml"
-if ! "$ODB_VENV/bin/python" -c "$IMPORT_PROBE" >/dev/null 2>&1; then
-    "$ODB_VENV/bin/python" -m pip --version >/dev/null 2>&1 \
-        || "$ODB_VENV/bin/python" -m ensurepip --upgrade >/dev/null 2>&1
-    # PyPI index: honour PYPI_INDEX from mirrors.env (written by
-    # detect-mirrors.ps1) so a China-network machine uses Tsinghua and an
-    # open-egress machine uses pypi.org. Fall back to Tsinghua if unset.
-    PYPI_MIRROR="${PYPI_INDEX:-https://pypi.tuna.tsinghua.edu.cn/simple}"
-    "$ODB_VENV/bin/python" -m pip install -q -i "$PYPI_MIRROR" \
-        apted beautifulsoup4 evaluate func-timeout Levenshtein loguru lxml numpy pandas \
-        Pillow pylatexenc PyYAML scipy tabulate tqdm nltk matplotlib
-    ok "venv dependencies synchronized (index: $PYPI_MIRROR)"
-fi
+[ -f "$WSL_REQUIREMENTS" ] || fail "WSL Python requirements lock missing: $WSL_REQUIREMENTS"
+"$ODB_VENV/bin/python" -m pip --version >/dev/null 2>&1 \
+    || "$ODB_VENV/bin/python" -m ensurepip --upgrade >/dev/null 2>&1
+# PyPI index: honour PYPI_INDEX from mirrors.env (written by
+# detect-mirrors.ps1) so a China-network machine uses Tsinghua and an
+# open-egress machine uses pypi.org. Fall back to Tsinghua if unset.
+PYPI_MIRROR="${PYPI_INDEX:-https://pypi.tuna.tsinghua.edu.cn/simple}"
+"$ODB_VENV/bin/python" -m pip install -q --require-hashes -r "$WSL_REQUIREMENTS" -i "$PYPI_MIRROR"
+ok "venv dependencies synchronized from requirements.lock.txt (index: $PYPI_MIRROR)"
 "$ODB_VENV/bin/python" -c "$IMPORT_PROBE" \
     && ok "venv imports verified" || fail "venv dependency imports"
 

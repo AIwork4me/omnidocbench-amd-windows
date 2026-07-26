@@ -75,6 +75,13 @@ $logFile     = Join-Path $logDir "llama-server.log"
 $pidFile     = Join-Path $logDir "llama-server.pid"
 $host_       = "127.0.0.1"
 $baseUrl     = "http://${host_}:$Port"
+$lockFile    = Join-Path $repoRoot "upstream-lock.json"
+$lockVerify  = Join-Path $repoRoot "scripts\verify-upstream-lock.ps1"
+if (-not (Test-Path -LiteralPath $lockFile)) { throw "Upstream lock missing: $lockFile" }
+$upstreamLock = Get-Content -Raw -Encoding UTF8 -LiteralPath $lockFile | ConvertFrom-Json
+$lockedLlamaTag = [string]$upstreamLock.git.llama_cpp.tag
+$vlmRevision = [string]$upstreamLock.huggingface.vlm.revision
+if ($Tag -ne $lockedLlamaTag) { throw "llama.cpp tag '$Tag' is not locked; expected '$lockedLlamaTag' from upstream-lock.json" }
 
 New-Item -ItemType Directory -Force -Path $modelsDir, $logDir | Out-Null
 
@@ -156,6 +163,9 @@ if ($SkipDownload) {
         }
     }
     if (-not (Test-Path $zip)) { throw "Download failed: $url" }
+    $llamaComponent = if ($Variant -eq "hip") { "LlamaHipZip" } else { "LlamaCpuZip" }
+    & powershell -ExecutionPolicy Bypass -File $lockVerify -Component $llamaComponent -Path $zip
+    if ($LASTEXITCODE -ne 0) { throw "Downloaded llama.cpp archive does not match upstream-lock.json" }
     Write-Host "      Downloaded $([math]::Round((Get-Item $zip).Length / 1MB, 1)) MB" -ForegroundColor Green
     if (Test-Path $llamaDir) { Remove-Item $llamaDir -Recurse -Force }
     New-Item -ItemType Directory -Path $llamaDir -Force | Out-Null
@@ -174,6 +184,8 @@ $mainGguf = $envLocal["PADDLEOCR_VL_GGUF"]
 if ($SkipDownload) {
     Write-Host "[2/3] Skipping weights download (-SkipDownload)." -ForegroundColor Yellow
 } elseif ($mainGguf -and (Test-Path $mainGguf) -and -not $Force) {
+    & powershell -ExecutionPolicy Bypass -File $lockVerify -Component Vlm -Path $vlmModelDir
+    if ($LASTEXITCODE -ne 0) { throw "Existing VLM model does not match upstream-lock.json" }
     Write-Host "[2/3] PaddleOCR-VL-1.6-GGUF already present: $mainGguf" -ForegroundColor Green
 } else {
     New-Item -ItemType Directory -Force -Path $vlmModelDir | Out-Null
@@ -191,7 +203,7 @@ if ($SkipDownload) {
         $previousDisableXet = $env:HF_HUB_DISABLE_XET
         try {
             $env:HF_HUB_DISABLE_XET = "1"
-            & $hfCli download $repoId --local-dir $vlmModelDir --max-workers 4
+            & $hfCli download $repoId --revision $vlmRevision --local-dir $vlmModelDir --max-workers 4
         } finally {
             $env:HF_HUB_DISABLE_XET = $previousDisableXet
         }
@@ -214,6 +226,8 @@ print('Downloaded to:', p)
         $py | & $pythonExe -
         if ($LASTEXITCODE -ne 0) { throw "modelscope download failed for $repoId" }
     }
+    & powershell -ExecutionPolicy Bypass -File $lockVerify -Component Vlm -Path $vlmModelDir
+    if ($LASTEXITCODE -ne 0) { throw "Downloaded VLM model does not match upstream-lock.json" }
     $ggufs = @(Get-ChildItem -LiteralPath $vlmModelDir -Recurse -File -Filter "*.gguf" -ErrorAction SilentlyContinue)
     if ($ggufs.Count -eq 0) { throw "No .gguf files found under $vlmModelDir" }
     $mainGguf = ($ggufs | Where-Object { $_.Name -notmatch "mmproj" } | Sort-Object Length -Descending | Select-Object -First 1).FullName

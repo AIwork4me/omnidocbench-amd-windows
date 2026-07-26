@@ -87,13 +87,33 @@ Step 4 (scoring) ~5 min (Edit_dist+TEDS) + ~20-30 min (CDM, per-formula LaTeX).
 
 ### Quick Start
 
-Clone, then run the four setup phases. Each `setup.*` is idempotent; run the
-matching `verify.*` after each. **All commands assume the repo root as CWD.**
+For a real AMD Windows provisioning check without rerunning the accuracy
+benchmark, clone and run the canonical ten-page CPU profile. It includes WSL
+CDM and writes resumable evidence under `outputs/reproduction/cpu-smoke-10/`:
 
 ```bash
 git clone https://github.com/AIwork4me/omnidocbench-amd-windows
 cd omnidocbench-amd-windows
 ```
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts\reproduce.ps1 `
+  -Profile cpu-smoke-10
+```
+
+Use `-Resume` only after an interrupted run. The first run refuses existing
+profile predictions/results, processes exactly ten images, verifies all locked
+upstream inputs, and scores Windows metrics plus WSL CDM. This is a capability
+smoke test, not a leaderboard result. See
+[`docs/upstream-lock.md`](docs/upstream-lock.md) for the executable input lock.
+
+<details>
+<summary><strong>Manual phase-by-phase setup</strong></summary>
+
+<br>
+
+Each `setup.*` is idempotent; run the matching `verify.*` after each. **All
+commands assume the repo root as CWD.**
 
 ```powershell
 # Step 0: reproducible local Python + network + WSL
@@ -140,6 +160,8 @@ powershell -ExecutionPolicy Bypass -File scripts\full-verify.ps1 `
   -ScoreSaveName paddleocrvl_rocm_quick_match
 ```
 
+</details>
+
 For constrained hardware, `v16-cpu-200.yaml` and `v16-cdm-cpu-200.yaml` provide
 an explicit 200-page capability path. Choose this instead of the full Step 3
 inference, provision the CPU server, and stop deterministically after 200 images:
@@ -183,6 +205,10 @@ powershell -ExecutionPolicy Bypass -File scripts\full-verify.ps1 `
 Never label this subset as a full-set score. The verified command provenance
 and limitations are in
 [`docs/reproduction-cpu-200-2026-07-26.md`](docs/reproduction-cpu-200-2026-07-26.md).
+
+The ten-page smoke uses `v16-cpu-smoke-10.yaml` and
+`v16-cdm-cpu-smoke-10.yaml`; use the single entry point above rather than
+assembling those commands manually.
 
 Windows-native CDM is supported when `patches/omnidocbench/windows-cdm.patch`
 has been applied by `eval-infra/01-omnidocbench/setup.ps1` and

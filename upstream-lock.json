@@ -1,0 +1,99 @@
+{
+  "schema_version": 1,
+  "verified_at": "2026-07-26",
+  "git": {
+    "omnidocbench": {
+      "url": "https://github.com/opendatalab/OmniDocBench.git",
+      "commit": "c3e100b386d59b4ba1497786fb99b75220947c40"
+    },
+    "paddleocr_vl_rocm": {
+      "url": "https://github.com/AIwork4me/PaddleOCR-VL-ROCm.git",
+      "commit": "f0cb4014be5f9f98593f6b08afbc2404f049df4d"
+    },
+    "llama_cpp": {
+      "url": "https://github.com/ggml-org/llama.cpp.git",
+      "tag": "b9637",
+      "commit": "aedb2a5e9ca3d4064148bbb919e0ddc0c1b70ab3"
+    }
+  },
+  "downloads": {
+    "llama_cpu_zip": {
+      "file": "llama-b9637-bin-win-cpu-x64.zip",
+      "bytes": 16906751,
+      "sha256": "f7783c2b8c007f95e710ac40f26a24861a80b603b0b739fc54d7c926a4716c1e"
+    },
+    "llama_hip_zip": {
+      "file": "llama-b9637-bin-win-hip-radeon-x64.zip",
+      "bytes": 321088172,
+      "sha256": "e66c169c1d47fd6c5be8d02be7b348ac90f95d11176bb03a859ee6cf9256b4a9"
+    },
+    "ubuntu_rootfs": {
+      "file": "ubuntu-base-22.04.5-base-amd64.tar.gz",
+      "bytes": 29832285,
+      "sha256": "242cd8898b33ea806ef5f13b1076ed7c76f9f989d18384452f7166692438ff1a",
+      "version": "22.04.5",
+      "canonical_url": "https://cdimage.ubuntu.com/ubuntu-base/releases/22.04/release/ubuntu-base-22.04.5-base-amd64.tar.gz"
+    },
+    "imagemagick_appimage": {
+      "file": "ImageMagick-7.1.2-26-gcc-x86_64.AppImage",
+      "bytes": 33520120,
+      "sha256": "6366d353b81871929a653ad81158e805f3611d1be7836f2490b6afc38b64c92f",
+      "version": "7.1.2-26",
+      "canonical_url": "https://github.com/ImageMagick/ImageMagick/releases/download/7.1.2-26/ImageMagick-7.1.2-26-gcc-x86_64.AppImage"
+    }
+  },
+  "huggingface": {
+    "vlm": {
+      "repo_id": "PaddlePaddle/PaddleOCR-VL-1.6-GGUF",
+      "revision": "511b09642bb324401f15f97cc23bc67e8f0a291d",
+      "files": {
+        "PaddleOCR-VL-1.6-GGUF.gguf": {
+          "bytes": 935769056,
+          "sha256": "f3ae46ec885050acf4b3d31944431e1fd90d50664fb09126af4a3c050ba14ee8"
+        },
+        "PaddleOCR-VL-1.6-GGUF-mmproj.gguf": {
+          "bytes": 881770560,
+          "sha256": "204d757d7610d9b3faab10d506d69e5b244e32bf765e2bab2d0167e65e0a058a"
+        }
+      }
+    },
+    "layout": {
+      "repo_id": "PaddlePaddle/PP-DocLayoutV3_onnx",
+      "revision": "46bbdf188bb0a772c08aed74882ce7e51a8f1ea6",
+      "files": {
+        "inference.onnx": {
+          "bytes": 130502049,
+          "sha256": "45bf71750b00739a41fc209f132eb104a4d6b5bb29483c9078164d8b87cf28ba"
+        },
+        "inference.yml": {
+          "bytes": 1482,
+          "sha256": "506fcfac13b3b546ae40d7886b44126420f392adb694e3f8bb6a6286a1f90fdc"
+        }
+      }
+    },
+    "dataset": {
+      "repo_id": "opendatalab/OmniDocBench",
+      "revision": "aa1ee96d106dbe53d0ae59474d75c6e6d9b53fec",
+      "manifest": {
+        "file": "OmniDocBench.json",
+        "bytes": 42208096,
+        "sha256": "a45cd84b04ad8b793e775089640e6b681209abea33ead54c1828ddca35fae496",
+        "pages": 1651,
+        "referenced_image_bytes": 1446322066,
+        "referenced_image_tree_sha256": "11edca7c05b5e87cba3ac2b2a32765f944d79bb876924d3098104be44d70f0a6"
+      }
+    }
+  },
+  "wsl_cdm": {
+    "distro": "Ubuntu2204",
+    "ubuntu": "22.04",
+    "python": "3.10",
+    "texlive": "2026",
+    "texlive_tlmgr_revision": "79639",
+    "texlive_tlpdb_bytes": 4871636,
+    "texlive_tlpdb_sha256": "4013c1ec60f436376177522ad7e47101f61bdd377500a744b6a6f028339a6806",
+    "imagemagick": "7.1.2-26",
+    "ghostscript_minimum": "9.55.0",
+    "python_requirements": "eval-infra/02-cdm-environment/requirements.lock.txt"
+  }
+}

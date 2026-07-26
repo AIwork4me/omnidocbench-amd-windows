@@ -60,6 +60,19 @@ Work top to bottom. Run each `verify.*` immediately after its `setup.*`; only
 proceed when it exits 0. All paths are relative to the repo root. Launch
 PowerShell scripts with `powershell -ExecutionPolicy Bypass -File ...`.
 
+For a clean-room AMD Windows capability acceptance run (not accuracy
+benchmarking), prefer the canonical single entry point:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts\reproduce.ps1 `
+   -Profile cpu-smoke-10
+```
+
+It executes the same setup/verify ownership chain below, verifies
+`upstream-lock.json`, produces exactly ten fresh CPU predictions, scores Windows
+metrics and WSL CDM, and writes resumable state. Use `-Resume` only after an
+interrupted run.
+
 ### Step 0 — environment + network + WSL  (Windows)
 
 ```powershell

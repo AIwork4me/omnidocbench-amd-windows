@@ -269,7 +269,17 @@ def test_vlm_setup_uses_locked_hugging_face_cli_without_xet():
     assert 'Join-Path $repoRoot ".venv\\Scripts\\hf.exe"' in text
     assert '$env:HF_HUB_DISABLE_XET = "1"' in text
     assert "--max-workers 4" in text
+    assert "--revision $vlmRevision" in text
     assert "    huggingface-cli download" not in text
+
+
+def test_vlm_setup_verifies_locked_archive_and_model_files():
+    text = VLM_SETUP.read_text(encoding="utf-8")
+
+    assert "$lockedLlamaTag" in text
+    assert "LlamaHipZip" in text and "LlamaCpuZip" in text
+    assert "-Component $llamaComponent -Path $zip" in text
+    assert "-Component Vlm -Path $vlmModelDir" in text
 
 
 def test_vlm_setup_uses_served_gguf_path_as_api_model_id():
@@ -310,6 +320,8 @@ def test_layout_setup_serializes_required_files_for_python():
     assert "required = $requiredJson" in text
     assert "required = $required" not in text.replace("required = $requiredJson", "")
     assert "HF_HUB_DISABLE_XET" in text
+    assert "revision=revision" in text
+    assert "-Component Layout -Path $ModelDir" in text
 
 
 def test_dependency_setup_handles_expected_missing_import():
@@ -317,7 +329,7 @@ def test_dependency_setup_handles_expected_missing_import():
 
     assert '$ErrorActionPreference = "Continue"' in text
     assert "$importExit = $LASTEXITCODE" in text
-    assert "if ($importExit -eq 0)" in text
+    assert "if ($importExit -eq 0 -and (Test-Path -LiteralPath $probe))" in text
 
 
 def test_dependency_setup_supports_uv_env_without_pip():
@@ -326,3 +338,12 @@ def test_dependency_setup_supports_uv_env_without_pip():
     assert "Get-Command uv" in text
     assert "pip install --python $Python" in text
     assert "$Python -m ensurepip --upgrade" in text
+
+
+def test_dependency_setup_fetches_and_verifies_locked_pipeline_commit():
+    text = DEPS_SETUP.read_text(encoding="utf-8")
+
+    assert "$pipelineCommit" in text
+    assert "fetch --depth 1 origin $pipelineCommit" in text
+    assert "checkout --detach FETCH_HEAD" in text
+    assert "verify-upstream-lock.ps1" in text

@@ -79,12 +79,32 @@ CPU。该 Windows HIP 打包缺口已提交至上游
 
 ### 快速开始
 
-克隆，然后跑四个搭建阶段。每个 `setup.*` 都是幂等的；之后跑对应的 `verify.*`。**所有命令都假定在 repo 根目录执行。**
+无需再次运行精度全量评测，可用标准 10 页 CPU profile 验证 AMD Windows
+是否真正搭通。它包含 WSL CDM，并将可恢复证据写到
+`outputs/reproduction/cpu-smoke-10/`：
 
 ```bash
 git clone https://github.com/AIwork4me/omnidocbench-amd-windows
 cd omnidocbench-amd-windows
 ```
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts\reproduce.ps1 `
+  -Profile cpu-smoke-10
+```
+
+中断后才使用 `-Resume`。首次运行会拒绝已有的该 profile 预测/结果，严格处理
+10 张图，验证全部锁定的上游输入，并完成 Windows 指标和 WSL CDM 评分。这是
+能力 smoke test，不是 leaderboard 结果。可执行输入锁见
+[`docs/upstream-lock.md`](docs/upstream-lock.md)。
+
+<details>
+<summary><strong>手工分阶段搭建</strong></summary>
+
+<br>
+
+每个 `setup.*` 都是幂等的；之后跑对应的 `verify.*`。**所有命令都假定在 repo
+根目录执行。**
 
 ```powershell
 # 步骤 0：可复现的本地 Python + 网络 + WSL
@@ -131,6 +151,8 @@ powershell -ExecutionPolicy Bypass -File scripts\full-verify.ps1 `
   -ScoreSaveName paddleocrvl_rocm_quick_match
 ```
 
+</details>
+
 受限硬件可使用 `v16-cpu-200.yaml` 与 `v16-cdm-cpu-200.yaml` 的显式 200 页
 能力路径。用它替代全量步骤 3 推理，启动 CPU server，并确定性地在 200 张图
 后停止：
@@ -172,6 +194,9 @@ powershell -ExecutionPolicy Bypass -File scripts\full-verify.ps1 `
 
 不得把该子集分数标记为 1651 页全量分数。已验证命令、证据哈希与限制见
 [`docs/reproduction-cpu-200-2026-07-26.md`](docs/reproduction-cpu-200-2026-07-26.md)。
+
+10 页 smoke 使用 `v16-cpu-smoke-10.yaml` 与
+`v16-cdm-cpu-smoke-10.yaml`；请使用上方单入口，不要手工拼接这些命令。
 
 Windows 原生 CDM 已受支持：`eval-infra/01-omnidocbench/setup.ps1` 会自动应用
 `patches/omnidocbench/windows-cdm.patch`，并由

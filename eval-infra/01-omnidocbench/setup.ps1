@@ -83,6 +83,13 @@ $rootDir  = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)  # repo root
 $envFile  = Join-Path $rootDir "mirrors.env"
 $shortRoot = Ensure-ShortRepoRoot -RepoRoot $rootDir
 Write-Host "Windows short repository path: $shortRoot" -ForegroundColor DarkGray
+$lockFile = Join-Path $rootDir "upstream-lock.json"
+$lockVerify = Join-Path $rootDir "scripts\verify-upstream-lock.ps1"
+$treeVerify = Join-Path $rootDir "scripts\verify_dataset_tree.py"
+if (-not (Test-Path -LiteralPath $lockFile)) { throw "Upstream lock missing: $lockFile" }
+$upstreamLock = Get-Content -Raw -Encoding UTF8 -LiteralPath $lockFile | ConvertFrom-Json
+$odbCommit = [string]$upstreamLock.git.omnidocbench.commit
+$datasetRevision = [string]$upstreamLock.huggingface.dataset.revision
 
 # --- Parse mirrors.env (KEY=VALUE lines; ignore comments / blanks) ---
 $cfg = @{}
@@ -110,19 +117,24 @@ if (-not (Test-Path $probe)) {
     # fetch+reset instead of nuking the dir and re-downloading from scratch. A
     # bare Remove-Item on re-run would discard everything already fetched.
     if (Test-Path $gitHead) {
-        Write-Host "Incomplete clone detected (no pdf_validation.py); resuming via git fetch ..." -ForegroundColor Cyan
-        git -C $odbDir fetch --depth 1 origin
+        Write-Host "Incomplete clone detected; fetching locked commit $odbCommit ..." -ForegroundColor Cyan
+        git -C $odbDir fetch --depth 1 origin $odbCommit
         if ($LASTEXITCODE -eq 0) {
-            git -C $odbDir reset --hard origin/HEAD
+            git -C $odbDir checkout --detach --force FETCH_HEAD
         } else {
             Write-Host "git fetch failed; removing partial clone and retrying fresh." -ForegroundColor Yellow
             Remove-Item -Recurse -Force $odbDir
-            git clone --depth 1 $repoUrl $odbDir
+            git init -q $odbDir
+            git -C $odbDir remote add origin $repoUrl
+            git -C $odbDir fetch --depth 1 origin $odbCommit
+            if ($LASTEXITCODE -eq 0) { git -C $odbDir checkout --detach FETCH_HEAD }
         }
     } else {
-        Write-Host "Cloning OmniDocBench from $repoUrl ..." -ForegroundColor Cyan
-        # --depth 1 keeps it small (no full history needed for eval).
-        git clone --depth 1 $repoUrl $odbDir
+        Write-Host "Fetching locked OmniDocBench commit $odbCommit from $repoUrl ..." -ForegroundColor Cyan
+        git init -q $odbDir
+        git -C $odbDir remote add origin $repoUrl
+        git -C $odbDir fetch --depth 1 origin $odbCommit
+        if ($LASTEXITCODE -eq 0) { git -C $odbDir checkout --detach FETCH_HEAD }
     }
     if ($LASTEXITCODE -ne 0) { throw "git clone failed for OmniDocBench (URL: $repoUrl)" }
     if (-not (Test-Path $probe)) { throw "Clone succeeded but pdf_validation.py missing in $odbDir" }
@@ -130,6 +142,8 @@ if (-not (Test-Path $probe)) {
 } else {
     Write-Host "OmniDocBench code already present: $probe" -ForegroundColor Green
 }
+& powershell -ExecutionPolicy Bypass -File $lockVerify -Component OmniDocBench -Path $odbDir
+if ($LASTEXITCODE -ne 0) { throw "OmniDocBench checkout does not match upstream-lock.json" }
 
 # --- 1a. Apply repo-maintained OmniDocBench compatibility patches -----------
 # The OmniDocBench checkout is a generated dependency and is ignored by this
@@ -330,6 +344,10 @@ if (Test-Path $manifest) {
     }
     $missingImages = @($imagePaths | Where-Object { -not (Test-FileExtended -Path (Join-Path $imgDir $_)) })
     if ($missingImages.Count -eq 0) {
+        & powershell -ExecutionPolicy Bypass -File $lockVerify -Component DatasetManifest -Path $manifest
+        if ($LASTEXITCODE -ne 0) { throw "Dataset manifest does not match upstream-lock.json" }
+        & $venvPython $treeVerify --manifest $manifest --image-dir $imgDir --lock $lockFile
+        if ($LASTEXITCODE -ne 0) { throw "Dataset image tree does not match upstream-lock.json" }
         Write-Host "Dataset already complete: $manifest ($($imagePaths.Count)/$($imagePaths.Count) referenced images)." -ForegroundColor Green
         Write-Host "OmniDocBench setup complete." -ForegroundColor Green
         exit 0
@@ -356,7 +374,7 @@ if ($hfOrMs -eq "huggingface") {
         # request; modest concurrency is friendlier to public rate limits.
         $env:HF_HUB_DISABLE_XET = "1"
         & $hfCli download opendatalab/OmniDocBench `
-            --repo-type dataset --local-dir $dataDir --max-workers 4
+            --repo-type dataset --revision $datasetRevision --local-dir $dataDir --max-workers 4
     } finally {
         $env:HF_HUB_DISABLE_XET = $previousDisableXet
     }
@@ -379,7 +397,7 @@ if ($hfOrMs -eq "huggingface") {
             foreach ($imagePath in $longMissing) {
                 $remotePath = "images/$imagePath"
                 & $hfCli download opendatalab/OmniDocBench $remotePath `
-                    --repo-type dataset --local-dir $recoveryRoot
+                    --repo-type dataset --revision $datasetRevision --local-dir $recoveryRoot
                 if ($LASTEXITCODE -ne 0) { throw "Long-path recovery download failed: $remotePath" }
                 $sourcePath = Join-Path (Join-Path $recoveryRoot "images") $imagePath
                 if (-not (Test-Path -LiteralPath $sourcePath)) { throw "Long-path recovery source missing: $sourcePath" }
@@ -405,6 +423,10 @@ $missingImages = @($imagePaths | Where-Object { -not (Test-FileExtended -Path (J
 if ($imagePaths.Count -eq 0 -or $missingImages.Count -gt 0) {
     throw "Dataset download is incomplete: $($imagePaths.Count - $missingImages.Count)/$($imagePaths.Count) manifest-referenced images present. Re-run setup.ps1 to resume."
 }
+& powershell -ExecutionPolicy Bypass -File $lockVerify -Component DatasetManifest -Path $manifest
+if ($LASTEXITCODE -ne 0) { throw "Dataset manifest does not match upstream-lock.json" }
+& $venvPython $treeVerify --manifest $manifest --image-dir $imgDir --lock $lockFile
+if ($LASTEXITCODE -ne 0) { throw "Dataset image tree does not match upstream-lock.json" }
 
 Write-Host "Dataset downloaded to $dataDir ($($imagePaths.Count) referenced images verified)" -ForegroundColor Green
 Write-Host "OmniDocBench setup complete." -ForegroundColor Green
