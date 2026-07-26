@@ -25,14 +25,14 @@ Git checkout or binary/model artifact differs from the verified lock.
 
 ## Phase 1: Executable Upstream Lock
 
-- [ ] Add a tracked machine-readable lock containing canonical source, exact
+- [x] Add a tracked machine-readable lock containing canonical source, exact
   Git commit or release tag, expected files, byte sizes, and SHA-256 hashes.
-- [ ] Add PowerShell 5.1-compatible helpers to read the lock, verify files, and
+- [x] Add PowerShell 5.1-compatible helpers to read the lock, verify files, and
   verify detached Git checkouts.
-- [ ] Pin OmniDocBench and PaddleOCR-VL-ROCm clones to exact commits.
-- [ ] Verify llama.cpp CPU archive/binary, GGUF/mmproj, layout ONNX/YAML, dataset
+- [x] Pin OmniDocBench and PaddleOCR-VL-ROCm clones to exact commits.
+- [x] Verify llama.cpp CPU archive/binary, GGUF/mmproj, layout ONNX/YAML, dataset
   manifest, Ubuntu rootfs fallback, and ImageMagick AppImage where applicable.
-- [ ] Keep mirrors as transport alternatives only; they may not change locked
+- [x] Keep mirrors as transport alternatives only; they may not change locked
   content.
 
 **Gate:** focused tests prove wrong Git commits and one-byte artifact corruption
@@ -40,10 +40,10 @@ exit non-zero with the component name, expected hash, and actual hash.
 
 ## Phase 2: Ten-Page Profile
 
-- [ ] Add non-CDM and CDM config templates for an exact ten-page manifest and
+- [x] Add non-CDM and CDM config templates for an exact ten-page manifest and
   isolated prediction directory.
-- [ ] Keep deterministic single-worker matching/TEDS settings.
-- [ ] Use adapter `--max-pages 10`; build the exact ground truth from the ten
+- [x] Keep deterministic single-worker matching/TEDS settings.
+- [x] Use adapter `--max-pages 10`; build the exact ground truth from the ten
   successful prediction stems; require 100% prediction coverage.
 
 **Gate:** config and adapter tests prove exactly ten sorted images are selected,
@@ -51,26 +51,26 @@ the manifest/config paths agree, and no 200-page/full-set artifact is reused.
 
 ## Phase 3: Windows Single Entry Point
 
-- [ ] Add `scripts/reproduce.ps1 -Profile cpu-smoke-10` as the canonical human
+- [x] Add `scripts/reproduce.ps1 -Profile cpu-smoke-10` as the canonical human
   entry point.
-- [ ] Orchestrate uv sync, mirrors, WSL availability, preflight, dataset setup
+- [x] Orchestrate uv sync, mirrors, WSL availability, preflight, dataset setup
   and verify, WSL CDM setup and verify, CPU VLM setup and verify, layout setup
   and verify, dependency setup, ten-page inference, manifest build, prediction
   validation, Windows score and verify, WSL CDM score and verify, and exact
   full-chain verification.
-- [ ] Persist an atomic JSON state/evidence file after every phase with command,
+- [x] Persist an atomic JSON state/evidence file after every phase with command,
   exit code, duration, artifact paths, and resume command.
-- [ ] Support `-Resume`, `-ForceInference`, and `-SkipCdmSetup`; never silently
+- [x] Support `-Resume`, `-ForceInference`, and `-SkipCdmSetup`; never silently
   reuse predictions unless resume is explicitly requested.
-- [ ] Preserve the four human-intervention boundaries in `AGENTS.md`.
+- [x] Preserve the four human-intervention boundaries in `AGENTS.md`.
 
 **Gate:** dry-run/fixture tests verify phase order, failure propagation, resume
 semantics, exact artifact binding, and PowerShell 5.1 parsing.
 
 ## Phase 4: Development-Checkout Validation
 
-- [ ] Run the full deterministic test suite and syntax/data/doc gates.
-- [ ] Run the orchestrator against existing resources in explicit resume mode
+- [x] Run the full deterministic test suite and syntax/data/doc gates.
+- [x] Run the orchestrator against existing resources in explicit resume mode
   to validate command wiring without claiming clean-room evidence.
 
 **Gate:** all deterministic checks pass and the existing physical evidence
@@ -78,17 +78,24 @@ chain remains green.
 
 ## Phase 5: Real Isolated Clean Room
 
-- [ ] Commit and push the implementation so the validation clone starts from a
+- [x] Commit and push the implementation so the validation clone starts from a
   public immutable commit.
-- [ ] Clone that commit into a new path containing spaces outside this checkout.
-- [ ] Confirm the isolated clone has no `.venv`, `mirrors.env`, generated
+- [x] Clone that commit into a new path containing spaces outside this checkout.
+- [x] Confirm the isolated clone has no `.venv`, `mirrors.env`, generated
   checkout, data, models, predictions, results, or `.env.local`.
-- [ ] Run only the single entry point for `cpu-smoke-10`.
-- [ ] Allow machine-global uv downloads, package caches, WSL distro, and WSL CDM
+- [x] Run only the single entry point for `cpu-smoke-10`.
+- [x] Allow machine-global uv downloads, package caches, WSL distro, and WSL CDM
   tools, but do not copy repo-local generated artifacts from this checkout.
 - [ ] Verify ten new non-empty UTF-8 predictions, exact ten-page manifest,
   finite Windows metrics, positive WSL CDM, and final chain success.
 - [ ] Re-run with `-Resume` to prove idempotent recovery.
+
+**Interrupted evidence (2026-07-26):** The user stopped the locked dataset
+download after 1,389,938,164 staging bytes. No downstream inference or score
+claim was made. The run discovered and fixed OneDrive uv hardlink error 396,
+Hugging Face MAX_PATH failures, and PowerShell CI hash compatibility. Resume
+evidence and open gates are recorded in
+`docs/reproduction-clean-room-smoke-2026-07-26.md`.
 
 **Gate:** dated evidence records the public commit, machine/software versions,
 all phase exits, durations, artifact hashes, `10/10` coverage, score sample
@@ -97,10 +104,10 @@ fresh repo-local outputs.
 
 ## Phase 6: Documentation And Release
 
-- [ ] Update English/Chinese README and `AGENTS.md` to make the one-command
+- [x] Update English/Chinese README and `AGENTS.md` to make the one-command
   profile canonical for AMD Windows smoke validation.
-- [ ] Record lock update procedure and clean-room evidence.
-- [ ] Re-run CI, review the final diff, commit, push, and confirm warning-free
+- [x] Record lock update procedure and clean-room evidence.
+- [x] Re-run CI, review the final diff, commit, push, and confirm warning-free
   GitHub Actions.
 
 ## Success Criteria
