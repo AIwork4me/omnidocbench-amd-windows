@@ -88,12 +88,17 @@ if ($LASTEXITCODE -ne 0) { throw "Seed source dataset tree lock verification fai
 $sourceManifest = Join-Path $sourceShortRoot "eval-infra\01-omnidocbench\data\OmniDocBench.json"
 $destinationManifest = Join-Path $destinationShortRoot "eval-infra\01-omnidocbench\data\OmniDocBench.json"
 Copy-LockedFile $sourceManifest $destinationManifest
-$pages = @(Get-Content -Raw -Encoding UTF8 -LiteralPath $sourceManifest | ConvertFrom-Json)
-foreach ($page in $pages) {
-    $relative = [string]$page.page_info.image_path
-    Copy-LockedFile `
-    (Join-LiteralPath (Join-Path $sourceShortRoot "eval-infra\01-omnidocbench\data\images") $relative) `
-    (Join-LiteralPath (Join-Path $destinationShortRoot "eval-infra\01-omnidocbench\data\images") $relative)
+$parsedPages = Get-Content -Raw -Encoding UTF8 -LiteralPath $sourceManifest | ConvertFrom-Json
+$imagePaths = @($parsedPages | ForEach-Object { $_ } | ForEach-Object { [string]$_.page_info.image_path })
+if ($imagePaths.Count -ne 1651) { throw "Seed manifest expected 1651 image paths, found $($imagePaths.Count)" }
+foreach ($relative in $imagePaths) {
+    try {
+        Copy-LockedFile `
+            (Join-LiteralPath (Join-Path $sourceShortRoot "eval-infra\01-omnidocbench\data\images") $relative) `
+            (Join-LiteralPath (Join-Path $destinationShortRoot "eval-infra\01-omnidocbench\data\images") $relative)
+    } catch {
+        throw "Seed copy failed for '$relative': $($_.Exception.Message)"
+    }
 }
 
 foreach ($relative in @(

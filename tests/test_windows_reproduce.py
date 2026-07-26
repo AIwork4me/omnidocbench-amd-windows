@@ -68,6 +68,8 @@ def test_seed_script_copies_only_locked_inputs_and_reverifies_destination():
     assert 'if ($full.StartsWith("\\\\?\\"))' in text
     assert "Join-LiteralPath" in text
     assert "[System.IO.Path]::GetDirectoryName" in text
+    assert '$parsedPages | ForEach-Object { $_ }' in text
+    assert "Seed manifest expected 1651 image paths" in text
     assert "predictions" not in text
     assert "metric_result" not in text
     assert 'Join-Path $SourceRoot ".env.local"' not in text
