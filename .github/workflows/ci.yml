@@ -14,8 +14,8 @@ jobs:
       matrix:
         python-version: ['3.10', '3.11']
     steps:
-      - uses: actions/checkout@v7
-      - uses: astral-sh/setup-uv@v9
+      - uses: actions/checkout@v7.0.1
+      - uses: astral-sh/setup-uv@v9.0.0
         with:
           python-version: ${{ matrix.python-version }}
           enable-cache: true
@@ -42,7 +42,7 @@ jobs:
   bash-syntax:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@v7.0.1
       - name: Parse Bash scripts
         run: find . -type f -name '*.sh' -print0 | xargs -0 -n1 bash -n
 
