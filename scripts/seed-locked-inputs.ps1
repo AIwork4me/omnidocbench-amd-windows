@@ -36,6 +36,10 @@ function ConvertTo-ExtendedPath([string] $Path) {
     return "\\?\" + $full
 }
 
+function Join-LiteralPath([string] $Base, [string] $Child) {
+    return $Base.TrimEnd('\', '/') + '\' + $Child.TrimStart('\', '/')
+}
+
 function Ensure-ShortRepoRoot([string] $RepoRoot) {
     $normalized = [System.IO.Path]::GetFullPath($RepoRoot)
     $sha = [System.Security.Cryptography.SHA256]::Create()
@@ -59,7 +63,7 @@ $destinationShortRoot = Ensure-ShortRepoRoot $DestinationRoot
 function Copy-LockedFile([string] $Source, [string] $Destination) {
     $extendedSource = ConvertTo-ExtendedPath $Source
     if (-not [System.IO.File]::Exists($extendedSource)) { throw "Seed source missing: $Source" }
-    $parent = Split-Path -Parent $Destination
+    $parent = [System.IO.Path]::GetDirectoryName($Destination)
     [System.IO.Directory]::CreateDirectory((ConvertTo-ExtendedPath $parent)) | Out-Null
     [System.IO.File]::Copy($extendedSource, (ConvertTo-ExtendedPath $Destination), $true)
 }
@@ -88,8 +92,8 @@ $pages = @(Get-Content -Raw -Encoding UTF8 -LiteralPath $sourceManifest | Conver
 foreach ($page in $pages) {
     $relative = [string]$page.page_info.image_path
     Copy-LockedFile `
-        (Join-Path (Join-Path $sourceShortRoot "eval-infra\01-omnidocbench\data\images") $relative) `
-        (Join-Path (Join-Path $destinationShortRoot "eval-infra\01-omnidocbench\data\images") $relative)
+    (Join-LiteralPath (Join-Path $sourceShortRoot "eval-infra\01-omnidocbench\data\images") $relative) `
+    (Join-LiteralPath (Join-Path $destinationShortRoot "eval-infra\01-omnidocbench\data\images") $relative)
 }
 
 foreach ($relative in @(
