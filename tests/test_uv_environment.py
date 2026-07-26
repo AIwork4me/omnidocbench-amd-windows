@@ -41,8 +41,10 @@ def test_omnidocbench_setup_prefers_uv_and_never_uses_unsupported_python():
     assert "Partial dataset detected" in text
     assert "function ConvertTo-ExtendedPath" in text
     assert "Test-FileExtended" in text
-    assert "Recovering $($longMissing.Count) MAX_PATH dataset files" in text
     assert "function Ensure-ShortRepoRoot" in text
     assert "Windows short repository path" in text
-    assert '$dataDir  = Join-Path $shortRoot "eval-infra\\01-omnidocbench\\data"' in text
+    assert '$downloadDataDir = Join-Path (Split-Path -Parent $shortRoot) "dataset-download"' in text
+    assert "--local-dir $downloadDataDir" in text
+    assert "ConvertTo-ExtendedPath -Path $targetPath" in text
+    assert "Dataset staging source missing" in text
     assert "    huggingface-cli download" not in text

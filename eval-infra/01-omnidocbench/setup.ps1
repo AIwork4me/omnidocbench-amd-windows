@@ -329,10 +329,12 @@ if ($SkipDataset) {
 }
 
 # --- 2. Download v1.6 dataset (1651 pages + GT manifest) ---
-# Hugging Face creates long internal names under local_dir/.cache. Route the
-# whole download through the short-root junction, not only later image access,
-# so OneDrive clones do not fail before long-path recovery can run.
-$dataDir  = Join-Path $shortRoot "eval-infra\01-omnidocbench\data"
+# Hugging Face resolves junctions before creating local_dir/.cache, so a
+# short-root junction alone does not prevent OneDrive MAX_PATH failures. Keep
+# a real short staging directory beside the junction, then copy the immutable
+# snapshot into this clone with Win32 extended paths.
+$dataDir  = Join-Path $PSScriptRoot "data"
+$downloadDataDir = Join-Path (Split-Path -Parent $shortRoot) "dataset-download"
 $manifest = Join-Path $dataDir "OmniDocBench.json"
 if (Test-Path $manifest) {
     $imgDir = Join-Path $dataDir "images"
@@ -359,6 +361,7 @@ if (Test-Path $manifest) {
 }
 
 New-Item -ItemType Directory -Force -Path $dataDir | Out-Null
+New-Item -ItemType Directory -Force -Path $downloadDataDir | Out-Null
 
 if ($hfOrMs -eq "huggingface") {
     Write-Host "Downloading OmniDocBench v1.6 dataset from HuggingFace ..." -ForegroundColor Cyan
@@ -377,43 +380,34 @@ if ($hfOrMs -eq "huggingface") {
         # request; modest concurrency is friendlier to public rate limits.
         $env:HF_HUB_DISABLE_XET = "1"
         & $hfCli download opendatalab/OmniDocBench `
-            --repo-type dataset --revision $datasetRevision --local-dir $dataDir --max-workers 4
+            --repo-type dataset --revision $datasetRevision --local-dir $downloadDataDir --max-workers 4
     } finally {
         $env:HF_HUB_DISABLE_XET = $previousDisableXet
     }
     if ($LASTEXITCODE -ne 0) { throw "Hugging Face dataset download failed; re-run setup.ps1 to resume, or see docs/pitfalls.md#network." }
 
-    # On systems with LongPathsEnabled=0, the Hub client can report success
-    # while skipping files whose full destination exceeds MAX_PATH. Recover
-    # only those manifest references through a short temp root, then copy via
-    # the Win32 extended-path prefix. This avoids requiring admin registry
-    # changes or forcing users to relocate a OneDrive clone.
-    if (Test-Path -LiteralPath $manifest) {
-        $manifestPages = @(Get-Content -Raw -Encoding UTF8 -LiteralPath $manifest | ConvertFrom-Json)
-        $imagePaths = @($manifestPages | ForEach-Object { $_.page_info.image_path } | Where-Object { $_ })
-        $imgDir = Join-Path $dataDir "images"
-        $missingImages = @($imagePaths | Where-Object { -not (Test-FileExtended -Path (Join-Path $imgDir $_)) })
-        $longMissing = @($missingImages | Where-Object { (Join-Path $imgDir $_).Length -ge 260 })
-        if ($longMissing.Count -gt 0) {
-            $recoveryRoot = Join-Path $env:TEMP "omnidocbench-hf-longpath"
-            Write-Host "Recovering $($longMissing.Count) MAX_PATH dataset files through $recoveryRoot ..." -ForegroundColor Yellow
-            foreach ($imagePath in $longMissing) {
-                $remotePath = "images/$imagePath"
-                & $hfCli download opendatalab/OmniDocBench $remotePath `
-                    --repo-type dataset --revision $datasetRevision --local-dir $recoveryRoot
-                if ($LASTEXITCODE -ne 0) { throw "Long-path recovery download failed: $remotePath" }
-                $sourcePath = Join-Path (Join-Path $recoveryRoot "images") $imagePath
-                if (-not (Test-Path -LiteralPath $sourcePath)) { throw "Long-path recovery source missing: $sourcePath" }
-                $targetPath = Join-Path $imgDir $imagePath
-                [System.IO.File]::Copy($sourcePath, (ConvertTo-ExtendedPath -Path $targetPath), $true)
-            }
-        }
-    }
 } else {
     Write-Host "Downloading OmniDocBench v1.6 dataset from ModelScope ..." -ForegroundColor Cyan
     Write-Host "(~1651 images; this can take ~18 minutes on a slow link.)" -ForegroundColor DarkGray
-    modelscope download --dataset OpenDataLab/OmniDocBench --local_dir $dataDir
+    modelscope download --dataset OpenDataLab/OmniDocBench --local_dir $downloadDataDir
     if ($LASTEXITCODE -ne 0) { throw "modelscope download failed" }
+}
+
+$downloadManifest = Join-Path $downloadDataDir "OmniDocBench.json"
+if (-not (Test-Path -LiteralPath $downloadManifest)) {
+    throw "Locked dataset snapshot is missing OmniDocBench.json: $downloadDataDir"
+}
+$manifestPages = @(Get-Content -Raw -Encoding UTF8 -LiteralPath $downloadManifest | ConvertFrom-Json)
+$imagePaths = @($manifestPages | ForEach-Object { $_.page_info.image_path } | Where-Object { $_ })
+$imgDir = Join-Path $dataDir "images"
+[System.IO.Directory]::CreateDirectory((ConvertTo-ExtendedPath -Path $imgDir)) | Out-Null
+[System.IO.File]::Copy($downloadManifest, (ConvertTo-ExtendedPath -Path $manifest), $true)
+Write-Host "Copying $($imagePaths.Count) locked dataset images from short staging into this clone ..." -ForegroundColor Cyan
+foreach ($imagePath in $imagePaths) {
+    $sourcePath = Join-Path (Join-Path $downloadDataDir "images") $imagePath
+    if (-not (Test-Path -LiteralPath $sourcePath)) { throw "Dataset staging source missing: $sourcePath" }
+    $targetPath = Join-Path $imgDir $imagePath
+    [System.IO.File]::Copy($sourcePath, (ConvertTo-ExtendedPath -Path $targetPath), $true)
 }
 
 if (-not (Test-Path $manifest)) {
