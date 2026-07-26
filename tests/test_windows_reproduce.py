@@ -34,6 +34,8 @@ def test_orchestrator_is_windows_only_fail_closed_and_exactly_ten_pages():
     assert "-PredictionManifest $manifestRel" in text
     assert "Existing $RunProfile artifacts found" in text
     assert "Move-Item -LiteralPath $temp -Destination $stateFile -Force" in text
+    assert '$env:UV_LINK_MODE = "copy"' in text
+    assert "$env:UV_LINK_MODE = $previousLinkMode" in text
     assert "Assert-LastExit" in text
     assert "RESUME SKIP: phase already passed" in text
     always_run = text.split("$alwaysRunPhases", 1)[1].split("$state", 1)[0]

@@ -143,10 +143,18 @@ Save-State
 
 Invoke-Phase "Python environment" {
     if (-not (Get-Command uv -ErrorAction SilentlyContinue)) { throw "uv not found; install astral-sh.uv with winget" }
-    & uv python install 3.11
-    Assert-LastExit "uv python install"
-    & uv sync --locked --all-groups
-    Assert-LastExit "uv sync"
+    $previousLinkMode = $env:UV_LINK_MODE
+    try {
+        # OneDrive/Cloud Files rejects hardlinks from uv's local cache with
+        # Windows error 396. Copy mode is deterministic and works everywhere.
+        $env:UV_LINK_MODE = "copy"
+        & uv python install 3.11
+        Assert-LastExit "uv python install"
+        & uv sync --locked --all-groups
+        Assert-LastExit "uv sync"
+    } finally {
+        $env:UV_LINK_MODE = $previousLinkMode
+    }
 } "uv python install 3.11; uv sync --locked --all-groups"
 
 Invoke-Phase "Network mirrors" {
