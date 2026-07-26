@@ -54,7 +54,11 @@ denominators, raw values, limitations, and hashes are in
 The Radeon 860M (gfx1152) cannot run the tested official Windows HIP llama.cpp
 binaries: b9637 and b10107 fail with `ROCm error: invalid device function`. Use
 `-Variant cpu` on this GPU class unless you have a gfx1152-compatible build.
-See [`docs/llama-cpp-radeon-860m-gfx1152-issue-draft-2026-07-26.md`](docs/llama-cpp-radeon-860m-gfx1152-issue-draft-2026-07-26.md).
+This forced the verified run to fall back to CPU. The Windows HIP packaging
+gap has been reported upstream as
+[`ggml-org/llama.cpp#26127`](https://github.com/ggml-org/llama.cpp/issues/26127);
+local reproduction details are in
+[`docs/llama-cpp-radeon-860m-gfx1152-issue-draft-2026-07-26.md`](docs/llama-cpp-radeon-860m-gfx1152-issue-draft-2026-07-26.md).
 
 ## System Requirements
 

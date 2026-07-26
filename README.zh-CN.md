@@ -49,7 +49,10 @@ timeout、error、exception 均为 0。完整命令、分母、raw 值、限制�
 
 Radeon 860M（gfx1152）无法运行本次测试的官方 Windows HIP llama.cpp：
 b9637 与 b10107 都报 `ROCm error: invalid device function`。此类 GPU 应使用
-`-Variant cpu`，除非已有兼容 gfx1152 的构建。详见
+`-Variant cpu`，除非已有兼容 gfx1152 的构建，因此本次已验核运行被迫回退到
+CPU。该 Windows HIP 打包缺口已提交至上游
+[`ggml-org/llama.cpp#26127`](https://github.com/ggml-org/llama.cpp/issues/26127)；
+本地复现细节见
 [`docs/llama-cpp-radeon-860m-gfx1152-issue-draft-2026-07-26.md`](docs/llama-cpp-radeon-860m-gfx1152-issue-draft-2026-07-26.md)。
 
 ## 系统需求
