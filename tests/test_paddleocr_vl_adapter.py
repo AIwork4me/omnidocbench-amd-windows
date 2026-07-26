@@ -339,6 +339,8 @@ def test_dependency_setup_supports_uv_env_without_pip():
 
     assert "Get-Command uv" in text
     assert "pip install --python $Python" in text
+    assert '$env:UV_LINK_MODE = "copy"' in text
+    assert "$env:UV_LINK_MODE = $previousLinkMode" in text
     assert "$Python -m ensurepip --upgrade" in text
 
 

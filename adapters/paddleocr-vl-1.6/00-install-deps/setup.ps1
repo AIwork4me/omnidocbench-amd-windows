@@ -123,7 +123,13 @@ if ($LASTEXITCODE -ne 0) { throw "PaddleOCR-VL-ROCm checkout does not match upst
 Write-Host "[2/2] pip install -e $CloneDir[gpu] (index: $pypiIndex) ..." -ForegroundColor Cyan
 $uvCommand = Get-Command uv -ErrorAction SilentlyContinue
 if ($uvCommand) {
-    & $uvCommand.Source pip install --python $Python -e "$CloneDir[gpu]" --index-url $pypiIndex
+    $previousLinkMode = $env:UV_LINK_MODE
+    try {
+        $env:UV_LINK_MODE = "copy"
+        & $uvCommand.Source pip install --python $Python -e "$CloneDir[gpu]" --index-url $pypiIndex
+    } finally {
+        $env:UV_LINK_MODE = $previousLinkMode
+    }
 } else {
     & $Python -m pip --version *> $null
     if ($LASTEXITCODE -ne 0) { & $Python -m ensurepip --upgrade }
