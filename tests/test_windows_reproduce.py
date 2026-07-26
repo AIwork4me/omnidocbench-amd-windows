@@ -62,7 +62,7 @@ def test_seed_script_copies_only_locked_inputs_and_reverifies_destination():
     assert "DatasetManifest" in text and "Vlm" in text and "Layout" in text
     assert "verify_dataset_tree.py" in text
     assert "ConvertTo-ExtendedPath" in text
-    assert "Ensure-ShortRepoRoot" in text
+    assert "Initialize-ShortRepoRoot" in text
     assert "[System.IO.File]::Exists($extendedSource)" in text
     assert "$sourceShortRoot" in text and "$destinationShortRoot" in text
     assert 'if ($full.StartsWith("\\\\?\\"))' in text
@@ -126,3 +126,5 @@ def test_entrypoint_docs_make_ten_page_profile_canonical():
         assert "cpu-smoke-10" in text
     assert "docs/upstream-lock.md" in readme
     assert "能力 smoke test" in readme_zh
+    assert "-SeedFrom" in readme and "-SeedFrom" in readme_zh and "-SeedFrom" in agents
+    assert "predictions" in readme and "never copied" in readme

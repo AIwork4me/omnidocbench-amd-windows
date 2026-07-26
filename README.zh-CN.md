@@ -98,6 +98,19 @@ powershell -ExecutionPolicy Bypass -File scripts\reproduce.ps1 `
 能力 smoke test，不是 leaderboard 结果。可执行输入锁见
 [`docs/upstream-lock.md`](docs/upstream-lock.md)。
 
+如果另一 checkout 已有锁定的 dataset/GGUF/layout，可避免重复 bulk 下载，
+同时保持推理和评分为本次新生成：
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts\reproduce.ps1 `
+  -Profile cpu-smoke-10 `
+  -SeedFrom "C:\path\to\existing\locked-checkout" `
+  -SkipCdmSetup
+```
+
+seed 的 source 与 destination 都会完整执行 lock 校验；预测、分数、环境、
+checkout 和 `.env.local` 均不会复制。
+
 <details>
 <summary><strong>手工分阶段搭建</strong></summary>
 

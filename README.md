@@ -107,6 +107,19 @@ upstream inputs, and scores Windows metrics plus WSL CDM. This is a capability
 smoke test, not a leaderboard result. See
 [`docs/upstream-lock.md`](docs/upstream-lock.md) for the executable input lock.
 
+If the locked dataset/GGUF/layout files already exist in another checkout,
+avoid repeating bulk downloads while keeping inference and scoring fresh:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts\reproduce.ps1 `
+  -Profile cpu-smoke-10 `
+  -SeedFrom "C:\path\to\existing\locked-checkout" `
+  -SkipCdmSetup
+```
+
+The seed source and destination are both fully lock-verified; predictions,
+scores, environments, checkouts, and `.env.local` are never copied.
+
 <details>
 <summary><strong>Manual phase-by-phase setup</strong></summary>
 

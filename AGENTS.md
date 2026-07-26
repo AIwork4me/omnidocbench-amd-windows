@@ -73,6 +73,10 @@ It executes the same setup/verify ownership chain below, verifies
 metrics and WSL CDM, and writes resumable state. Use `-Resume` only after an
 interrupted run.
 
+When bulk dataset/GGUF/layout bytes already exist in another checkout, add
+`-SeedFrom <path> -SkipCdmSetup`. The orchestrator verifies source and
+destination locks and still creates fresh predictions and scores.
+
 ### Step 0 — environment + network + WSL  (Windows)
 
 ```powershell

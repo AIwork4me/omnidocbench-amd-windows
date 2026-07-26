@@ -40,7 +40,7 @@ function Join-LiteralPath([string] $Base, [string] $Child) {
     return $Base.TrimEnd('\', '/') + '\' + $Child.TrimStart('\', '/')
 }
 
-function Ensure-ShortRepoRoot([string] $RepoRoot) {
+function Initialize-ShortRepoRoot([string] $RepoRoot) {
     $normalized = [System.IO.Path]::GetFullPath($RepoRoot)
     $sha = [System.Security.Cryptography.SHA256]::Create()
     try {
@@ -57,8 +57,8 @@ function Ensure-ShortRepoRoot([string] $RepoRoot) {
     return $alias
 }
 
-$sourceShortRoot = Ensure-ShortRepoRoot $SourceRoot
-$destinationShortRoot = Ensure-ShortRepoRoot $DestinationRoot
+$sourceShortRoot = Initialize-ShortRepoRoot $SourceRoot
+$destinationShortRoot = Initialize-ShortRepoRoot $DestinationRoot
 
 function Copy-LockedFile([string] $Source, [string] $Destination) {
     $extendedSource = ConvertTo-ExtendedPath $Source

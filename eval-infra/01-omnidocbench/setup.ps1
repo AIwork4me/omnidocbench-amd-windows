@@ -51,7 +51,7 @@ function Test-FileExtended {
     return [System.IO.File]::Exists((ConvertTo-ExtendedPath -Path $Path))
 }
 
-function Ensure-ShortRepoRoot {
+function Initialize-ShortRepoRoot {
     param([string]$RepoRoot)
     $normalizedRoot = [System.IO.Path]::GetFullPath($RepoRoot)
     $sha = [System.Security.Cryptography.SHA256]::Create()
@@ -81,7 +81,7 @@ function Ensure-ShortRepoRoot {
 # Windows PowerShell 5.1 as well as PowerShell 7+.
 $rootDir  = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)  # repo root
 $envFile  = Join-Path $rootDir "mirrors.env"
-$shortRoot = Ensure-ShortRepoRoot -RepoRoot $rootDir
+$shortRoot = Initialize-ShortRepoRoot -RepoRoot $rootDir
 Write-Host "Windows short repository path: $shortRoot" -ForegroundColor DarkGray
 $lockFile = Join-Path $rootDir "upstream-lock.json"
 $lockVerify = Join-Path $rootDir "scripts\verify-upstream-lock.ps1"

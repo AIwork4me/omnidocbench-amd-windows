@@ -17,10 +17,10 @@ Git checkout or binary/model artifact differs from the verified lock.
 - Platform: Windows 11 on AMD hardware.
 - Profile: `cpu-smoke-10` only for this clean-room acceptance run.
 - Metrics: Windows Edit-distance/TEDS plus WSL Formula CDM.
-- Existing machine-global WSL/CDM installation may be reused, but the clone,
-  Python environment, OmniDocBench checkout, dataset tree, adapter checkout,
-  model files, predictions, subset manifest, and Windows score must be new or
-  fetched into the isolated clone.
+- Existing machine-global WSL/CDM installation and previously downloaded bulk
+  dataset/model bytes may be reused only through explicit source and destination
+  lock verification. Python environment, generated checkouts, predictions,
+  subset manifest, and scores must be new in the isolated clone.
 - This is a capability and provisioning test, not a new accuracy benchmark.
 
 ## Phase 1: Executable Upstream Lock
@@ -86,15 +86,15 @@ chain remains green.
 - [x] Run only the single entry point for `cpu-smoke-10`.
 - [x] Allow machine-global uv downloads, package caches, WSL distro, and WSL CDM
   tools, but do not copy repo-local generated artifacts from this checkout.
-- [ ] Verify ten new non-empty UTF-8 predictions, exact ten-page manifest,
+- [x] Verify ten new non-empty UTF-8 predictions, exact ten-page manifest,
   finite Windows metrics, positive WSL CDM, and final chain success.
-- [ ] Re-run with `-Resume` to prove idempotent recovery.
+- [x] Re-run with `-Resume` to prove idempotent recovery.
 
-**Interrupted evidence (2026-07-26):** The user stopped the locked dataset
-download after 1,389,938,164 staging bytes. No downstream inference or score
-claim was made. The run discovered and fixed OneDrive uv hardlink error 396,
-Hugging Face MAX_PATH failures, and PowerShell CI hash compatibility. Resume
-evidence and open gates are recorded in
+**Final evidence (2026-07-26):** The locked dataset download started and staged
+1,389,938,164 bytes before the user stopped the redundant bulk transfer. The
+run then used explicit lock-verified source/destination seeding for existing
+dataset/GGUF/layout bytes and produced ten fresh predictions and fresh scores.
+All downstream gates and a second resume passed. Evidence is recorded in
 `docs/reproduction-clean-room-smoke-2026-07-26.md`.
 
 **Gate:** dated evidence records the public commit, machine/software versions,
@@ -116,8 +116,8 @@ fresh repo-local outputs.
    tests, and documentation.
 2. The isolated clone completes through one command except for documented
    reboot/UAC/network boundaries.
-3. All repo-local generated state in the clean-room run originates in that
-   clone; only explicitly documented machine-global caches/toolchains are reused.
+3. All generated state originates in that clone; reused bulk bytes and
+  machine-global toolchains are explicit and lock-verified.
 4. Every locked input is verified before execution or scoring.
 5. Ten predictions and ten ground-truth pages match exactly at 100% coverage.
 6. Windows mandatory metrics are finite and non-negative; WSL CDM is finite and

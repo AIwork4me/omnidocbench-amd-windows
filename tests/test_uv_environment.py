@@ -41,7 +41,7 @@ def test_omnidocbench_setup_prefers_uv_and_never_uses_unsupported_python():
     assert "Partial dataset detected" in text
     assert "function ConvertTo-ExtendedPath" in text
     assert "Test-FileExtended" in text
-    assert "function Ensure-ShortRepoRoot" in text
+    assert "function Initialize-ShortRepoRoot" in text
     assert "Windows short repository path" in text
     assert '$downloadDataDir = Join-Path (Split-Path -Parent $shortRoot) "dataset-download"' in text
     assert "--local-dir $downloadDataDir" in text
