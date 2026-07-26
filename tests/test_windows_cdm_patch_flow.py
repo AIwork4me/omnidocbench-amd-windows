@@ -786,3 +786,61 @@ def test_user_facing_docs_do_not_describe_cdm_as_wsl_only():
         text = read(REPO_ROOT / relative_path)
         for claim in claims:
             assert claim not in text, f"stale WSL-only CDM claim in {relative_path}: {claim}"
+
+
+def test_fresh_clone_docs_order_wsl_provisioning_before_wsl_preflight():
+    for path in (REPO_ROOT / "README.md", REPO_ROOT / "README.zh-CN.md", REPO_ROOT / "AGENTS.md"):
+        text = read(path)
+        assert text.index("scripts\\wsl-ensure.ps1") < text.index(
+            "scripts\\preflight.ps1 -CdmPath Wsl"
+        ), path
+
+
+def test_fresh_clone_docs_remove_manual_wsl_path_placeholders():
+    for path in (REPO_ROOT / "README.md", REPO_ROOT / "README.zh-CN.md", REPO_ROOT / "AGENTS.md"):
+        text = read(path)
+        assert "$repoWsl" in text
+        assert "/mnt/c/<path-to-repo>" not in text
+        assert "wslpath -a" in text
+
+
+def test_quick_start_verifies_models_and_reuses_predictions_for_cdm():
+    for path in (REPO_ROOT / "README.md", REPO_ROOT / "README.zh-CN.md", REPO_ROOT / "AGENTS.md"):
+        text = read(path)
+        assert "01-vlm-server\\verify.ps1" in text
+        assert "02-layout-model\\verify.ps1" in text
+        assert "score-cdm.sh\" v16-cdm.yaml predictions/paddleocrvl_rocm" in text
+
+
+def test_docs_make_cpu_200_inference_executable_and_score_official_output_explicitly():
+    readme = read(REPO_ROOT / "README.md")
+    readme_zh = read(REPO_ROOT / "README.zh-CN.md")
+    agents = read(REPO_ROOT / "AGENTS.md")
+    for text in (readme, readme_zh):
+        assert "-Variant cpu" in text
+        assert "--out-dir predictions\\paddleocrvl_cpu_860m_200" in text
+        assert "--max-pages 200" in text
+        assert "-not ($gpuNames -match 'AMD|Radeon')" in text
+        inference = text.index("--out-dir predictions\\paddleocrvl_cpu_860m_200")
+        cpu_setup = text[text.rfind("-Variant cpu", 0, inference) : inference]
+        assert "02-layout-model\\setup.ps1" in cpu_setup
+        assert "02-layout-model\\verify.ps1" in cpu_setup
+        assert "00-install-deps\\setup.ps1" in cpu_setup
+        assert "-Config v16-cpu-200.yaml -SaveName" not in text[inference:]
+    assert "v16-official-prettyfalse-full-2026-07-09.yaml" in agents
+    assert "-not ($gpuNames -match 'AMD|Radeon')" in agents
+
+
+def test_verified_machine_results_are_collapsed_by_default():
+    for path, label in (
+        (REPO_ROOT / "README.md", "Verified result on this machine"),
+        (REPO_ROOT / "README.zh-CN.md", "本机已验核结果"),
+    ):
+        text = read(path)
+        summary = f"<summary><strong>{label}</strong></summary>"
+        start = text.index(summary)
+        end = text.index("</details>", start)
+        block = text[text.rfind("<details", 0, start) : end]
+        assert "<details open" not in block
+        assert "ggml-org/llama.cpp#26127" in block
+        assert "96.0949" in block

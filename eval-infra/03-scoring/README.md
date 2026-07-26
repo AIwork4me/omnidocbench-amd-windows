@@ -65,16 +65,16 @@ powershell -ExecutionPolicy Bypass -File eval-infra\03-scoring\score.ps1 -Config
 ### + CDM (WSL compatibility/reference path)
 
 ```powershell
-# In WSL, this repo is at /mnt/c/<your-clone-path>/omnidocbench-amd-windows.
-# Replace the path below with your actual clone location:
+$repoWsl = (wsl -d Ubuntu2204 -- wslpath -a $PWD.Path).Trim()
 # First provision the CDM environment (one-time, ~30 min):
-wsl -d Ubuntu2204 bash /mnt/c/<path-to-repo>/eval-infra/02-cdm-environment/setup.sh
+wsl -d Ubuntu2204 bash "$repoWsl/eval-infra/02-cdm-environment/setup.sh"
 
-# Then score with CDM (uses v16-cdm.yaml; ~40 min on the full set):
-wsl -d Ubuntu2204 bash /mnt/c/<path-to-repo>/eval-infra/03-scoring/score-cdm.sh
+# Then score the default adapter output with CDM (~40 min on the full set):
+wsl -d Ubuntu2204 bash "$repoWsl/eval-infra/03-scoring/score-cdm.sh" `
+  v16-cdm.yaml predictions/paddleocrvl_rocm
 
 # Optional argument 2 overrides prediction.data_path for a custom run:
-wsl -d Ubuntu2204 bash /mnt/c/<path-to-repo>/eval-infra/03-scoring/score-cdm.sh `
+wsl -d Ubuntu2204 bash "$repoWsl/eval-infra/03-scoring/score-cdm.sh" `
   v16-cdm.yaml predictions/my-adapter
 ```
 

@@ -29,7 +29,10 @@
 
 G4 推理加速比: **1.7x** (27 页分层抽样，9 类别、0 结构错配)。 PaddleOCR-VL-ROCm 默认 `vlm_max_workers=8` 即可获得此加速。 | > Overall = (文本准确率 + CDM + TEDS) / 3，其中文本准确率 = (1 − Edit_dist) × 100。阅读顺序不纳入 Overall（布局指标，非内容准确率）。
 
-### 本机已验核结果
+<details>
+<summary><strong>本机已验核结果</strong></summary>
+
+<br>
 
 2026-07-26，一台 Ryzen AI 7 PRO 350 / Radeon 860M 机器完成了严格固定的
 200 页 CPU fallback 运行。这是本机能力证据，**不是** 1651 页 leaderboard
@@ -54,6 +57,8 @@ CPU。该 Windows HIP 打包缺口已提交至上游
 [`ggml-org/llama.cpp#26127`](https://github.com/ggml-org/llama.cpp/issues/26127)；
 本地复现细节见
 [`docs/llama-cpp-radeon-860m-gfx1152-issue-draft-2026-07-26.md`](docs/llama-cpp-radeon-860m-gfx1152-issue-draft-2026-07-26.md)。
+
+</details>
 
 ## 系统需求
 
@@ -87,25 +92,28 @@ winget install --id astral-sh.uv -e
 uv python install 3.11
 uv sync --locked --all-groups
 powershell -ExecutionPolicy Bypass -File scripts\detect-mirrors.ps1
-powershell -ExecutionPolicy Bypass -File scripts\preflight.ps1 -CdmPath Wsl -Variant hip
 powershell -ExecutionPolicy Bypass -File scripts\wsl-ensure.ps1
+# 官方 Windows HIP 二进制不含 Radeon 860M/gfx1152，因此该机型自动选 CPU。
+$gpuNames = @(Get-CimInstance Win32_VideoController | ForEach-Object Name)
+$useCpu = ($gpuNames -match 'Radeon.*860M') -or -not ($gpuNames -match 'AMD|Radeon')
+$variant = if ($useCpu) { 'cpu' } else { 'hip' }
+powershell -ExecutionPolicy Bypass -File scripts\preflight.ps1 -CdmPath Wsl -Variant $variant
+$repoWsl = (wsl -d Ubuntu2204 -- wslpath -a $PWD.Path).Trim()
 
 # 步骤 1：OmniDocBench 代码 + 数据集
 powershell -ExecutionPolicy Bypass -File eval-infra\01-omnidocbench\setup.ps1
 powershell -ExecutionPolicy Bypass -File eval-infra\01-omnidocbench\verify.ps1
 
-# 可选的原生 CDM 验证（optional；需要本机 TeX Live、ImageMagick 和 Ghostscript）。
-# 使用下方 WSL 兼容/参考路径时跳过此项。
-powershell -ExecutionPolicy Bypass -File eval-infra\02-cdm-environment\verify-windows.ps1
-
 # 步骤 2：CDM 环境（WSL 兼容/参考路径）
-# 把 /mnt/c/<path-to-repo> 换成你 clone 的 WSL 路径。
-wsl -d Ubuntu2204 bash /mnt/c/<path-to-repo>/eval-infra/02-cdm-environment/setup.sh
-wsl -d Ubuntu2204 bash /mnt/c/<path-to-repo>/eval-infra/02-cdm-environment/verify.sh
+wsl -d Ubuntu2204 bash "$repoWsl/eval-infra/02-cdm-environment/setup.sh"
+wsl -d Ubuntu2204 bash "$repoWsl/eval-infra/02-cdm-environment/verify.sh"
 
 # 步骤 3：参考适配器（PaddleOCR-VL-1.6）
-powershell -ExecutionPolicy Bypass -File adapters\paddleocr-vl-1.6\01-vlm-server\setup.ps1 -Variant hip
+# CPU 用户可改用下方 200 页路径，避免直接执行 1651 页全量推理。
+powershell -ExecutionPolicy Bypass -File adapters\paddleocr-vl-1.6\01-vlm-server\setup.ps1 -Variant $variant
+powershell -ExecutionPolicy Bypass -File adapters\paddleocr-vl-1.6\01-vlm-server\verify.ps1
 powershell -ExecutionPolicy Bypass -File adapters\paddleocr-vl-1.6\02-layout-model\setup.ps1
+powershell -ExecutionPolicy Bypass -File adapters\paddleocr-vl-1.6\02-layout-model\verify.ps1
 powershell -ExecutionPolicy Bypass -File adapters\paddleocr-vl-1.6\00-install-deps\setup.ps1
 .\.venv\Scripts\python.exe adapters\paddleocr-vl-1.6\run_adapter.py `
     --img-dir  eval-infra\01-omnidocbench\data\images `
@@ -113,20 +121,30 @@ powershell -ExecutionPolicy Bypass -File adapters\paddleocr-vl-1.6\00-install-de
 
 # 步骤 4：评分 + 最终验证
 powershell -ExecutionPolicy Bypass -File eval-infra\03-scoring\score.ps1
-# 原生 Windows CDM 路径：verify-windows.ps1 通过后运行：
-powershell -ExecutionPolicy Bypass -File eval-infra\03-scoring\score.ps1 -Config v16-cdm.yaml
-# WSL CDM 兼容/参考路径：
-wsl -d Ubuntu2204 bash /mnt/c/<path-to-repo>/eval-infra/03-scoring/score-cdm.sh
-powershell -ExecutionPolicy Bypass -File eval-infra\03-scoring\verify.ps1
-# 或一次性跑完：
-powershell -ExecutionPolicy Bypass -File scripts\full-verify.ps1
+powershell -ExecutionPolicy Bypass -File eval-infra\03-scoring\verify.ps1 `
+  -WindowsOnly -SaveName paddleocrvl_rocm_quick_match
+wsl -d Ubuntu2204 bash "$repoWsl/eval-infra/03-scoring/score-cdm.sh" v16-cdm.yaml predictions/paddleocrvl_rocm
+powershell -ExecutionPolicy Bypass -File eval-infra\03-scoring\verify.ps1 `
+  -WslOnly -RequireCdm -SaveName paddleocrvl_rocm_quick_match
+powershell -ExecutionPolicy Bypass -File scripts\full-verify.ps1 `
+  -PredictionDir predictions\paddleocrvl_rocm `
+  -ScoreSaveName paddleocrvl_rocm_quick_match
 ```
 
 受限硬件可使用 `v16-cpu-200.yaml` 与 `v16-cdm-cpu-200.yaml` 的显式 200 页
-能力路径。推理产生至少 200 个可用预测后，生成与预测一一对应的 GT 子集，
-验证输出合同，再对显式配置评分：
+能力路径。用它替代全量步骤 3 推理，启动 CPU server，并确定性地在 200 张图
+后停止：
 
 ```powershell
+powershell -ExecutionPolicy Bypass -File adapters\paddleocr-vl-1.6\01-vlm-server\setup.ps1 -Variant cpu
+powershell -ExecutionPolicy Bypass -File adapters\paddleocr-vl-1.6\01-vlm-server\verify.ps1
+powershell -ExecutionPolicy Bypass -File adapters\paddleocr-vl-1.6\02-layout-model\setup.ps1
+powershell -ExecutionPolicy Bypass -File adapters\paddleocr-vl-1.6\02-layout-model\verify.ps1
+powershell -ExecutionPolicy Bypass -File adapters\paddleocr-vl-1.6\00-install-deps\setup.ps1
+.\.venv\Scripts\python.exe adapters\paddleocr-vl-1.6\run_adapter.py `
+  --img-dir eval-infra\01-omnidocbench\data\images `
+  --out-dir predictions\paddleocrvl_cpu_860m_200 `
+  --max-pages 200
 .\.venv\Scripts\python.exe scripts\build_prediction_subset.py `
   --full-manifest eval-infra\01-omnidocbench\data\OmniDocBench.json `
   --pred-dir predictions\paddleocrvl_cpu_860m_200 `
@@ -137,13 +155,13 @@ powershell -ExecutionPolicy Bypass -File scripts\full-verify.ps1
   --pred-dir predictions\paddleocrvl_cpu_860m_200 `
   --min-coverage 1.0
 powershell -ExecutionPolicy Bypass -File eval-infra\03-scoring\score.ps1 `
-  -Config v16-cpu-200.yaml -SaveName paddleocrvl_cpu_860m_200
+  -Config v16-cpu-200.yaml
 ```
 
 WSL CDM 使用同一预测目录与 CDM 配置，最终验证显式绑定到本次产物：
 
 ```powershell
-wsl -d Ubuntu2204 bash ./eval-infra/03-scoring/score-cdm.sh `
+wsl -d Ubuntu2204 bash "$repoWsl/eval-infra/03-scoring/score-cdm.sh" `
   v16-cdm-cpu-200.yaml `
   predictions/paddleocrvl_cpu_860m_200
 powershell -ExecutionPolicy Bypass -File scripts\full-verify.ps1 `
@@ -161,6 +179,8 @@ Windows 原生 CDM 已受支持：`eval-infra/01-omnidocbench/setup.ps1` 会自�
 TeX Live、ImageMagick 和 Ghostscript。WSL CDM 仍保留为兼容和 reference 路径；
 选择 WSL 的用户无需进行原生 CDM 验证。
 `scripts/full-verify.ps1` 只有在显式传入 `-WindowsCdm` 时才检查原生路径。
+
+可选的原生 CDM 验证独立于 WSL 快速开始路径。
 
 如果用 PaddleOCR 官方 `PaddleOCRVL` engine 跑基准评测，请用
 `_to_markdown(pretty=False)` 导出评测型 Markdown。默认 pretty Markdown

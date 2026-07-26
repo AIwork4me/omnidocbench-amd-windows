@@ -91,6 +91,15 @@ def expected_md_name(image_name: str) -> str:
     return Path(image_name).stem + ".md"
 
 
+def _select_images(img_dir: Path, max_pages: int | None = None) -> list[Path]:
+    images = sorted(p for p in img_dir.iterdir() if p.suffix.lower() in IMAGE_EXTENSIONS)
+    if max_pages is None:
+        return images
+    if max_pages <= 0:
+        raise ValueError("max_pages must be positive")
+    return images[:max_pages]
+
+
 def process_folder(
     img_dir: Path,
     out_dir: Path,
@@ -99,6 +108,7 @@ def process_folder(
     server_url: str,
     api_model_name: str,
     vlm_backend: str = "vllm-server",
+    max_pages: int | None = None,
 ) -> dict:
     return run_lightweight_folder(
         img_dir=img_dir,
@@ -107,6 +117,7 @@ def process_folder(
         server_url=server_url,
         api_model_name=api_model_name,
         vlm_backend=vlm_backend,
+        max_pages=max_pages,
     )
 
 
@@ -118,6 +129,7 @@ def run_lightweight_folder(
     server_url: str,
     api_model_name: str,
     vlm_backend: str = "vllm-server",
+    max_pages: int | None = None,
 ) -> dict:
     """Run the pipeline over every image in ``img_dir`` and write per-page ``.md``.
 
@@ -139,7 +151,7 @@ def run_lightweight_folder(
     )
     out_dir.mkdir(parents=True, exist_ok=True)
     stats: list[dict] = []
-    images = sorted(p for p in img_dir.iterdir() if p.suffix.lower() in IMAGE_EXTENSIONS)
+    images = _select_images(img_dir, max_pages)
     for img in images:
         start = time.time()
         try:
@@ -306,6 +318,7 @@ def run_official_folder(
     api_model_name: str,
     page_retries: int = 1,
     fallback_pred_dir: Path | None = None,
+    max_pages: int | None = None,
 ) -> dict:
     if not img_dir.is_dir():
         raise SystemExit(f"Image directory not found: {img_dir}")
@@ -330,7 +343,7 @@ def run_official_folder(
     stats_path.unlink(missing_ok=True)
 
     stats: list[dict] = []
-    images = sorted(p for p in img_dir.iterdir() if p.suffix.lower() in IMAGE_EXTENSIONS)
+    images = _select_images(img_dir, max_pages)
     try:
         page_retries = max(0, int(page_retries))
     except (TypeError, ValueError):
@@ -449,6 +462,7 @@ def run_adapter(
     vlm_backend: str = "vllm-server",
     page_retries: int = 1,
     fallback_pred_dir: str | Path | None = None,
+    max_pages: int | None = None,
 ) -> dict:
     """Adapter interface contract: images -> one ``<stem>.md`` per page.
 
@@ -514,6 +528,7 @@ def run_adapter(
             server_url=resolved_server,
             api_model_name=default_api_model,
             vlm_backend=vlm_backend,
+            max_pages=max_pages,
         )
     if engine == "official":
         return run_official_folder(
@@ -523,6 +538,7 @@ def run_adapter(
             api_model_name=default_api_model,
             page_retries=page_retries,
             fallback_pred_dir=Path(fallback_pred_dir) if fallback_pred_dir else None,
+            max_pages=max_pages,
         )
     raise ValueError("Unsupported engine '%s'. Use lightweight or official." % engine)
 
@@ -560,6 +576,12 @@ def main() -> None:
         default=os.environ.get("PADDLEOCR_VL_FALLBACK_PRED_DIR"),
         help="Optional existing prediction dir to copy from when official retries still fail.",
     )
+    parser.add_argument(
+        "--max-pages",
+        type=int,
+        default=None,
+        help="Process only the first N images in deterministic filename order.",
+    )
     args = parser.parse_args()
 
     # Route through the documented contract (run_adapter) when no advanced
@@ -575,6 +597,7 @@ def main() -> None:
             engine=args.engine,
             page_retries=args.page_retries,
             fallback_pred_dir=args.fallback_pred_dir,
+            max_pages=args.max_pages,
         )
     else:
         summary = run_adapter(
@@ -587,6 +610,7 @@ def main() -> None:
             vlm_backend=args.vlm_backend,
             page_retries=args.page_retries,
             fallback_pred_dir=args.fallback_pred_dir,
+            max_pages=args.max_pages,
         )
     print(summary)
 

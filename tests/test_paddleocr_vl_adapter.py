@@ -76,6 +76,41 @@ def test_expected_md_name_preserves_stem():
     assert adapter.expected_md_name("abc.page-01.png") == "abc.page-01.md"
 
 
+def test_select_images_applies_deterministic_positive_limit(tmp_path):
+    adapter = load_adapter()
+    for name in ("c.png", "a.png", "b.jpg", "ignored.txt"):
+        (tmp_path / name).write_bytes(b"fake")
+
+    assert [path.name for path in adapter._select_images(tmp_path, 2)] == ["a.png", "b.jpg"]
+
+    try:
+        adapter._select_images(tmp_path, 0)
+    except ValueError as error:
+        assert str(error) == "max_pages must be positive"
+    else:
+        raise AssertionError("zero max_pages should fail")
+
+
+def test_run_adapter_passes_page_limit_to_both_engines(tmp_path, monkeypatch):
+    adapter = load_adapter()
+    img_dir = tmp_path / "images"
+    out_dir = tmp_path / "pred"
+    img_dir.mkdir()
+    calls = []
+
+    def fake_folder(**kwargs):
+        calls.append(kwargs)
+        return {"count": 0, "ok": 0, "fail": 0}
+
+    monkeypatch.setattr(adapter, "run_lightweight_folder", fake_folder)
+    monkeypatch.setattr(adapter, "run_official_folder", fake_folder)
+
+    adapter.run_adapter(img_dir, out_dir, engine="lightweight", max_pages=200)
+    adapter.run_adapter(img_dir, out_dir, engine="official", max_pages=200)
+
+    assert [call["max_pages"] for call in calls] == [200, 200]
+
+
 def test_repo_paths_are_routed_through_windows_short_alias(monkeypatch):
     adapter = load_adapter()
     calls = []

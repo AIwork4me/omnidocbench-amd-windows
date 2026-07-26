@@ -58,12 +58,11 @@ powershell -ExecutionPolicy Bypass -File verify-windows.ps1
 Or use the WSL compatibility/reference path:
 
 ```powershell
-# In WSL, this repo is at /mnt/c/<your-clone-path>/omnidocbench-amd-windows.
-# Replace the path below with your actual clone location:
-wsl -d Ubuntu2204 bash /mnt/c/<path-to-repo>/eval-infra/02-cdm-environment/setup.sh
+$repoWsl = (wsl -d Ubuntu2204 -- wslpath -a $PWD.Path).Trim()
+wsl -d Ubuntu2204 bash "$repoWsl/eval-infra/02-cdm-environment/setup.sh"
 
 # Verify it works (should print "VERIFY OK: CDM environment fully functional.").
-wsl -d Ubuntu2204 bash /mnt/c/<path-to-repo>/eval-infra/02-cdm-environment/verify.sh
+wsl -d Ubuntu2204 bash "$repoWsl/eval-infra/02-cdm-environment/verify.sh"
 ```
 
 `setup.sh` reads `../../mirrors.env` (produced by `scripts/detect-mirrors.ps1`)

@@ -32,7 +32,10 @@ model via [adapters](adapters/). PaddleOCR-VL-1.6 ships as the validated referen
 > G4 inference speedup: **1.7x** (27-page stratified benchmark, 9 categories, 0 structural mismatches). The default `vlm_max_workers=8` in PaddleOCR-VL-ROCm enables this automatically. | Overall = (Text accuracy + CDM + TEDS) / 3, where Text accuracy = (1 − Edit_dist) × 100.
 > Reading order is excluded from Overall (layout metric, not content accuracy).
 
-### Verified result on this machine
+<details>
+<summary><strong>Verified result on this machine</strong></summary>
+
+<br>
 
 On 2026-07-26, a Ryzen AI 7 PRO 350 / Radeon 860M machine completed an exact
 200-page CPU fallback run. This is machine-capability evidence, **not** a
@@ -59,6 +62,8 @@ gap has been reported upstream as
 [`ggml-org/llama.cpp#26127`](https://github.com/ggml-org/llama.cpp/issues/26127);
 local reproduction details are in
 [`docs/llama-cpp-radeon-860m-gfx1152-issue-draft-2026-07-26.md`](docs/llama-cpp-radeon-860m-gfx1152-issue-draft-2026-07-26.md).
+
+</details>
 
 ## System Requirements
 
@@ -96,25 +101,28 @@ winget install --id astral-sh.uv -e
 uv python install 3.11
 uv sync --locked --all-groups
 powershell -ExecutionPolicy Bypass -File scripts\detect-mirrors.ps1
-powershell -ExecutionPolicy Bypass -File scripts\preflight.ps1 -CdmPath Wsl -Variant hip
 powershell -ExecutionPolicy Bypass -File scripts\wsl-ensure.ps1
+# Official Windows HIP binaries omit Radeon 860M/gfx1152, so select CPU there.
+$gpuNames = @(Get-CimInstance Win32_VideoController | ForEach-Object Name)
+$useCpu = ($gpuNames -match 'Radeon.*860M') -or -not ($gpuNames -match 'AMD|Radeon')
+$variant = if ($useCpu) { 'cpu' } else { 'hip' }
+powershell -ExecutionPolicy Bypass -File scripts\preflight.ps1 -CdmPath Wsl -Variant $variant
+$repoWsl = (wsl -d Ubuntu2204 -- wslpath -a $PWD.Path).Trim()
 
 # Step 1: OmniDocBench code + dataset
 powershell -ExecutionPolicy Bypass -File eval-infra\01-omnidocbench\setup.ps1
 powershell -ExecutionPolicy Bypass -File eval-infra\01-omnidocbench\verify.ps1
 
-# Optional native-CDM verification (requires native TeX Live, ImageMagick, and Ghostscript).
-# Skip this when using the WSL compatibility/reference path below.
-powershell -ExecutionPolicy Bypass -File eval-infra\02-cdm-environment\verify-windows.ps1
-
 # Step 2: CDM environment (WSL compatibility/reference path)
-# Replace /mnt/c/<path-to-repo> with your clone's WSL path.
-wsl -d Ubuntu2204 bash /mnt/c/<path-to-repo>/eval-infra/02-cdm-environment/setup.sh
-wsl -d Ubuntu2204 bash /mnt/c/<path-to-repo>/eval-infra/02-cdm-environment/verify.sh
+wsl -d Ubuntu2204 bash "$repoWsl/eval-infra/02-cdm-environment/setup.sh"
+wsl -d Ubuntu2204 bash "$repoWsl/eval-infra/02-cdm-environment/verify.sh"
 
 # Step 3: reference adapter (PaddleOCR-VL-1.6)
-powershell -ExecutionPolicy Bypass -File adapters\paddleocr-vl-1.6\01-vlm-server\setup.ps1 -Variant hip
+# CPU users can choose the 200-page path below instead of this full 1651-page run.
+powershell -ExecutionPolicy Bypass -File adapters\paddleocr-vl-1.6\01-vlm-server\setup.ps1 -Variant $variant
+powershell -ExecutionPolicy Bypass -File adapters\paddleocr-vl-1.6\01-vlm-server\verify.ps1
 powershell -ExecutionPolicy Bypass -File adapters\paddleocr-vl-1.6\02-layout-model\setup.ps1
+powershell -ExecutionPolicy Bypass -File adapters\paddleocr-vl-1.6\02-layout-model\verify.ps1
 powershell -ExecutionPolicy Bypass -File adapters\paddleocr-vl-1.6\00-install-deps\setup.ps1
 .\.venv\Scripts\python.exe adapters\paddleocr-vl-1.6\run_adapter.py `
     --img-dir  eval-infra\01-omnidocbench\data\images `
@@ -122,21 +130,30 @@ powershell -ExecutionPolicy Bypass -File adapters\paddleocr-vl-1.6\00-install-de
 
 # Step 4: scoring + final verification
 powershell -ExecutionPolicy Bypass -File eval-infra\03-scoring\score.ps1
-# Native CDM path, after verify-windows.ps1 passes:
-powershell -ExecutionPolicy Bypass -File eval-infra\03-scoring\score.ps1 -Config v16-cdm.yaml
-# WSL CDM compatibility/reference path:
-wsl -d Ubuntu2204 bash /mnt/c/<path-to-repo>/eval-infra/03-scoring/score-cdm.sh
-powershell -ExecutionPolicy Bypass -File eval-infra\03-scoring\verify.ps1
-# Or all-at-once:
-powershell -ExecutionPolicy Bypass -File scripts\full-verify.ps1
+powershell -ExecutionPolicy Bypass -File eval-infra\03-scoring\verify.ps1 `
+  -WindowsOnly -SaveName paddleocrvl_rocm_quick_match
+wsl -d Ubuntu2204 bash "$repoWsl/eval-infra/03-scoring/score-cdm.sh" v16-cdm.yaml predictions/paddleocrvl_rocm
+powershell -ExecutionPolicy Bypass -File eval-infra\03-scoring\verify.ps1 `
+  -WslOnly -RequireCdm -SaveName paddleocrvl_rocm_quick_match
+powershell -ExecutionPolicy Bypass -File scripts\full-verify.ps1 `
+  -PredictionDir predictions\paddleocrvl_rocm `
+  -ScoreSaveName paddleocrvl_rocm_quick_match
 ```
 
 For constrained hardware, `v16-cpu-200.yaml` and `v16-cdm-cpu-200.yaml` provide
-an explicit 200-page capability path. After inference has produced at least 200
-usable predictions, build the exact matching GT subset, validate it, and score
-that explicit config:
+an explicit 200-page capability path. Choose this instead of the full Step 3
+inference, provision the CPU server, and stop deterministically after 200 images:
 
 ```powershell
+powershell -ExecutionPolicy Bypass -File adapters\paddleocr-vl-1.6\01-vlm-server\setup.ps1 -Variant cpu
+powershell -ExecutionPolicy Bypass -File adapters\paddleocr-vl-1.6\01-vlm-server\verify.ps1
+powershell -ExecutionPolicy Bypass -File adapters\paddleocr-vl-1.6\02-layout-model\setup.ps1
+powershell -ExecutionPolicy Bypass -File adapters\paddleocr-vl-1.6\02-layout-model\verify.ps1
+powershell -ExecutionPolicy Bypass -File adapters\paddleocr-vl-1.6\00-install-deps\setup.ps1
+.\.venv\Scripts\python.exe adapters\paddleocr-vl-1.6\run_adapter.py `
+  --img-dir eval-infra\01-omnidocbench\data\images `
+  --out-dir predictions\paddleocrvl_cpu_860m_200 `
+  --max-pages 200
 .\.venv\Scripts\python.exe scripts\build_prediction_subset.py `
   --full-manifest eval-infra\01-omnidocbench\data\OmniDocBench.json `
   --pred-dir predictions\paddleocrvl_cpu_860m_200 `
@@ -147,14 +164,14 @@ that explicit config:
   --pred-dir predictions\paddleocrvl_cpu_860m_200 `
   --min-coverage 1.0
 powershell -ExecutionPolicy Bypass -File eval-infra\03-scoring\score.ps1 `
-  -Config v16-cpu-200.yaml -SaveName paddleocrvl_cpu_860m_200
+  -Config v16-cpu-200.yaml
 ```
 
 For WSL CDM, pass the same prediction directory and CDM config to
 `score-cdm.sh`, then bind final verification to the exact artifacts:
 
 ```powershell
-wsl -d Ubuntu2204 bash ./eval-infra/03-scoring/score-cdm.sh `
+wsl -d Ubuntu2204 bash "$repoWsl/eval-infra/03-scoring/score-cdm.sh" `
   v16-cdm-cpu-200.yaml `
   predictions/paddleocrvl_cpu_860m_200
 powershell -ExecutionPolicy Bypass -File scripts\full-verify.ps1 `
@@ -174,6 +191,8 @@ requires native TeX Live, ImageMagick, and Ghostscript. WSL CDM remains the
 compatibility/reference path; users choosing WSL do not need native-CDM
 verification. `scripts/full-verify.ps1` runs the native check only with the
 explicit `-WindowsCdm` opt-in.
+
+Optional native-CDM verification is separate from the WSL quick-start path.
 
 For benchmark scoring with PaddleOCR's official `PaddleOCRVL` engine, export
 evaluation-oriented Markdown with `_to_markdown(pretty=False)`. The default
