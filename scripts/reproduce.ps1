@@ -83,6 +83,17 @@ function Save-State {
     Move-Item -LiteralPath $temp -Destination $stateFile -Force
 }
 
+trap {
+    if ($state.status -eq "running") {
+        $state.status = "interrupted"
+        $state.interrupted_at = (Get-Date).ToUniversalTime().ToString("o")
+        $state.interruption_reason = $_.Exception.Message
+        $state.resume_command = "powershell -ExecutionPolicy Bypass -File scripts\reproduce.ps1 -Profile $RunProfile -Resume"
+        Save-State
+    }
+    throw
+}
+
 function Assert-LastExit([string] $Label) {
     if ($LASTEXITCODE -ne 0) { throw "$Label exited $LASTEXITCODE" }
 }

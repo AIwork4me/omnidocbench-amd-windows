@@ -32,6 +32,11 @@ def test_lock_has_immutable_git_and_huggingface_revisions():
     for name in ("vlm", "layout", "dataset"):
         assert len(lock["huggingface"][name]["revision"]) == 40
 
+    verifier = VERIFY.read_text(encoding="utf-8")
+    assert "[System.Security.Cryptography.SHA256]::Create()" in verifier
+    assert "[System.IO.File]::OpenRead" in verifier
+    assert "Get-FileHash" not in verifier
+
 
 def test_file_verifier_accepts_exact_bytes_and_rejects_corruption(tmp_path: Path):
     artifact = tmp_path / "artifact.bin"

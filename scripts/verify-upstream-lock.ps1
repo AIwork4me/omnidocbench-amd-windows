@@ -21,6 +21,20 @@ if ([string]::IsNullOrWhiteSpace($LockFile)) { $LockFile = Join-Path $rootDir "u
 if (-not (Test-Path -LiteralPath $LockFile -PathType Leaf)) { throw "Upstream lock missing: $LockFile" }
 $lock = Get-Content -Raw -Encoding UTF8 -LiteralPath $LockFile | ConvertFrom-Json
 
+function Get-Sha256Hex {
+    param([string] $FilePath)
+    $sha = [System.Security.Cryptography.SHA256]::Create()
+    $stream = $null
+    try {
+        $stream = [System.IO.File]::OpenRead($FilePath)
+        $bytes = $sha.ComputeHash($stream)
+        return ([System.BitConverter]::ToString($bytes) -replace "-", "").ToLowerInvariant()
+    } finally {
+        if ($null -ne $stream) { $stream.Dispose() }
+        $sha.Dispose()
+    }
+}
+
 function Assert-LockedFile {
     param([string] $Name, [string] $FilePath, $Entry)
     if ([string]::IsNullOrWhiteSpace([string]$Entry.sha256) -or $null -eq $Entry.bytes) {
@@ -31,7 +45,7 @@ function Assert-LockedFile {
     if ([long]$item.Length -ne [long]$Entry.bytes) {
         throw "$Name size mismatch: expected $($Entry.bytes), actual $($item.Length): $FilePath"
     }
-    $actual = (Get-FileHash -LiteralPath $FilePath -Algorithm SHA256).Hash.ToLowerInvariant()
+    $actual = Get-Sha256Hex -FilePath $FilePath
     $expected = ([string]$Entry.sha256).ToLowerInvariant()
     if ($actual -ne $expected) {
         throw "$Name SHA-256 mismatch: expected $expected, actual ${actual}: $FilePath"
