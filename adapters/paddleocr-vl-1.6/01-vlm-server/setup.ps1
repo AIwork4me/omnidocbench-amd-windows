@@ -181,6 +181,20 @@ if ($SkipDownload) {
 # ===========================================================================
 $envLocal = Get-DotEnv $envFile
 $mainGguf = $envLocal["PADDLEOCR_VL_GGUF"]
+$lockedMainGguf = Join-Path $vlmModelDir "PaddleOCR-VL-1.6-GGUF.gguf"
+$lockedMmproj = Join-Path $vlmModelDir "PaddleOCR-VL-1.6-GGUF-mmproj.gguf"
+if ((-not $mainGguf -or -not (Test-Path -LiteralPath $mainGguf)) -and
+    (Test-Path -LiteralPath $lockedMainGguf) -and (Test-Path -LiteralPath $lockedMmproj)) {
+    & powershell -ExecutionPolicy Bypass -File $lockVerify -Component Vlm -Path $vlmModelDir
+    if ($LASTEXITCODE -ne 0) { throw "Seeded VLM model does not match upstream-lock.json" }
+    $mainGguf = $lockedMainGguf
+    Set-DotEnv -Path $envFile -Values @{
+        PADDLEOCR_VL_GGUF = $lockedMainGguf
+        PADDLEOCR_VL_MMPROJ = $lockedMmproj
+        VL_REC_API_MODEL_NAME = (Split-Path $lockedMainGguf -Leaf)
+    }
+    Write-Host "[2/3] Adopted lock-verified seeded GGUF files and rebuilt .env.local." -ForegroundColor Green
+}
 if ($SkipDownload) {
     Write-Host "[2/3] Skipping weights download (-SkipDownload)." -ForegroundColor Yellow
 } elseif ($mainGguf -and (Test-Path $mainGguf) -and -not $Force) {

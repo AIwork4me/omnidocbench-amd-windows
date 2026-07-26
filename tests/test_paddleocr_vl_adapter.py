@@ -280,6 +280,8 @@ def test_vlm_setup_verifies_locked_archive_and_model_files():
     assert "LlamaHipZip" in text and "LlamaCpuZip" in text
     assert "-Component $llamaComponent -Path $zip" in text
     assert "-Component Vlm -Path $vlmModelDir" in text
+    assert "Adopted lock-verified seeded GGUF files" in text
+    assert "PADDLEOCR_VL_MMPROJ = $lockedMmproj" in text
 
 
 def test_vlm_setup_uses_served_gguf_path_as_api_model_id():
