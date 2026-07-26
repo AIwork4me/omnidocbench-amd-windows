@@ -28,4 +28,5 @@ dependencies = [
 dev = [
     "psutil>=7.0",
     "pytest>=9.0",
+    "tomli>=2.0; python_version < '3.11'",
 ]

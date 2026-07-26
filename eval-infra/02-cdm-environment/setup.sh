@@ -43,8 +43,14 @@ step 1 "apt base CDM deps (texlive-lang-cjk/chinese + imagemagick + ghostscript)
 dpkg -s texlive-lang-chinese >/dev/null 2>&1 && ok "already installed" || {
     apt-get update -qq && DEBIAN_FRONTEND=noninteractive apt-get install -y -qq \
         texlive-lang-cjk texlive-lang-chinese texlive-latex-extra texlive-fonts-recommended \
-        texlive-science imagemagick ghostscript curl perl git >/dev/null 2>&1
+        texlive-science imagemagick ghostscript curl perl git python3-venv >/dev/null 2>&1
     ok "apt deps installed"
+}
+# The primary dpkg sentinel predates python3-venv, so existing installations
+# need a separate idempotent check when this prerequisite is added later.
+dpkg -s python3-venv >/dev/null 2>&1 || {
+    DEBIAN_FRONTEND=noninteractive apt-get install -y -qq python3-venv >/dev/null 2>&1
+    ok "python3-venv installed"
 }
 
 # ── Step 2: Install TeX Live 2026 (official, for \mathcolor + complete CJK) ──
@@ -137,13 +143,35 @@ step 5 "ImageMagick 7 (IM6 renders color-coded formulas as grayscale → CDM fai
 if magick --version 2>/dev/null | grep -q "ImageMagick 7"; then ok "IM7 already active"
 else
     cd "$HOME"
-    if [ ! -f magick7.AppImage ] || [ "$(stat -c%s magick7.AppImage 2>/dev/null || echo 0)" -lt 10000000 ]; then
-        PROXY="${GITHUB_PROXY:-https://ghproxy.net}"
-        curl -sL --retry 3 --retry-delay 5 -m 300 -o magick7.AppImage "$PROXY/https://github.com/ImageMagick/ImageMagick/releases/download/7.1.2-26/ImageMagick-7.1.2-26-gcc-x86_64.AppImage"
+    IM7_URL="https://github.com/ImageMagick/ImageMagick/releases/download/7.1.2-26/ImageMagick-7.1.2-26-gcc-x86_64.AppImage"
+    appimage_valid() {
+        [ -f "$1" ] \
+            && [ "$(stat -c%s "$1" 2>/dev/null || echo 0)" -ge 30000000 ] \
+            && [ "$(od -An -tx1 -N4 "$1" 2>/dev/null | tr -d ' \n')" = "7f454c46" ]
+    }
+    if ! appimage_valid magick7.AppImage; then
+        rm -f magick7.AppImage.part
+        IM7_SOURCES=("$IM7_URL")
+        if [ -n "${GITHUB_PROXY:-}" ]; then IM7_SOURCES+=("${GITHUB_PROXY%/}/$IM7_URL"); fi
+        downloaded=false
+        for source_url in "${IM7_SOURCES[@]}"; do
+            echo "  downloading IM7 from $source_url"
+            if curl -fL --retry 3 --retry-delay 5 -m 300 -o magick7.AppImage.part "$source_url" \
+                && appimage_valid magick7.AppImage.part; then
+                mv -f magick7.AppImage.part magick7.AppImage
+                downloaded=true
+                break
+            fi
+            rm -f magick7.AppImage.part
+        done
+        $downloaded || fail "IM7 AppImage download is truncated or invalid"
     fi
     chmod +x magick7.AppImage
     rm -rf squashfs-root
-    ./magick7.AppImage --appimage-extract >/dev/null 2>&1
+    ./magick7.AppImage --appimage-extract >/root/im7-extract.log 2>&1 || {
+        tail -40 /root/im7-extract.log >&2
+        fail "IM7 AppImage extraction"
+    }
     # Install system-wide (avoids LD_LIBRARY_PATH shadowing gs)
     cp squashfs-root/usr/bin/magick /usr/local/bin/magick7
     mkdir -p /usr/local/lib/im7
@@ -243,19 +271,31 @@ fi
 
 # ── Step 9: Python venv + OmniDocBench deps ──
 step 9 "Python venv + OmniDocBench dependencies"
-if [ ! -d "$ODB_VENV" ]; then
+if [ ! -x "$ODB_VENV/bin/python" ]; then
+    if [ -d "$ODB_VENV" ]; then
+        rm -rf "$ODB_VENV"
+        ok "removed incomplete venv"
+    fi
     python3 -m venv "$ODB_VENV"
+    ok "venv created at $ODB_VENV"
+else
+    ok "venv already exists at $ODB_VENV"
+fi
+IMPORT_PROBE="import apted, bs4, evaluate, Levenshtein, lxml, numpy, pandas, PIL, pylatexenc, yaml"
+if ! "$ODB_VENV/bin/python" -c "$IMPORT_PROBE" >/dev/null 2>&1; then
+    "$ODB_VENV/bin/python" -m pip --version >/dev/null 2>&1 \
+        || "$ODB_VENV/bin/python" -m ensurepip --upgrade >/dev/null 2>&1
     # PyPI index: honour PYPI_INDEX from mirrors.env (written by
     # detect-mirrors.ps1) so a China-network machine uses Tsinghua and an
     # open-egress machine uses pypi.org. Fall back to Tsinghua if unset.
     PYPI_MIRROR="${PYPI_INDEX:-https://pypi.tuna.tsinghua.edu.cn/simple}"
-    "$ODB_VENV/bin/pip" install -q -i "$PYPI_MIRROR" \
+    "$ODB_VENV/bin/python" -m pip install -q -i "$PYPI_MIRROR" \
         apted beautifulsoup4 evaluate func-timeout Levenshtein loguru lxml numpy pandas \
         Pillow pylatexenc PyYAML scipy tabulate tqdm nltk matplotlib
-    ok "venv + deps installed (index: $PYPI_MIRROR) at $ODB_VENV"
-else
-    ok "venv already exists at $ODB_VENV"
+    ok "venv dependencies synchronized (index: $PYPI_MIRROR)"
 fi
+"$ODB_VENV/bin/python" -c "$IMPORT_PROBE" \
+    && ok "venv imports verified" || fail "venv dependency imports"
 
 echo ""
 echo "========================================"

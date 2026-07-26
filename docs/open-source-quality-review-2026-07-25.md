@@ -153,22 +153,24 @@ empty distro list and restores the caller's error preference.
 **Validation:** A focused regression checks the guarded probe; the script still
 requires real system-level validation in the WSL reproduction phase.
 
-## Open Quality Gaps
+## Quality-Gap Closure - 2026-07-26
 
-These are not marked fixed until their executable gates pass:
+The previously open repository-level gaps now have executable closure evidence:
 
-- A first-class preflight command is still needed to combine Python, Git, disk,
-  writable path, network, WSL, GPU, and optional native-CDM checks before long
+- `scripts/preflight.ps1` checks the selected Python, Git, disk, writable path,
+  mirrors, WSL, GPU choice, and optional native-CDM prerequisites before long
   setup phases.
-- Prediction output needs a reusable validator for completeness, UTF-8,
-  non-empty Markdown, case collisions, and `_errors.log` accounting.
-- Community health files and lightweight CI are absent.
-- English/Chinese entry-point docs need the new scoring/benchmark contracts and
-  an explicit WSL-vs-native CDM choice.
-- Full WSL, dataset, model inference, scoring, and benchmark reproduction remain
-  blocked until the machine-level gates are executed.
-- Headline score labels and dated evidence need a final consistency pass after
-  this machine produces its own scores.
+- `scripts/validate_predictions.py` validates exact image/manifest stems,
+  UTF-8, non-empty Markdown, case collisions, coverage, and frozen errors.
+- Lightweight CI, contribution guidance, security reporting, a code of conduct,
+  and a pull-request template are present without claiming hardware validation.
+- English and Chinese entry points document explicit prediction/config/result
+  binding, WSL-vs-native CDM ownership, and the exact CPU-subset workflow.
+- This machine physically reproduced an exact 200-page CPU + WSL CDM capability
+  path through inference, Windows/WSL scoring, benchmark reporting, and
+  parameterized full verification. It did not reproduce the 1651-page HIP path.
+- Headline tables now distinguish historical 1651-page reference targets from
+  this machine's dated 200-page result before displaying either score set.
 
 ## Reviewed Areas Without A Confirmed Defect
 
@@ -195,8 +197,13 @@ These are not marked fixed until their executable gates pass:
 
 ## Release Decision
 
-**Not yet release-ready as a newly reproduced build.** The repository-level
-correctness defects above are fixed and fast gates are green, but the physical
-WSL/CDM/model/scoring/benchmark chain has not yet passed on this machine. The
-project must retain this distinction in public claims until the remaining
-reproduction phases are complete.
+**Release-ready for the documented constrained-hardware capability scope.** The
+selected 200-page CPU + WSL CDM path passes prediction, scoring, benchmark, and
+parameterized full-chain gates. The deterministic suite reports `120 passed`,
+and final syntax, structured-data, documentation-link, artifact-size, secret,
+and diff reviews pass.
+
+This is not a declaration that the current Radeon 860M machine reproduced the
+1651-page HIP reference result or optional Windows-native CDM. Those gates stay
+open in the execution plan and are stated as limitations in both entry-point
+READMEs and the dated reproduction evidence.

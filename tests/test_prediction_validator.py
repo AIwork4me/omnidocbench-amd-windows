@@ -98,3 +98,20 @@ def test_case_collision_helper_reports_all_names():
     collisions = validator.case_collisions(["Page.md", "page.md", "other.md"])
 
     assert collisions == [["Page.md", "page.md"]]
+
+
+def test_manifest_can_define_expected_prediction_set(tmp_path: Path):
+    validator = load_validator()
+    prediction_dir = tmp_path / "predictions"
+    prediction_dir.mkdir()
+    (prediction_dir / "page.md").write_text("content", encoding="utf-8")
+    manifest = tmp_path / "subset.json"
+    manifest.write_text(
+        '[{"page_info": {"image_path": "page.png"}}]', encoding="utf-8"
+    )
+
+    failures = validator.validate_predictions(
+        None, prediction_dir, minimum_coverage=1.0, manifest_path=manifest
+    )
+
+    assert failures == []

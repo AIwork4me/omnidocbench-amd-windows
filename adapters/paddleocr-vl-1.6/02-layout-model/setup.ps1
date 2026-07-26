@@ -115,16 +115,19 @@ if ((Test-Path $onnxFile) -and -not $Force) {
 
     # Drive the download from python so the same snippet works for both
     # huggingface_hub and modelscope. Either lib is a one-line pip install.
+    $requiredJson = $required | ConvertTo-Json -Compress
     $dl = @"
 import sys
+import os
 from pathlib import Path
 model_dir = Path(r'$ModelDir')
 model_dir.mkdir(parents=True, exist_ok=True)
-required = $required
+required = $requiredJson
 source = '$Source'
 repo_id = '$repoId'
 
 if source == 'huggingface':
+    os.environ['HF_HUB_DISABLE_XET'] = '1'
     try:
         from huggingface_hub import hf_hub_download
     except ImportError:

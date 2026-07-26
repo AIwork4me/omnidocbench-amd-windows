@@ -68,6 +68,7 @@ $repoRoot    = Split-Path -Parent (Split-Path -Parent $adapterRoot)
 $modelsDir   = Join-Path $adapterRoot "models"
 $envFile     = Join-Path $adapterRoot ".env.local"
 $llamaDir    = Join-Path $modelsDir "llama.cpp"
+$variantFile = Join-Path $llamaDir ".variant"
 $vlmModelDir = Join-Path $modelsDir "PaddleOCR-VL-1.6-GGUF"
 $logDir      = Join-Path $adapterRoot "logs"
 $logFile     = Join-Path $logDir "llama-server.log"
@@ -128,11 +129,15 @@ $repoId     = "PaddlePaddle/PaddleOCR-VL-1.6-GGUF"
 # Phase 1 -- download llama.cpp
 # ===========================================================================
 $serverExe = Get-ChildItem -Path $llamaDir -Filter "llama-server.exe" -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1
+$installedVariant = if (Test-Path -LiteralPath $variantFile) { (Get-Content -Raw -LiteralPath $variantFile).Trim() } else { "" }
 if ($SkipDownload) {
     Write-Host "[1/3] Skipping llama.cpp download (-SkipDownload)." -ForegroundColor Yellow
-} elseif ($serverExe -and -not $Force) {
+} elseif ($serverExe -and $installedVariant -eq $Variant -and -not $Force) {
     Write-Host "[1/3] llama-server.exe already present: $($serverExe.FullName)" -ForegroundColor Green
 } else {
+    if ($serverExe -and $installedVariant -ne $Variant) {
+        Write-Host "[1/3] llama.cpp variant mismatch (installed='$installedVariant', requested='$Variant'); replacing binary." -ForegroundColor Yellow
+    }
     $assetName = switch ($Variant) {
         "cpu" { "llama-$Tag-bin-win-cpu-x64.zip" }
         "hip" { "llama-$Tag-bin-win-hip-radeon-x64.zip" }
@@ -155,6 +160,7 @@ if ($SkipDownload) {
     if (Test-Path $llamaDir) { Remove-Item $llamaDir -Recurse -Force }
     New-Item -ItemType Directory -Path $llamaDir -Force | Out-Null
     Expand-Archive -LiteralPath $zip -DestinationPath $llamaDir -Force
+    Set-Content -LiteralPath $variantFile -Value $Variant -Encoding ASCII
     Write-Host "      Extracted to $llamaDir" -ForegroundColor Green
     $serverExe = Get-ChildItem -Path $llamaDir -Filter "llama-server.exe" -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1
     if (-not $serverExe) { throw "llama-server.exe not found after extraction in $llamaDir" }
@@ -174,8 +180,24 @@ if ($SkipDownload) {
     Write-Host "[2/3] Downloading $repoId via $hfOrMs (~1.7 GB)..." -ForegroundColor Cyan
     Write-Host "      Destination: $vlmModelDir"
     if ($hfOrMs -eq "huggingface") {
-        huggingface-cli download $repoId --local-dir $vlmModelDir
-        if ($LASTEXITCODE -ne 0) { throw "huggingface-cli download failed for $repoId" }
+        $hfCli = Join-Path $repoRoot ".venv\Scripts\hf.exe"
+        if (-not (Test-Path -LiteralPath $hfCli)) {
+            $legacyHfCli = Join-Path $repoRoot ".venv\Scripts\huggingface-cli.exe"
+            if (Test-Path -LiteralPath $legacyHfCli) { $hfCli = $legacyHfCli }
+        }
+        if (-not (Test-Path -LiteralPath $hfCli)) {
+            throw "Hugging Face CLI missing from the locked environment. Run 'uv sync --locked --all-groups' and retry."
+        }
+        $previousDisableXet = $env:HF_HUB_DISABLE_XET
+        try {
+            $env:HF_HUB_DISABLE_XET = "1"
+            & $hfCli download $repoId --local-dir $vlmModelDir --max-workers 4
+        } finally {
+            $env:HF_HUB_DISABLE_XET = $previousDisableXet
+        }
+        if ($LASTEXITCODE -ne 0) {
+            throw "Hugging Face model download failed for $repoId; re-run setup.ps1 to resume."
+        }
     } else {
         $py = @"
 import sys
@@ -223,7 +245,8 @@ Set-DotEnv -Path $envFile -Values @{
     LLAMA_TAG        = $Tag
     LLAMA_HOST       = $host_
     LLAMA_PORT       = $Port
-    VL_REC_API_MODEL_NAME = $mainGguf
+    LLAMA_GPU_LAYERS = $(if ($Variant -eq "hip") { "99" } else { "0" })
+    VL_REC_API_MODEL_NAME = (Split-Path $mainGguf -Leaf)
 }
 
 # ===========================================================================
@@ -240,13 +263,14 @@ try {
 if (-not $alreadyUp) {
     # Parameters tuned + verified byte-identical vs conservative config on
     # AMD Radeon 8060S (Phase 5 parameter sweep in the source project).
+    $gpuLayers = if ($Variant -eq "hip") { "99" } else { "0" }
     $llamaArgs = @(
         "--host", $host_,
         "--port", $Port,
         "-m", $mainGguf,
         "--temp", "0",
         "-c", "32768",
-        "-ngl", "0",
+        "-ngl", $gpuLayers,
         "-fa", "on",
         "--seed", "1",
         "--top-k", "1",

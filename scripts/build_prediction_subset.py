@@ -1,0 +1,90 @@
+"""Build an OmniDocBench ground-truth manifest from available predictions."""
+from __future__ import annotations
+
+import argparse
+import json
+from pathlib import Path
+import sys
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from windows_paths import through_short_repo
+
+REPO_ROOT = Path(__file__).resolve().parents[1]
+
+
+def build_subset(
+    full_manifest: Path,
+    prediction_dir: Path,
+    output_manifest: Path,
+    *,
+    limit: int | None = None,
+) -> list[dict]:
+    prediction_dir = through_short_repo(prediction_dir, REPO_ROOT)
+    pages = json.loads(full_manifest.read_text(encoding="utf-8"))
+    if not isinstance(pages, list):
+        raise ValueError("full manifest must contain a JSON list")
+
+    page_by_stem: dict[str, dict] = {}
+    for page in pages:
+        image_path = page.get("page_info", {}).get("image_path")
+        if not isinstance(image_path, str) or not image_path:
+            raise ValueError("manifest page is missing page_info.image_path")
+        stem = Path(image_path).stem
+        if stem in page_by_stem:
+            raise ValueError(f"duplicate manifest image stem: {stem}")
+        page_by_stem[stem] = page
+
+    prediction_stems: list[str] = []
+    for prediction in sorted(prediction_dir.glob("*.md"), key=lambda path: path.name.casefold()):
+        try:
+            content = prediction.read_text(encoding="utf-8")
+        except UnicodeDecodeError as error:
+            raise ValueError(f"prediction is not UTF-8: {prediction.name}") from error
+        if content.strip():
+            prediction_stems.append(prediction.stem)
+
+    if limit is not None:
+        if limit <= 0:
+            raise ValueError("limit must be positive")
+        prediction_stems = prediction_stems[:limit]
+
+    missing = sorted(set(prediction_stems) - set(page_by_stem))
+    if missing:
+        raise ValueError(f"predictions have no ground truth: {', '.join(missing[:10])}")
+    if not prediction_stems:
+        raise ValueError("no non-empty UTF-8 Markdown predictions found")
+    if limit is not None and len(prediction_stems) < limit:
+        raise ValueError(
+            f"only {len(prediction_stems)} usable predictions found; {limit} required"
+        )
+
+    subset = [page_by_stem[stem] for stem in prediction_stems]
+    output_manifest.parent.mkdir(parents=True, exist_ok=True)
+    output_manifest.write_text(
+        json.dumps(subset, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
+    )
+    return subset
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(
+        description="Build exact ground truth for the pages with usable predictions"
+    )
+    parser.add_argument("--full-manifest", type=Path, required=True)
+    parser.add_argument("--pred-dir", type=Path, required=True)
+    parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--limit", type=int)
+    args = parser.parse_args()
+
+    subset = build_subset(
+        args.full_manifest,
+        args.pred_dir,
+        args.output,
+        limit=args.limit,
+    )
+    print(f"Wrote {len(subset)} pages to {args.output}")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

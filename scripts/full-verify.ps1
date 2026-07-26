@@ -62,7 +62,11 @@ param(
     [switch] $SkipWsl,
     [switch] $SkipVlm,
     [switch] $WindowsCdm,
-    [switch] $SkipWindowsCdm
+    [switch] $SkipWindowsCdm,
+    [string] $PredictionDir = "",
+    [string] $PredictionManifest = "",
+    [string] $ScoreSaveName = "",
+    [string] $BenchmarkDir = ""
 )
 $ErrorActionPreference = "Stop"
 
@@ -238,7 +242,13 @@ if ($SkipVlm) {
 } else {
     # predictions/paddleocrvl_rocm is the dir the committed configs (v16*.yaml)
     # read from -- keep this in sync with eval-infra/01-omnidocbench/configs/.
-    $predDir = Join-Path $rootDir "predictions\paddleocrvl_rocm"
+    if ([string]::IsNullOrWhiteSpace($PredictionDir)) {
+        $predDir = Join-Path $rootDir "predictions\paddleocrvl_rocm"
+    } elseif ([System.IO.Path]::IsPathRooted($PredictionDir)) {
+        $predDir = $PredictionDir
+    } else {
+        $predDir = Join-Path $rootDir $PredictionDir
+    }
     $count = 0
     if (Test-Path $predDir) {
         # @(): Get-ChildItem returns a scalar (not array) for one match on PS
@@ -253,7 +263,12 @@ if ($SkipVlm) {
     # hard subset and a false PASS on a 1001/1651 partial full-set run.
     $imgDir = Join-Path $rootDir "eval-infra\01-omnidocbench\data\images"
     $expected = 0
-    if (Test-Path $imgDir) {
+    if (-not [string]::IsNullOrWhiteSpace($PredictionManifest)) {
+        $manifestPath = if ([System.IO.Path]::IsPathRooted($PredictionManifest)) { $PredictionManifest } else { Join-Path $rootDir $PredictionManifest }
+        if (Test-Path -LiteralPath $manifestPath) {
+            try { $expected = @((Get-Content -Raw -Encoding UTF8 -LiteralPath $manifestPath | ConvertFrom-Json)).Count } catch { $expected = 0 }
+        }
+    } elseif (Test-Path $imgDir) {
         $expected = @(Get-ChildItem $imgDir -Include *.png,*.jpg,*.jpeg,*.bmp,*.tif,*.tiff -File -Recurse -ErrorAction SilentlyContinue).Count
     }
     if ($expected -eq 0) {
@@ -266,11 +281,11 @@ if ($SkipVlm) {
     # pages without flagging a complete-enough run). At least 1 required.
     $threshold = [int][Math]::Max(1, [Math]::Floor(0.95 * $expected))
     if ($count -ge $threshold) {
-        Add-Result "predictions/paddleocrvl_rocm" "PASS" "$count .md files (expected ~$expected)"
+        Add-Result "adapter predictions" "PASS" "$count .md files (expected ~$expected)"
     } elseif ($count -gt 0) {
-        Add-Result "predictions/paddleocrvl_rocm" "FAIL" "only $count .md (expected ~$expected, threshold $threshold) - re-run run_adapter.py"
+        Add-Result "adapter predictions" "FAIL" "only $count .md (expected ~$expected, threshold $threshold) - re-run run_adapter.py"
     } else {
-        Add-Result "predictions/paddleocrvl_rocm" "FAIL" "none - run the adapter (adapters/paddleocr-vl-1.6/run_adapter.py)"
+        Add-Result "adapter predictions" "FAIL" "none - run the adapter (adapters/paddleocr-vl-1.6/run_adapter.py)"
     }
 }
 
@@ -281,13 +296,19 @@ $scoreVerify = Join-Path $rootDir "eval-infra\03-scoring\verify.ps1"
 $runWindowsCdm = $WindowsCdm -and -not $SkipWindowsCdm
 if ($SkipWsl) {
     $scoreArguments = @("-WindowsOnly")
+    if ($ScoreSaveName) { $scoreArguments += @("-SaveName", $ScoreSaveName) }
     if ($runWindowsCdm) { $scoreArguments += "-RequireCdm" }
     [void](Invoke-Verify "03-scoring/verify-windows" $scoreVerify $scoreArguments)
 } elseif ($runWindowsCdm) {
-    [void](Invoke-Verify "03-scoring/verify-windows" $scoreVerify @("-WindowsOnly", "-RequireCdm"))
-    [void](Invoke-Verify "03-scoring/verify-wsl" $scoreVerify @("-WslOnly", "-RequireCdm"))
+    $windowsScoreArguments = @("-WindowsOnly", "-RequireCdm")
+    $wslScoreArguments = @("-WslOnly", "-RequireCdm")
+    if ($ScoreSaveName) { $windowsScoreArguments += @("-SaveName", $ScoreSaveName); $wslScoreArguments += @("-SaveName", $ScoreSaveName) }
+    [void](Invoke-Verify "03-scoring/verify-windows" $scoreVerify $windowsScoreArguments)
+    [void](Invoke-Verify "03-scoring/verify-wsl" $scoreVerify $wslScoreArguments)
 } else {
-    [void](Invoke-Verify "03-scoring/verify-wsl" $scoreVerify @("-WslOnly", "-RequireCdm"))
+    $wslScoreArguments = @("-WslOnly", "-RequireCdm")
+    if ($ScoreSaveName) { $wslScoreArguments += @("-SaveName", $ScoreSaveName) }
+    [void](Invoke-Verify "03-scoring/verify-wsl" $scoreVerify $wslScoreArguments)
 }
 
 # --- 8. Benchmark report (optional - skip if not run) -----------------------
@@ -296,7 +317,12 @@ Write-Host "[8/8] benchmark report" -ForegroundColor Cyan
 $benchVerify = Join-Path $rootDir "eval-infra\04-benchmark\verify.ps1"
 if (Test-Path $benchVerify) {
     # Find most recent benchmark results directory
-    $benchDirs = @(Get-ChildItem (Join-Path $rootDir "benchmark-results") -Directory -ErrorAction SilentlyContinue | Where-Object { $_.Name -ne "reference" } | Sort-Object LastWriteTime -Descending)
+    if (-not [string]::IsNullOrWhiteSpace($BenchmarkDir)) {
+        $explicitBenchmark = if ([System.IO.Path]::IsPathRooted($BenchmarkDir)) { $BenchmarkDir } else { Join-Path $rootDir $BenchmarkDir }
+        $benchDirs = if (Test-Path -LiteralPath $explicitBenchmark) { @((Get-Item -LiteralPath $explicitBenchmark)) } else { @() }
+    } else {
+        $benchDirs = @(Get-ChildItem (Join-Path $rootDir "benchmark-results") -Directory -ErrorAction SilentlyContinue | Where-Object { $_.Name -ne "reference" } | Sort-Object LastWriteTime -Descending)
+    }
     if ($benchDirs.Count -gt 0) {
         $latestBench = $benchDirs[0].FullName
         [void](Invoke-Verify "04-benchmark/verify" $benchVerify @("-ReportDir", $latestBench))

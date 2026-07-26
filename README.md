@@ -17,7 +17,11 @@ model via [adapters](adapters/). PaddleOCR-VL-1.6 ships as the validated referen
 
 ![OmniDocBench AMD Windows overview](overview.jpg)
 
-| Metric | PaddleOCR-VL (paper) | PaddleOCR-VL-ROCm (measured) |
+> **Historical full-set reference targets:** the table below is the dated
+> 1651-page result documented in the linked release evidence. It was not rerun
+> on the current Radeon 860M machine; see the physical-machine result below.
+
+| Metric | PaddleOCR-VL (paper) | PaddleOCR-VL-ROCm (full-set reference) |
 |---:|---:|---:|
 | Overall | 96.33 | **95.99** |
 | Text Edit-dist | 0.033 | 0.03488 |
@@ -27,6 +31,30 @@ model via [adapters](adapters/). PaddleOCR-VL-1.6 ships as the validated referen
 
 > G4 inference speedup: **1.7x** (27-page stratified benchmark, 9 categories, 0 structural mismatches). The default `vlm_max_workers=8` in PaddleOCR-VL-ROCm enables this automatically. | Overall = (Text accuracy + CDM + TEDS) / 3, where Text accuracy = (1 − Edit_dist) × 100.
 > Reading order is excluded from Overall (layout metric, not content accuracy).
+
+### Verified result on this machine
+
+On 2026-07-26, a Ryzen AI 7 PRO 350 / Radeon 860M machine completed an exact
+200-page CPU fallback run. This is machine-capability evidence, **not** a
+1651-page leaderboard result.
+
+| Metric | Verified 200-page result |
+|---|---:|
+| Overall (official notebook aggregation) | **96.6362** |
+| Text Edit-distance | **0.02446** |
+| Reading-order Edit-distance | **0.11668** |
+| Table TEDS | **96.2597** |
+| Formula CDM | **96.0949** |
+
+Windows and WSL shared metrics were identical after deterministic single-worker
+scoring; CDM/TEDS recorded zero timeout, error, or exception cases. Commands,
+denominators, raw values, limitations, and hashes are in
+[`docs/reproduction-cpu-200-2026-07-26.md`](docs/reproduction-cpu-200-2026-07-26.md).
+
+The Radeon 860M (gfx1152) cannot run the tested official Windows HIP llama.cpp
+binaries: b9637 and b10107 fail with `ROCm error: invalid device function`. Use
+`-Variant cpu` on this GPU class unless you have a gfx1152-compatible build.
+See [`docs/llama-cpp-radeon-860m-gfx1152-issue-draft-2026-07-26.md`](docs/llama-cpp-radeon-860m-gfx1152-issue-draft-2026-07-26.md).
 
 ## System Requirements
 
@@ -98,6 +126,42 @@ powershell -ExecutionPolicy Bypass -File eval-infra\03-scoring\verify.ps1
 # Or all-at-once:
 powershell -ExecutionPolicy Bypass -File scripts\full-verify.ps1
 ```
+
+For constrained hardware, `v16-cpu-200.yaml` and `v16-cdm-cpu-200.yaml` provide
+an explicit 200-page capability path. After inference has produced at least 200
+usable predictions, build the exact matching GT subset, validate it, and score
+that explicit config:
+
+```powershell
+.\.venv\Scripts\python.exe scripts\build_prediction_subset.py `
+  --full-manifest eval-infra\01-omnidocbench\data\OmniDocBench.json `
+  --pred-dir predictions\paddleocrvl_cpu_860m_200 `
+  --output eval-infra\01-omnidocbench\data\OmniDocBench_cpu_200.json `
+  --limit 200
+.\.venv\Scripts\python.exe scripts\validate_predictions.py `
+  --manifest eval-infra\01-omnidocbench\data\OmniDocBench_cpu_200.json `
+  --pred-dir predictions\paddleocrvl_cpu_860m_200 `
+  --min-coverage 1.0
+powershell -ExecutionPolicy Bypass -File eval-infra\03-scoring\score.ps1 `
+  -Config v16-cpu-200.yaml -SaveName paddleocrvl_cpu_860m_200
+```
+
+For WSL CDM, pass the same prediction directory and CDM config to
+`score-cdm.sh`, then bind final verification to the exact artifacts:
+
+```powershell
+wsl -d Ubuntu2204 bash ./eval-infra/03-scoring/score-cdm.sh `
+  v16-cdm-cpu-200.yaml `
+  predictions/paddleocrvl_cpu_860m_200
+powershell -ExecutionPolicy Bypass -File scripts\full-verify.ps1 `
+  -PredictionDir predictions\paddleocrvl_cpu_860m_200 `
+  -PredictionManifest eval-infra\01-omnidocbench\data\OmniDocBench_cpu_200.json `
+  -ScoreSaveName paddleocrvl_cpu_860m_200_quick_match
+```
+
+Never label this subset as a full-set score. The verified command provenance
+and limitations are in
+[`docs/reproduction-cpu-200-2026-07-26.md`](docs/reproduction-cpu-200-2026-07-26.md).
 
 Windows-native CDM is supported when `patches/omnidocbench/windows-cdm.patch`
 has been applied by `eval-infra/01-omnidocbench/setup.ps1` and
@@ -275,11 +339,17 @@ local single-machine setups, the four standard metrics.
 
 **Out of scope** (by design — see spec §8): Docker-based setups (kept as a
 fallback, not the main path), OmniDocBench v1.5 (config template provided, not
-automated), non-AMD GPU adapters (template provided, community contributions
-welcome), CI/CD (local verify scripts, not GitHub Actions).
+automated), and hosted validation of WSL, AMD GPUs, model/data downloads, CDM,
+scoring, or benchmarks. GitHub Actions runs deterministic tests and script
+syntax only; physical-machine evidence remains mandatory for hardware claims.
 
 ## License
 
-See the upstream [OmniDocBench](https://github.com/opendatalab/OmniDocBench)
-license for the eval code and dataset terms. The infrastructure and adapter
-code in this repo is provided as-is for reproducing the benchmark.
+This repository's original code is Apache-2.0 under [`LICENSE`](LICENSE).
+Downloaded OmniDocBench code/dataset, PaddleOCR/PaddleOCR-VL model weights,
+PP-DocLayoutV3, llama.cpp binaries, and system packages remain governed by
+their respective upstream licenses and terms. Generated checkouts, datasets,
+models, predictions, and results are gitignored and are not relicensed here.
+
+Security reporting is documented in [`SECURITY.md`](SECURITY.md); community
+expectations are in [`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md).

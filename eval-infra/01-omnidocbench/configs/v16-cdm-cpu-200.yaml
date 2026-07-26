@@ -1,0 +1,16 @@
+# Local 200-page CPU capability subset with Formula CDM.
+#
+# Uses the same exact ground-truth/prediction pair as v16-cpu-200.yaml. Scores
+# are machine capability evidence and must not be presented as full-set values.
+end2end_eval:
+  metrics:
+    text_block:      { metric: [Edit_dist] }
+    display_formula: { metric: [Edit_dist, CDM], cdm_workers: 8 }
+    table:           { metric: [TEDS, Edit_dist], teds_workers: 1 }
+    reading_order:   { metric: [Edit_dist] }
+  dataset:
+    dataset_name: end2end_dataset
+    ground_truth: { data_path: <REPO_ROOT>/eval-infra/01-omnidocbench/data/OmniDocBench_cpu_200.json }
+    prediction:   { data_path: <REPO_ROOT>/predictions/paddleocrvl_cpu_860m_200 }
+    match_method: quick_match
+    match_workers: 1

@@ -19,6 +19,15 @@ verify the resulting environment, predictions, metrics, and benchmark report.
 owns orchestration. Improve the gates and user journey around those boundaries
 instead of duplicating model or scorer logic.
 
+**Evidence status (2026-07-26):** The full 1651-page dataset and WSL CDM
+environment have been provisioned and verified. The optional Windows-native
+CDM path was assessed but not selected because its native tools are absent.
+This machine has not completed the 1651-page HIP reference inference path. The
+physically reproduced end-to-end path is an exact 200-page CPU capability run
+with WSL CDM. Its evidence is in
+`docs/reproduction-cpu-200-2026-07-26.md`; it must not satisfy or replace the
+unchecked full-set/HIP/native-CDM gates below.
+
 ## Global Constraints
 
 - Preserve PowerShell 5.1 compatibility and setup idempotency.
@@ -76,12 +85,12 @@ instead of duplicating model or scorer logic.
 
 ### Task 0.2: Run the fast repository baseline
 
-- [ ] Compile all tracked Python files that do not require generated upstream
+- [x] Compile all tracked Python files that do not require generated upstream
   dependencies.
-- [ ] Run the complete configured pytest collection.
-- [ ] Parse every tracked YAML and JSON file.
-- [ ] Parse PowerShell scripts without executing installers.
-- [ ] Check Markdown links and referenced local paths with a deterministic
+- [x] Run the complete configured pytest collection.
+- [x] Parse every tracked YAML and JSON file.
+- [x] Parse PowerShell scripts without executing installers.
+- [x] Check Markdown links and referenced local paths with a deterministic
   repository test rather than an ad hoc manual list.
 
 **Gate:** Every fast check passes, or each pre-existing failure is recorded as
@@ -145,11 +154,11 @@ path.
   instead of creating a known-incompatible environment.
 - [x] Validate the selected Python interpreter and required config input paths
   in `03-scoring/score.ps1` before materializing or launching a run.
-- [ ] Make hard-subset derivation fail when its source schema yields no usable
+- [x] Make hard-subset derivation fail when its source schema yields no usable
   pages; verify the generated manifest count and image references.
-- [ ] Preserve tiny-fixture support by making full-run completeness thresholds
+- [x] Preserve tiny-fixture support by making full-run completeness thresholds
   explicit rather than globally rejecting small intentional tests.
-- [ ] Add regression tests for every new failure mode.
+- [x] Add regression tests for every new failure mode.
 
 **Gate:** Focused tests fail on the old behavior and pass on the corrected
 behavior; the complete fast suite remains green.
@@ -172,21 +181,21 @@ fixtures fail with page-level diagnostics.
 
 ### Task 3.1: Make the contributor path self-verifying
 
-- [ ] Expand `CONTRIBUTING.md` with supported developer versions, one fast test
+- [x] Expand `CONTRIBUTING.md` with supported developer versions, one fast test
   command, script compatibility rules, setup/verify pairing, documentation
   parity, and a pull-request checklist.
-- [ ] Add missing community health files where they provide real value:
+- [x] Add missing community health files where they provide real value:
   `SECURITY.md`, `CODE_OF_CONDUCT.md`, and a pull-request template.
-- [ ] Clarify upstream code, dataset, model, and generated-artifact licensing;
+- [x] Clarify upstream code, dataset, model, and generated-artifact licensing;
   do not claim rights the project does not hold.
 
 ### Task 3.2: Add lightweight continuous verification
 
-- [ ] Add CI only for deterministic, non-GPU, non-dataset checks: Python unit
+- [x] Add CI only for deterministic, non-GPU, non-dataset checks: Python unit
   tests, structured-data parsing, documentation links, and PowerShell syntax.
-- [ ] Pin action major versions and the supported Python matrix. Do not pretend
+- [x] Pin action major versions and the supported Python matrix. Do not pretend
   hosted CI validates AMD GPU, WSL CDM, or full benchmark reproduction.
-- [ ] Document the boundary between CI evidence and physical-machine evidence.
+- [x] Document the boundary between CI evidence and physical-machine evidence.
 
 **Gate:** The local equivalents of every CI job pass, workflow syntax is valid,
 and no job downloads the benchmark dataset or model weights.
@@ -231,9 +240,9 @@ are verifiably applied.
 
 ### Task 5.1: WSL compatibility/reference CDM
 
-- [ ] Run WSL `02-cdm-environment/setup.sh` using the actual repository path.
-- [ ] Immediately run `02-cdm-environment/verify.sh`.
-- [ ] Re-run setup and verify to prove all nine setup stages resume/skip safely.
+- [x] Run WSL `02-cdm-environment/setup.sh` using the actual repository path.
+- [x] Immediately run `02-cdm-environment/verify.sh`.
+- [x] Re-run setup and verify to prove all nine setup stages resume/skip safely.
 
 **Gate:** Exit 0 plus the literal `VERIFY OK`; the end-to-end CJK formula smoke
 test produces a color PNG and positive identical-formula CDM F1.
@@ -257,9 +266,9 @@ the native path as not selected; do not block the verified WSL path.
 - [ ] Run VLM server setup with `-Variant hip`, then its verifier.
 - [ ] Stop for human point 2 to confirm real GPU utilization and server
   stability before inference.
-- [ ] Run layout-model setup, then its verifier.
-- [ ] Run dependency setup and a focused import/version smoke test.
-- [ ] Re-run each setup/verify pair to prove idempotency.
+- [x] Run layout-model setup, then its verifier.
+- [x] Run dependency setup and a focused import/version smoke test.
+- [ ] Re-run each HIP setup/verify pair to prove idempotency.
 
 **Gate:** VLM `/v1/models` returns 200, GPU use is human-confirmed, layout ONNX
 verification passes, and adapter imports succeed in the intended environment.
@@ -268,12 +277,25 @@ verification passes, and adapter imports succeed in the intended environment.
 
 - [ ] Run the reference adapter into the exact config-consumed directory
   `predictions/paddleocrvl_rocm`.
-- [ ] Preserve per-page errors and runtime statistics.
-- [ ] Run the adapter output validator from Task 2.3.
+- [ ] Preserve full-set per-page errors and runtime statistics.
+- [ ] Run the adapter output validator from Task 2.3 against the full manifest.
 
 **Gate:** At least 95% of full dataset pages have non-empty UTF-8 Markdown,
 errors are enumerated, and the adapter exits non-zero if its documented fatal
 failure threshold is crossed.
+
+### Task 6.3: Constrained-hardware capability path
+
+- [x] Provision and verify the real llama.cpp CPU server with
+  `LLAMA_GPU_LAYERS=0` after the tested Windows HIP binaries failed on gfx1152.
+- [x] Produce exactly 200 non-empty UTF-8 predictions in
+  `predictions/paddleocrvl_cpu_860m_200` with zero frozen error entries.
+- [x] Build an exact 200-page ground-truth manifest from those prediction stems
+  and pass the prediction validator at 100% coverage.
+
+**Gate:** The CPU subset is reported only as machine-capability evidence, with
+the HIP limitation, page count, timing provenance, and artifact hashes recorded
+in `docs/reproduction-cpu-200-2026-07-26.md`.
 
 ---
 
@@ -281,9 +303,9 @@ failure threshold is crossed.
 
 ### Task 7.1: Non-CDM scoring
 
-- [ ] Run `03-scoring/score.ps1`, then `03-scoring/verify.ps1` against the
+- [ ] Run full-set `03-scoring/score.ps1`, then `03-scoring/verify.ps1` against the
   explicit result file/save name rather than an ambiguous newest artifact.
-- [ ] Record raw metric JSON hash, sample counts, timeout/exception counters,
+- [ ] Record full-set raw metric JSON hash, sample counts, timeout/exception counters,
   runtime, and reported aggregation convention.
 
 **Gate:** All mandatory metrics are present, numeric, finite, and non-negative;
@@ -291,11 +313,11 @@ full-run values meet the documented reproduction thresholds.
 
 ### Task 7.2: CDM scoring
 
-- [ ] Run the selected WSL reference CDM score path and verify with
+- [ ] Run the full-set WSL reference CDM score path and verify with
   `-WslOnly -RequireCdm`.
 - [ ] If native CDM passed Task 5.2, run native CDM scoring and verify with
   `-WindowsOnly -RequireCdm`.
-- [ ] Run Formula CDM diagnostics for any zero, missing, timeout, or exception
+- [ ] Run Formula CDM diagnostics for any full-set zero, missing, timeout, or exception
   condition and update the pitfall decision tree only with reproduced facts.
 
 **Gate:** Selected CDM result is present, numeric, finite, positive, and above
@@ -303,14 +325,26 @@ the documented threshold; sample counts and failures are recorded.
 
 ### Task 7.3: Full verification and benchmark
 
-- [ ] Run the appropriate `scripts/full-verify.ps1` mode for every selected
+- [ ] Run the full-set `scripts/full-verify.ps1` mode for every selected
   toolchain path.
-- [ ] Run one benchmark and verify its report.
-- [ ] Run stability mode only after the single-run report passes and resources
+- [ ] Run one full-set benchmark and verify its report.
+- [ ] Run full-set stability mode only after the single-run report passes and resources
   permit; report variance rather than cherry-picking the best run.
 
 **Gate:** Full verify exits 0, benchmark verify exits 0, and the capability
 report contains CPU, memory, timing, metric, and available GPU evidence.
+
+### Task 7.4: Verify the 200-page CPU capability evidence
+
+- [x] Run deterministic Windows non-CDM scoring and exact-result verification.
+- [x] Run deterministic WSL CDM scoring and exact-result verification.
+- [x] Run parameterized `scripts/full-verify.ps1` against the exact prediction
+  directory, manifest, save name, and benchmark directory.
+- [x] Verify the benchmark report; record raw/page-level scores, sample counts,
+  zero timeout/error/exception evidence, and SHA-256 hashes.
+
+**Gate:** The parameterized capability chain passes without being described as
+a full-set or GPU-accelerated reproduction.
 
 ---
 
@@ -318,25 +352,34 @@ report contains CPU, memory, timing, metric, and available GPU evidence.
 
 ### Task 8.1: Replace assumptions with reproduced instructions
 
-- [ ] Update English and Chinese READMEs together with the tested happy path,
+- [x] Update English and Chinese READMEs together with the tested happy path,
   preflight, resume behavior, expected durations/disk, verification commands,
   and explicit human-intervention points.
-- [ ] Ensure every public score links to dated evidence and states engine,
+- [x] Ensure every public score links to dated evidence and states engine,
   config, aggregation, dataset version, machine class, and known deviations.
-- [ ] Remove or qualify claims that this machine did not reproduce.
-- [ ] Keep `AGENTS.md` orchestration-only; place fixes in `docs/pitfalls.md`.
+- [x] Remove or qualify claims that this machine did not reproduce.
+- [x] Keep `AGENTS.md` orchestration-only; place fixes in `docs/pitfalls.md`.
 
 ### Task 8.2: Final clean-clone simulation
 
-- [ ] Run all fast tests and local CI equivalents.
-- [ ] Run documentation/config consistency checks.
-- [ ] Re-run full verification without relying on an ambiguous latest artifact.
-- [ ] Inspect tracked changes, ignored generated files, and repository size.
-- [ ] Perform a final severity-ordered code review of the resulting diff.
+- [x] Run all fast tests and local CI equivalents.
+- [x] Run documentation/config consistency checks.
+- [x] Re-run full verification without relying on an ambiguous latest artifact.
+- [x] Inspect tracked changes, ignored generated files, and repository size.
+- [x] Perform a final severity-ordered code review of the resulting diff.
 
 **Gate:** No unresolved critical/high finding; all selected-path verifiers pass;
 the reproduction report is complete; generated artifacts and secrets remain
 untracked; limitations and skipped optional paths are explicit.
+
+**Final gate evidence (2026-07-26):** `120 passed`; tracked Python compilation,
+PowerShell AST parsing, Bash syntax, JSON/YAML parsing, and 442-file Markdown
+local-link validation pass. Parameterized full verification against the exact
+200-page prediction directory, manifest, score name, and benchmark directory
+reports `9 passed, 0 failed, 1 skipped`; the skip is optional Windows-native
+CDM. Final diff review found one release-blocking README claim ambiguity, which
+was corrected in both languages and revalidated. No critical/high finding
+remains for the selected 200-page CPU + WSL CDM capability path.
 
 ## Expected Deliverables
 

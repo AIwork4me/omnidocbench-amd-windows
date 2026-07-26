@@ -22,29 +22,39 @@ def case_collisions(names: list[str]) -> list[list[str]]:
 
 
 def validate_predictions(
-    image_dir: Path,
+    image_dir: Path | None,
     prediction_dir: Path,
     *,
     minimum_coverage: float = 0.95,
+    manifest_path: Path | None = None,
 ) -> list[str]:
-    image_dir = through_short_repo(image_dir, REPO_ROOT)
+    if image_dir is not None:
+        image_dir = through_short_repo(image_dir, REPO_ROOT)
     prediction_dir = through_short_repo(prediction_dir, REPO_ROOT)
     failures: list[str] = []
     if not 0.0 <= minimum_coverage <= 1.0:
         return ["minimum coverage must be between 0 and 1"]
-    if not image_dir.is_dir():
-        return [f"image directory not found: {image_dir}"]
     if not prediction_dir.is_dir():
         return [f"prediction directory not found: {prediction_dir}"]
+    if manifest_path is not None:
+        try:
+            pages = json.loads(manifest_path.read_text(encoding="utf-8"))
+            image_names = [page["page_info"]["image_path"] for page in pages]
+        except (OSError, UnicodeDecodeError, json.JSONDecodeError, KeyError, TypeError) as error:
+            return [f"manifest is invalid: {manifest_path} ({error})"]
+        if not image_names:
+            return [f"manifest contains no pages: {manifest_path}"]
+    else:
+        if image_dir is None or not image_dir.is_dir():
+            return [f"image directory not found: {image_dir}"]
+        images = sorted(
+            path for path in image_dir.iterdir() if path.suffix.lower() in IMAGE_EXTENSIONS
+        )
+        if not images:
+            return [f"image directory contains no supported images: {image_dir}"]
+        image_names = [path.name for path in images]
 
-    images = sorted(
-        path for path in image_dir.iterdir() if path.suffix.lower() in IMAGE_EXTENSIONS
-    )
-    if not images:
-        return [f"image directory contains no supported images: {image_dir}"]
-
-    image_names = [path.name for path in images]
-    image_stems = [path.stem for path in images]
+    image_stems = [Path(name).stem for name in image_names]
     for collision in case_collisions(image_stems):
         failures.append(f"case-colliding image stems: {', '.join(collision)}")
 
@@ -80,10 +90,11 @@ def validate_predictions(
         if markdown_path.stem in expected:
             readable_nonempty += 1
 
-    coverage = readable_nonempty / len(images)
+    expected_count = len(image_names)
+    coverage = readable_nonempty / expected_count
     if coverage < minimum_coverage:
         failures.append(
-            f"usable prediction coverage {readable_nonempty}/{len(images)} "
+            f"usable prediction coverage {readable_nonempty}/{expected_count} "
             f"({coverage:.2%}) is below required {minimum_coverage:.2%}"
         )
 
@@ -106,15 +117,15 @@ def validate_predictions(
         except (UnicodeDecodeError, json.JSONDecodeError) as error:
             failures.append(f"_run_stats.json is invalid UTF-8 JSON ({error})")
         else:
-            if stats.get("count") != len(images):
+            if stats.get("count") != expected_count:
                 failures.append(
                     f"_run_stats.json count={stats.get('count')!r} does not match "
-                    f"image count={len(images)}"
+                    f"expected count={expected_count}"
                 )
 
-    print(f"Images: {len(images)}")
+    print(f"Expected pages: {expected_count}")
     print(f"Markdown files: {len(markdown_files)}")
-    print(f"Usable coverage: {readable_nonempty}/{len(images)} ({coverage:.2%})")
+    print(f"Usable coverage: {readable_nonempty}/{expected_count} ({coverage:.2%})")
     print(f"Error-log entries: {error_entries}")
     return failures
 
@@ -123,7 +134,9 @@ def main() -> int:
     parser = argparse.ArgumentParser(
         description="Validate one non-empty UTF-8 Markdown prediction per image"
     )
-    parser.add_argument("--img-dir", type=Path, required=True)
+    expected_group = parser.add_mutually_exclusive_group(required=True)
+    expected_group.add_argument("--img-dir", type=Path)
+    expected_group.add_argument("--manifest", type=Path)
     parser.add_argument("--pred-dir", type=Path, required=True)
     parser.add_argument("--min-coverage", type=float, default=0.95)
     args = parser.parse_args()
@@ -132,6 +145,7 @@ def main() -> int:
         args.img_dir,
         args.pred_dir,
         minimum_coverage=args.min_coverage,
+        manifest_path=args.manifest,
     )
     if failures:
         for failure in failures:

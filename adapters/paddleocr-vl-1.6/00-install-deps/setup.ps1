@@ -75,8 +75,15 @@ if ([string]::IsNullOrWhiteSpace($CloneDir)) {
 
 # --- Phase 0: already installed? (idempotent fast-path) ---
 Write-Host "Checking for paddleocr_vl_rocm in $Python ..." -ForegroundColor Cyan
-& $Python -c "import paddleocr_vl_rocm" *> $null
-if ($LASTEXITCODE -eq 0) {
+$previousErrorActionPreference = $ErrorActionPreference
+try {
+    $ErrorActionPreference = "Continue"
+    & $Python -c "import paddleocr_vl_rocm" *> $null
+    $importExit = $LASTEXITCODE
+} finally {
+    $ErrorActionPreference = $previousErrorActionPreference
+}
+if ($importExit -eq 0) {
     Write-Host "paddleocr_vl_rocm already importable in $Python -- nothing to do." -ForegroundColor Green
     exit 0
 }
@@ -103,7 +110,14 @@ if (Test-Path $probe) {
 
 # --- Phase 2: pip install -e (editable) ---
 Write-Host "[2/2] pip install -e $CloneDir[gpu] (index: $pypiIndex) ..." -ForegroundColor Cyan
-& $Python -m pip install -e "$CloneDir[gpu]" -i $pypiIndex
+$uvCommand = Get-Command uv -ErrorAction SilentlyContinue
+if ($uvCommand) {
+    & $uvCommand.Source pip install --python $Python -e "$CloneDir[gpu]" --index-url $pypiIndex
+} else {
+    & $Python -m pip --version *> $null
+    if ($LASTEXITCODE -ne 0) { & $Python -m ensurepip --upgrade }
+    & $Python -m pip install -e "$CloneDir[gpu]" -i $pypiIndex
+}
 if ($LASTEXITCODE -ne 0) {
     throw "pip install -e failed for PaddleOCR-VL-ROCm (index: $pypiIndex). See docs/pitfalls.md#network."
 }

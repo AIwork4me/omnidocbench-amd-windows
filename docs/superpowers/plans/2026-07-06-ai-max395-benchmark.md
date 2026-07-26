@@ -1982,7 +1982,7 @@ cross-process coordination:
 
 ## Prerequisites
 
-- Steps 0-3 from [AGENTS.md](../../AGENTS.md) must be provisioned (WSL, dataset, CDM environment, adapter)
+- Steps 0-3 from [AGENTS.md](../../../AGENTS.md) must be provisioned (WSL, dataset, CDM environment, adapter)
 - `psutil` Python package: `pip install psutil`
 - `rocm-smi` on PATH (for GPU metrics; degrades gracefully if unavailable)
 - `pytest` for running tests: `pip install pytest`
@@ -2094,7 +2094,7 @@ git commit -m "docs(benchmark): bilingual README for 04-benchmark module"
 In `docs/architecture.md`, after line 61 (the `03-scoring` row), insert:
 
 ```markdown
-| [`04-benchmark`](../eval-infra/04-benchmark/) | Capability reports with GPU/RAM profiling + stability statistics | Windows (`run.ps1`) |
+| [`04-benchmark`](../../../eval-infra/04-benchmark/) | Capability reports with GPU/RAM profiling + stability statistics | Windows (`run.ps1`) |
 ```
 
 Also, in the data-flow diagram (lines 8-34), add the benchmark module:

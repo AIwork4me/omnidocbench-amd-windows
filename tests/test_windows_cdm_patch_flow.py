@@ -316,6 +316,37 @@ def test_wsl_cdm_setup_uses_explicit_resumable_tex_collections():
     assert "2>&1 | tail -3" not in text
 
 
+def test_wsl_cdm_setup_rejects_truncated_imagemagick_appimage():
+    text = read(CDM_SETUP_SH)
+
+    assert "appimage_valid()" in text
+    assert 'stat -c%s "$1"' in text
+    assert '"7f454c46"' in text
+    assert "magick7.AppImage.part" in text
+    assert "curl -fL --retry 3" in text
+    assert "IM7 AppImage download is truncated or invalid" in text
+    assert ">/root/im7-extract.log" in text
+
+
+def test_wsl_cdm_setup_recovers_incomplete_python_venv():
+    text = read(CDM_SETUP_SH)
+
+    assert "python3-venv" in text
+    assert 'if [ ! -x "$ODB_VENV/bin/python" ]' in text
+    assert 'rm -rf "$ODB_VENV"' in text
+    assert 'if ! "$ODB_VENV/bin/python" -c "$IMPORT_PROBE"' in text
+    assert '"$ODB_VENV/bin/python" -m ensurepip --upgrade' in text
+    assert "venv dependencies synchronized" in text
+    assert "venv imports verified" in text
+
+
+def test_wsl_cdm_verifier_uses_venv_python_without_activation():
+    verifier = read(REPO_ROOT / "eval-infra" / "02-cdm-environment" / "verify.sh")
+
+    assert '"$ODB_VENV/bin/python" -c' in verifier
+    assert 'source "$ODB_VENV/bin/activate"' not in verifier
+
+
 def test_windows_cdm_patch_exists_and_targets_only_cdm_toolchain_files():
     assert PATCH.exists()
     text = read(PATCH)
@@ -396,12 +427,8 @@ def test_full_verify_can_run_windows_native_cdm_without_wsl():
 def test_full_verify_default_wsl_scoring_requires_wsl_cdm_result():
     text = read(FULL_VERIFY)
 
-    assert (
-        '} else {\n'
-        '    [void](Invoke-Verify "03-scoring/verify-wsl" $scoreVerify '
-        '@("-WslOnly", "-RequireCdm"))\n'
-        '}'
-    ) in text
+    assert '$wslScoreArguments = @("-WslOnly", "-RequireCdm")' in text
+    assert 'Invoke-Verify "03-scoring/verify-wsl" $scoreVerify $wslScoreArguments' in text
 
 
 def test_full_verify_wsl_cdm_verifier_temporarily_allows_stderr():
@@ -692,6 +719,14 @@ def test_full_verify_docs_include_the_native_only_cdm_command():
 
     assert command in read(REPO_ROOT / "AGENTS.md")
     assert command in read(REPO_ROOT / "eval-infra" / "README.md")
+
+
+def test_full_verify_accepts_explicit_subset_artifacts():
+    text = read(FULL_VERIFY)
+
+    for parameter in ("PredictionDir", "PredictionManifest", "ScoreSaveName", "BenchmarkDir"):
+        assert f"[string] ${parameter}" in text
+    assert 'if ($ScoreSaveName)' in text
 
 
 def test_agents_success_criteria_accepts_the_applicable_cdm_verifier():

@@ -9,6 +9,8 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parents[1]
 ADAPTER = REPO_ROOT / "adapters" / "paddleocr-vl-1.6" / "run_adapter.py"
 VLM_SETUP = REPO_ROOT / "adapters" / "paddleocr-vl-1.6" / "01-vlm-server" / "setup.ps1"
+LAYOUT_SETUP = REPO_ROOT / "adapters" / "paddleocr-vl-1.6" / "02-layout-model" / "setup.ps1"
+DEPS_SETUP = REPO_ROOT / "adapters" / "paddleocr-vl-1.6" / "00-install-deps" / "setup.ps1"
 
 
 def load_adapter():
@@ -226,7 +228,66 @@ def test_vlm_setup_checks_llama_server_full_name():
     assert "Test-Path -LiteralPath $serverExe.FullName" in text
 
 
+def test_vlm_setup_uses_locked_hugging_face_cli_without_xet():
+    text = VLM_SETUP.read_text(encoding="utf-8")
+
+    assert 'Join-Path $repoRoot ".venv\\Scripts\\hf.exe"' in text
+    assert '$env:HF_HUB_DISABLE_XET = "1"' in text
+    assert "--max-workers 4" in text
+    assert "    huggingface-cli download" not in text
+
+
 def test_vlm_setup_uses_served_gguf_path_as_api_model_id():
     text = VLM_SETUP.read_text(encoding="utf-8")
 
-    assert "VL_REC_API_MODEL_NAME = $mainGguf" in text
+    assert "VL_REC_API_MODEL_NAME = (Split-Path $mainGguf -Leaf)" in text
+    assert "VL_REC_API_MODEL_NAME = $mainGguf" not in text
+
+
+def test_vlm_verifier_fails_on_served_model_mismatch():
+    verifier = (VLM_SETUP.parent / "verify.ps1").read_text(encoding="utf-8")
+
+    assert "FAIL: VL_REC_API_MODEL_NAME=" in verifier
+    assert "$ok = $false" in verifier
+
+
+def test_vlm_setup_enables_gpu_layers_only_for_hip_variant():
+    text = VLM_SETUP.read_text(encoding="utf-8")
+
+    assert '$gpuLayers = if ($Variant -eq "hip") { "99" } else { "0" }' in text
+    assert '"-ngl", $gpuLayers' in text
+    assert "LLAMA_GPU_LAYERS" in text
+
+
+def test_vlm_setup_replaces_binary_when_variant_changes():
+    text = VLM_SETUP.read_text(encoding="utf-8")
+
+    assert '$variantFile = Join-Path $llamaDir ".variant"' in text
+    assert "$installedVariant -eq $Variant" in text
+    assert "llama.cpp variant mismatch" in text
+    assert "Set-Content -LiteralPath $variantFile -Value $Variant" in text
+
+
+def test_layout_setup_serializes_required_files_for_python():
+    text = LAYOUT_SETUP.read_text(encoding="utf-8")
+
+    assert "$requiredJson = $required | ConvertTo-Json -Compress" in text
+    assert "required = $requiredJson" in text
+    assert "required = $required" not in text.replace("required = $requiredJson", "")
+    assert "HF_HUB_DISABLE_XET" in text
+
+
+def test_dependency_setup_handles_expected_missing_import():
+    text = DEPS_SETUP.read_text(encoding="utf-8")
+
+    assert '$ErrorActionPreference = "Continue"' in text
+    assert "$importExit = $LASTEXITCODE" in text
+    assert "if ($importExit -eq 0)" in text
+
+
+def test_dependency_setup_supports_uv_env_without_pip():
+    text = DEPS_SETUP.read_text(encoding="utf-8")
+
+    assert "Get-Command uv" in text
+    assert "pip install --python $Python" in text
+    assert "$Python -m ensurepip --upgrade" in text

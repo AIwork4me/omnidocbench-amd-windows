@@ -16,7 +16,10 @@
 
 ![OmniDocBench AMD Windows 概览](overview.jpg)
 
-| 指标 | PaddleOCR-VL (论文) | PaddleOCR-VL-ROCm (实测) |
+> **历史全量参考目标：**下表是已有发布证据记录的 1651 页结果，并非当前
+> Radeon 860M 机器本轮重跑结果；本机物理复现结果见下方独立小节。
+
+| 指标 | PaddleOCR-VL (论文) | PaddleOCR-VL-ROCm（全量参考） |
 |---:|---:|---:|
 | 整体 Overall | 96.33 | **95.99** |
 | 文本 Edit-dist | 0.033 | 0.03488 |
@@ -25,6 +28,29 @@
 | 公式 CDM | 97.49 | **97.36** |
 
 G4 推理加速比: **1.7x** (27 页分层抽样，9 类别、0 结构错配)。 PaddleOCR-VL-ROCm 默认 `vlm_max_workers=8` 即可获得此加速。 | > Overall = (文本准确率 + CDM + TEDS) / 3，其中文本准确率 = (1 − Edit_dist) × 100。阅读顺序不纳入 Overall（布局指标，非内容准确率）。
+
+### 本机已验核结果
+
+2026-07-26，一台 Ryzen AI 7 PRO 350 / Radeon 860M 机器完成了严格固定的
+200 页 CPU fallback 运行。这是本机能力证据，**不是** 1651 页 leaderboard
+全量结果。
+
+| 指标 | 已验核 200 页结果 |
+|---|---:|
+| Overall（官方 notebook 聚合） | **96.6362** |
+| 文本 Edit-distance | **0.02446** |
+| 阅读顺序 Edit-distance | **0.11668** |
+| 表格 TEDS | **96.2597** |
+| 公式 CDM | **96.0949** |
+
+确定性单 worker 评分后，Windows 与 WSL 的共同指标完全一致；CDM/TEDS 的
+timeout、error、exception 均为 0。完整命令、分母、raw 值、限制与 hash 见
+[`docs/reproduction-cpu-200-2026-07-26.md`](docs/reproduction-cpu-200-2026-07-26.md)。
+
+Radeon 860M（gfx1152）无法运行本次测试的官方 Windows HIP llama.cpp：
+b9637 与 b10107 都报 `ROCm error: invalid device function`。此类 GPU 应使用
+`-Variant cpu`，除非已有兼容 gfx1152 的构建。详见
+[`docs/llama-cpp-radeon-860m-gfx1152-issue-draft-2026-07-26.md`](docs/llama-cpp-radeon-860m-gfx1152-issue-draft-2026-07-26.md)。
 
 ## 系统需求
 
@@ -92,6 +118,39 @@ powershell -ExecutionPolicy Bypass -File eval-infra\03-scoring\verify.ps1
 # 或一次性跑完：
 powershell -ExecutionPolicy Bypass -File scripts\full-verify.ps1
 ```
+
+受限硬件可使用 `v16-cpu-200.yaml` 与 `v16-cdm-cpu-200.yaml` 的显式 200 页
+能力路径。推理产生至少 200 个可用预测后，生成与预测一一对应的 GT 子集，
+验证输出合同，再对显式配置评分：
+
+```powershell
+.\.venv\Scripts\python.exe scripts\build_prediction_subset.py `
+  --full-manifest eval-infra\01-omnidocbench\data\OmniDocBench.json `
+  --pred-dir predictions\paddleocrvl_cpu_860m_200 `
+  --output eval-infra\01-omnidocbench\data\OmniDocBench_cpu_200.json `
+  --limit 200
+.\.venv\Scripts\python.exe scripts\validate_predictions.py `
+  --manifest eval-infra\01-omnidocbench\data\OmniDocBench_cpu_200.json `
+  --pred-dir predictions\paddleocrvl_cpu_860m_200 `
+  --min-coverage 1.0
+powershell -ExecutionPolicy Bypass -File eval-infra\03-scoring\score.ps1 `
+  -Config v16-cpu-200.yaml -SaveName paddleocrvl_cpu_860m_200
+```
+
+WSL CDM 使用同一预测目录与 CDM 配置，最终验证显式绑定到本次产物：
+
+```powershell
+wsl -d Ubuntu2204 bash ./eval-infra/03-scoring/score-cdm.sh `
+  v16-cdm-cpu-200.yaml `
+  predictions/paddleocrvl_cpu_860m_200
+powershell -ExecutionPolicy Bypass -File scripts\full-verify.ps1 `
+  -PredictionDir predictions\paddleocrvl_cpu_860m_200 `
+  -PredictionManifest eval-infra\01-omnidocbench\data\OmniDocBench_cpu_200.json `
+  -ScoreSaveName paddleocrvl_cpu_860m_200_quick_match
+```
+
+不得把该子集分数标记为 1651 页全量分数。已验证命令、证据哈希与限制见
+[`docs/reproduction-cpu-200-2026-07-26.md`](docs/reproduction-cpu-200-2026-07-26.md)。
 
 Windows 原生 CDM 已受支持：`eval-infra/01-omnidocbench/setup.ps1` 会自动应用
 `patches/omnidocbench/windows-cdm.patch`，并由
@@ -238,4 +297,12 @@ agent 驱动的流程和异常速查表见 [`AGENTS.md`](AGENTS.md)。
 
 ## 许可证
 
-评测代码与数据集的条款以上游 [OmniDocBench](https://github.com/opendatalab/OmniDocBench) 许可证为准。本 repo 中的基础设施与适配器代码按原样提供，用于复现该基准。
+本仓库原创代码按 [`LICENSE`](LICENSE) 中的 Apache-2.0 发布。下载的
+OmniDocBench 代码/数据集、PaddleOCR/PaddleOCR-VL 权重、PP-DocLayoutV3、
+llama.cpp 二进制及系统包仍受各自上游许可证和条款约束。本仓库不会重新授权
+这些第三方资产；生成的 checkout、数据、模型、预测和结果均保持 gitignored。
+重新分发前请检查对应上游条款。
+
+安全问题报告见 [`SECURITY.md`](SECURITY.md)，社区行为规范见
+[`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md)。托管 CI 只验证确定性测试和脚本
+语法，不代替 WSL、AMD GPU、CDM、评分或 benchmark 的物理机器证据。

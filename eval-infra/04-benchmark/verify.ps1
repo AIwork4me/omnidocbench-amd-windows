@@ -52,7 +52,8 @@ Write-Host "[2/5] Report file ..." -ForegroundColor Cyan
 if (-not (Test-Path $reportFile)) { Fail "benchmark-report.md missing at $reportFile" }
 $reportContent = Get-Content -Raw $reportFile -Encoding UTF8
 if ($reportContent.Length -lt 500) { Fail "benchmark-report.md too short ($($reportContent.Length) chars)" }
-if ($reportContent -notmatch '(?m)^\| Platform \|\s*([^|\r\n]+?)\s*\|$') {
+$platformLine = @($reportContent -split "`r?`n" | Where-Object { $_ -match '^\| Platform \|' } | Select-Object -First 1)
+if ($platformLine.Count -eq 0 -or $platformLine[0] -notmatch '^\| Platform \|\s*([^|]+?)\s*\|\s*$') {
     Fail "report does not declare a non-empty platform in Environment Snapshot"
 }
 $declaredPlatform = $matches[1].Trim()
