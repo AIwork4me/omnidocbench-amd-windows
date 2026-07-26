@@ -25,6 +25,10 @@ verifier still runs and CDM scoring remains mandatory.
 
 .PARAMETER DryRun
 Print the ordered phase commands without executing them.
+
+.PARAMETER SeedFrom
+Explicitly reuse lock-verified dataset/GGUF/layout bytes from another checkout.
+This skips repeated bulk downloads but remains a fresh inference/scoring run.
 #>
 [CmdletBinding()]
 param(
@@ -35,6 +39,7 @@ param(
     [switch] $ForceInference,
     [switch] $SkipCdmSetup,
     [switch] $DryRun,
+    [string] $SeedFrom = "",
     [string] $ServerPort = "8121"
 )
 $ErrorActionPreference = "Stop"
@@ -58,6 +63,7 @@ $state = [ordered]@{
     started_at = (Get-Date).ToUniversalTime().ToString("o")
     status = "running"
     phases = @()
+    seeded_from = $(if ([string]::IsNullOrWhiteSpace($SeedFrom)) { $null } else { [System.IO.Path]::GetFullPath($SeedFrom) })
 }
 $completedPhases = @()
 $alwaysRunPhases = @(
@@ -182,6 +188,13 @@ Invoke-Phase "Preflight" {
     & powershell -ExecutionPolicy Bypass -File (Join-Path $rootDir "scripts\preflight.ps1") -CdmPath Wsl -Variant cpu
     Assert-LastExit "preflight.ps1"
 } "scripts\preflight.ps1 -CdmPath Wsl -Variant cpu"
+
+if (-not [string]::IsNullOrWhiteSpace($SeedFrom)) {
+    Invoke-Phase "Seed locked inputs" {
+        & powershell -ExecutionPolicy Bypass -File (Join-Path $rootDir "scripts\seed-locked-inputs.ps1") -SourceRoot $SeedFrom -DestinationRoot $rootDir
+        Assert-LastExit "seed locked inputs"
+    } "seed-locked-inputs.ps1 -SourceRoot $SeedFrom"
+}
 
 Invoke-Phase "OmniDocBench and dataset" {
     & powershell -ExecutionPolicy Bypass -File (Join-Path $rootDir "eval-infra\01-omnidocbench\setup.ps1")

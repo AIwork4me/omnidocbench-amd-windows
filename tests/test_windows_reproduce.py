@@ -8,6 +8,7 @@ import yaml
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 SCRIPT = REPO_ROOT / "scripts" / "reproduce.ps1"
+SEED_SCRIPT = REPO_ROOT / "scripts" / "seed-locked-inputs.ps1"
 CONFIG_DIR = REPO_ROOT / "eval-infra" / "01-omnidocbench" / "configs"
 
 
@@ -51,6 +52,22 @@ def test_orchestrator_is_windows_only_fail_closed_and_exactly_ten_pages():
     assert 'Invoke-Phase "Inference input locks"' in text
     assert "Ten-page inference requires exactly 10 Markdown predictions" in text
     assert "Manifest generation requires exactly 10 predictions" in text
+    assert '[string] $SeedFrom = ""' in text
+    assert 'Invoke-Phase "Seed locked inputs"' in text
+    assert "seed-locked-inputs.ps1" in text
+
+
+def test_seed_script_copies_only_locked_inputs_and_reverifies_destination():
+    text = SEED_SCRIPT.read_text(encoding="utf-8")
+    assert "DatasetManifest" in text and "Vlm" in text and "Layout" in text
+    assert "verify_dataset_tree.py" in text
+    assert "ConvertTo-ExtendedPath" in text
+    assert "Ensure-ShortRepoRoot" in text
+    assert "[System.IO.File]::Exists($extendedSource)" in text
+    assert "predictions" not in text
+    assert "metric_result" not in text
+    assert 'Join-Path $SourceRoot ".env.local"' not in text
+    assert 'Join-Path $DestinationRoot ".env.local"' not in text
 
 
 def test_orchestrator_dry_run_parses_and_records_ordered_phases(tmp_path: Path):
@@ -75,6 +92,7 @@ def test_orchestrator_dry_run_parses_and_records_ordered_phases(tmp_path: Path):
         "Network mirrors",
         "WSL availability",
         "Preflight",
+        "Seed locked inputs",
         "OmniDocBench and dataset",
         "Upstream locks",
         "WSL CDM environment",

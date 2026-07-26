@@ -106,7 +106,7 @@ def test_dataset_tree_verifier_accepts_exact_tree_and_rejects_change(tmp_path: P
     assert spec and spec.loader
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
-    count, total_bytes, digest = module.dataset_tree_digest(manifest, images)
+    count, total_bytes, digest = module.dataset_tree_digest(manifest, images, tmp_path)
     lock = json.loads(LOCK.read_text(encoding="utf-8"))
     lock["huggingface"]["dataset"]["manifest"].update(
         {
@@ -126,6 +126,8 @@ def test_dataset_tree_verifier_accepts_exact_tree_and_rejects_change(tmp_path: P
         str(images),
         "--lock",
         str(test_lock),
+        "--repo-root",
+        str(tmp_path),
     ]
     ok = subprocess.run(command, capture_output=True, text=True, check=False)
     assert ok.returncode == 0, ok.stdout + ok.stderr

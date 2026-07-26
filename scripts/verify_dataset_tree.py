@@ -14,9 +14,11 @@ from windows_paths import through_short_repo
 REPO_ROOT = Path(__file__).resolve().parents[1]
 
 
-def dataset_tree_digest(manifest: Path, image_dir: Path) -> tuple[int, int, str]:
-    manifest = through_short_repo(manifest, REPO_ROOT)
-    image_dir = through_short_repo(image_dir, REPO_ROOT)
+def dataset_tree_digest(
+    manifest: Path, image_dir: Path, repo_root: Path = REPO_ROOT
+) -> tuple[int, int, str]:
+    manifest = through_short_repo(manifest, repo_root)
+    image_dir = through_short_repo(image_dir, repo_root)
     pages = json.loads(manifest.read_text(encoding="utf-8"))
     refs = sorted(page["page_info"]["image_path"] for page in pages)
     tree = hashlib.sha256()
@@ -45,10 +47,13 @@ def main() -> int:
     parser.add_argument("--manifest", type=Path, required=True)
     parser.add_argument("--image-dir", type=Path, required=True)
     parser.add_argument("--lock", type=Path, default=REPO_ROOT / "upstream-lock.json")
+    parser.add_argument("--repo-root", type=Path, default=REPO_ROOT)
     args = parser.parse_args()
     lock = json.loads(args.lock.read_text(encoding="utf-8"))
     expected = lock["huggingface"]["dataset"]["manifest"]
-    count, total_bytes, digest = dataset_tree_digest(args.manifest, args.image_dir)
+    count, total_bytes, digest = dataset_tree_digest(
+        args.manifest, args.image_dir, args.repo_root
+    )
     failures = []
     if count != expected["pages"]:
         failures.append(f"pages: expected {expected['pages']}, actual {count}")
