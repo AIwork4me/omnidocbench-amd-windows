@@ -25,7 +25,13 @@ $python = Join-Path $DestinationRoot ".venv\Scripts\python.exe"
 $lockFile = Join-Path $DestinationRoot "upstream-lock.json"
 
 function ConvertTo-ExtendedPath([string] $Path) {
-    $full = [System.IO.Path]::GetFullPath($Path)
+    $full = if ([System.IO.Path]::IsPathRooted($Path)) {
+        $Path
+    } else {
+        Join-Path (Get-Location).Path $Path
+    }
+    $full = $full -replace '/', '\'
+    if ($full.StartsWith("\\?\")) { return $full }
     if ($full.StartsWith("\\")) { return "\\?\UNC\" + $full.Substring(2) }
     return "\\?\" + $full
 }
@@ -47,8 +53,8 @@ function Ensure-ShortRepoRoot([string] $RepoRoot) {
     return $alias
 }
 
-$null = Ensure-ShortRepoRoot $SourceRoot
-$null = Ensure-ShortRepoRoot $DestinationRoot
+$sourceShortRoot = Ensure-ShortRepoRoot $SourceRoot
+$destinationShortRoot = Ensure-ShortRepoRoot $DestinationRoot
 
 function Copy-LockedFile([string] $Source, [string] $Destination) {
     $extendedSource = ConvertTo-ExtendedPath $Source
@@ -75,15 +81,15 @@ foreach ($component in @("DatasetManifest", "Vlm", "Layout")) {
     --repo-root $SourceRoot
 if ($LASTEXITCODE -ne 0) { throw "Seed source dataset tree lock verification failed" }
 
-$sourceManifest = Join-Path $SourceRoot "eval-infra\01-omnidocbench\data\OmniDocBench.json"
-$destinationManifest = Join-Path $DestinationRoot "eval-infra\01-omnidocbench\data\OmniDocBench.json"
+$sourceManifest = Join-Path $sourceShortRoot "eval-infra\01-omnidocbench\data\OmniDocBench.json"
+$destinationManifest = Join-Path $destinationShortRoot "eval-infra\01-omnidocbench\data\OmniDocBench.json"
 Copy-LockedFile $sourceManifest $destinationManifest
 $pages = @(Get-Content -Raw -Encoding UTF8 -LiteralPath $sourceManifest | ConvertFrom-Json)
 foreach ($page in $pages) {
     $relative = [string]$page.page_info.image_path
     Copy-LockedFile `
-        (Join-Path (Join-Path $SourceRoot "eval-infra\01-omnidocbench\data\images") $relative) `
-        (Join-Path (Join-Path $DestinationRoot "eval-infra\01-omnidocbench\data\images") $relative)
+        (Join-Path (Join-Path $sourceShortRoot "eval-infra\01-omnidocbench\data\images") $relative) `
+        (Join-Path (Join-Path $destinationShortRoot "eval-infra\01-omnidocbench\data\images") $relative)
 }
 
 foreach ($relative in @(
@@ -92,7 +98,7 @@ foreach ($relative in @(
     "adapters\paddleocr-vl-1.6\models\PP-DocLayoutV3-onnx\inference.onnx",
     "adapters\paddleocr-vl-1.6\models\PP-DocLayoutV3-onnx\inference.yml"
 )) {
-    Copy-LockedFile (Join-Path $SourceRoot $relative) (Join-Path $DestinationRoot $relative)
+    Copy-LockedFile (Join-Path $sourceShortRoot $relative) (Join-Path $destinationShortRoot $relative)
 }
 
 & powershell -ExecutionPolicy Bypass -File $lockVerify -Component DatasetManifest -Path $destinationManifest -LockFile $lockFile

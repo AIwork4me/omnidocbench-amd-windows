@@ -64,6 +64,8 @@ def test_seed_script_copies_only_locked_inputs_and_reverifies_destination():
     assert "ConvertTo-ExtendedPath" in text
     assert "Ensure-ShortRepoRoot" in text
     assert "[System.IO.File]::Exists($extendedSource)" in text
+    assert "$sourceShortRoot" in text and "$destinationShortRoot" in text
+    assert 'if ($full.StartsWith("\\\\?\\"))' in text
     assert "predictions" not in text
     assert "metric_result" not in text
     assert 'Join-Path $SourceRoot ".env.local"' not in text
