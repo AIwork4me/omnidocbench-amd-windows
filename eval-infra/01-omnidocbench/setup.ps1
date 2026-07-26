@@ -329,7 +329,10 @@ if ($SkipDataset) {
 }
 
 # --- 2. Download v1.6 dataset (1651 pages + GT manifest) ---
-$dataDir  = Join-Path $PSScriptRoot "data"
+# Hugging Face creates long internal names under local_dir/.cache. Route the
+# whole download through the short-root junction, not only later image access,
+# so OneDrive clones do not fail before long-path recovery can run.
+$dataDir  = Join-Path $shortRoot "eval-infra\01-omnidocbench\data"
 $manifest = Join-Path $dataDir "OmniDocBench.json"
 if (Test-Path $manifest) {
     $imgDir = Join-Path $dataDir "images"

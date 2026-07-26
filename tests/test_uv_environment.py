@@ -44,4 +44,5 @@ def test_omnidocbench_setup_prefers_uv_and_never_uses_unsupported_python():
     assert "Recovering $($longMissing.Count) MAX_PATH dataset files" in text
     assert "function Ensure-ShortRepoRoot" in text
     assert "Windows short repository path" in text
+    assert '$dataDir  = Join-Path $shortRoot "eval-infra\\01-omnidocbench\\data"' in text
     assert "    huggingface-cli download" not in text
