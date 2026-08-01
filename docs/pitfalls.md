@@ -589,7 +589,7 @@ captions in HTML such as:
 ```
 
 OmniDocBench's `md_tex_filter()` removes Markdown image syntax
-`![](imgs/...)`, but non-table HTML image wrappers are left as ordinary
+`![] (imgs/...)`, but non-table HTML image wrappers are left as ordinary
 `text_all` candidates. This changes the candidate sequence and can make
 quick-match pair the wrong text spans.
 

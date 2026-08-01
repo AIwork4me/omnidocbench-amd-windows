@@ -76,7 +76,7 @@ OmniDocBench's Markdown parser/scorer is better aligned with the lightweight
 shape, which PaddleOCRVL also emits when calling `_to_markdown(pretty=False)`:
 
 ```markdown
-![](imgs/...)
+![] (imgs/...)
 
 Fig. 1. ...
 ```
@@ -117,7 +117,7 @@ writing the `.md` file:
 
 The fallback normalization still converts:
 
-- centered HTML image wrappers become `![](imgs/...)`
+- centered HTML image wrappers become `![] (imgs/...)`
 - centered caption/text wrappers become plain Markdown text
 - excessive blank lines are collapsed
 
