@@ -6,8 +6,8 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [Unreleased]
 
 ### Added
-- CI: pytest (3.10/3.11 matrix) + PSScriptAnalyzer on windows-latest.
-- CI: unified workflow on main (uv pytest matrix) + PSScriptAnalyzer job (this branch).
+- CI: unified workflow on main — uv pytest matrix (3.10/3.11, windows-latest)
+  + PSScriptAnalyzer Error-gate.
 - Guard tests: README EN/ZH metric consistency, markdown relative links,
   scoring-config existence, full-verify.ps1 parameter surface.
 - `CHANGELOG.md`.

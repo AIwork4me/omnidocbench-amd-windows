@@ -313,8 +313,8 @@ G4 推理加速比: **1.7x** (27 页分层抽样，9 类别、0 结构错配)。
 
 这些行使用 OmniDocBench 官方 leaderboard/notebook page-level 聚合口径；
 底层 raw `metric_result` all-values 保留在对应产物中用于审计。official-local
-路线 Formula CDM 为 `97.36`，ROCm lightweight 路线 Formula CDM 为
-`97.36`；相对 `97.49` 的剩余差距主要来自官方 Linux vLLM-style 基线与
+路线 Formula CDM 为 `96.5022`。修正后的 ROCm CDM 为 `97.36`；相对 `97.49`
+的剩余差距主要来自官方 Linux vLLM-style 基线与
 本机 Windows AMD llama.cpp/GGUF server 路径的推理后端/模型输出差异。本轮
 official-local 仍有 1 个稳定 VLM 500 页面：
 `newspaper_The Times UK_0801@magazinesclubnew_page_031.png`，

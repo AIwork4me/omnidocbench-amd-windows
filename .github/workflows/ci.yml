@@ -2,6 +2,7 @@ name: CI
 
 on:
   push:
+    branches: [main]
   pull_request:
 
 permissions:
@@ -46,7 +47,7 @@ jobs:
       - name: Lint PowerShell
         shell: pwsh
         run: |
-          Install-Module PSScriptAnalyzer -Scope CurrentUser -Force -Repository PSGallery
+          Install-Module PSScriptAnalyzer -RequiredVersion 1.24.0 -Scope CurrentUser -Force -Repository PSGallery
           $errors = Invoke-ScriptAnalyzer -Path . -Recurse -Severity Error
           if ($errors) {
             $errors | Format-Table ScriptName, Line, RuleName, Message -AutoSize | Out-String | Write-Host

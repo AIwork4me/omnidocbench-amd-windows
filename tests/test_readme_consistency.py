@@ -36,3 +36,11 @@ def test_official_local_cdm_value_consistent():
     zh = (ROOT / "README.zh-CN.md").read_text(encoding="utf-8")
     assert "96.5022" in en
     assert "96.5022" in zh, "ZH README must cite official-local CDM 96.5022"
+    assert en.count("96.5022") == zh.count("96.5022"), (
+        f"96.5022 count mismatch: EN={en.count('96.5022')} ZH={zh.count('96.5022')}"
+    )
+    for lang, text in (("EN", en), ("ZH", zh)):
+        for line in text.splitlines():
+            assert not ("official-local" in line and "97.36" in line), (
+                f"{lang} README still pairs official-local with stale CDM 97.36: {line}"
+            )

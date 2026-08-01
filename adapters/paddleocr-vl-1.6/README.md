@@ -123,7 +123,7 @@ python adapters\paddleocr-vl-1.6\run_adapter.py `
 Important: PaddleOCRVL's default Markdown export is presentation-oriented:
 `_to_markdown(pretty=True)` wraps centered images and captions in HTML
 `<div>`/`<img>` tags. OmniDocBench's parser/scorer expects evaluation-oriented
-plain Markdown, where images are written as `![] (imgs/...)`. The official
+plain Markdown, where images are written as `![](imgs/...)`. The official
 engine therefore defaults to `_to_markdown(pretty=False)` before writing
 prediction `.md` files.
 
