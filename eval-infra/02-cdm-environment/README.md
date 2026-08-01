@@ -341,7 +341,8 @@ prints `already installed` / `already active` for each step.
   OmniDocBench source tree that Step 8 copies.
 - [`scripts/wsl-ensure.ps1`](../../scripts/wsl-ensure.ps1) — provisions the WSL
   Ubuntu 22.04 instance this all runs inside.
-- [`mirrors.env`](../../mirrors.env) — `CTAN_MIRROR`, `GITHUB_PROXY`,
+- `mirrors.env` (generated at repo root by `scripts/detect-mirrors.ps1`,
+  gitignored) — `CTAN_MIRROR`, `GITHUB_PROXY`,
   `PYPI_INDEX` consumed by setup.sh.
 - [`docs/pitfalls.md`](../../docs/pitfalls.md) — full narrative of each CDM
   landmine (`#grayscale`, `#mathcolor`, `#cjk-sty-missing`, `#gkaiu-map`,
