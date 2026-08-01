@@ -77,23 +77,33 @@ Phase B 能力与数据随后)。否决:方案 2 骨架大重构(破坏 AGENTS.m
 依赖:Phase A 全部完成并提交后启动。B1→B2 先行(全量推理+评分数小时,可后台),
 B3/B4 依赖 B2 数据。
 
-### B1 完成 `adapters/mineru/`
-- 实读现有未跟踪代码,对照 `adapters/_template` 契约
-  (`run_adapter(img_dir, out_dir, server_url)` + `out_dir/<stem>.md`)补齐。
+### B1 完成 `adapters/mineru/`(以已验证的 MinerU-ROCm 为基座移植)
+- **基座**:`C:\Users\rocm\Desktop\MinerU-ROCm` 是本机 GPU 上已成功运行的方案,
+  含 `adapter/run_adapter.py`、`adapter/setup` 与完整评测产物
+  (`model_card.pipeline.windows-hip.json`:2026-07-23 实测 Overall 86.59、
+  text_edit_dist 0.05655、TEDS 82.04、CDM 83.39、RO 0.15314,硬件即
+  AI MAX+ 395 / Radeon 8060S,后端 ROCm PyTorch + ONNX Runtime DirectML)。
+  B1 是**移植适配**,不是从零开发。
+- 对照 `adapters/_template` 契约(`run_adapter(img_dir, out_dir, server_url)`
+  + `out_dir/<stem>.md`)把 MinerU-ROCm adapter 收敛进本仓库 `adapters/mineru/`。
 - 补 `setup.ps1`(权重下载,幂等)+ `verify.ps1`。
 - 补非 CDM 评分配置(现有仅 `v16-cdm-mineru-pipeline.yaml`,不对称)。
 - **验收**:模板 README 五步可执行;`verify.ps1` exit 0。
 
-### B2 MinerU 全量实测(本机 AI MAX+ 395,1651 页)
-- 全量推理 + 四项指标评分。
+### B2 MinerU 全量复测(本机 AI MAX+ 395,1651 页,GPU 路径已验证)
+- 在本仓库评分管线(harness)下全量推理 + 四项指标评分,保证与
+  PaddleOCR-VL 数字同口径可比。
+- 与 MinerU-ROCm 2026-07-23 model card 数字交叉核对;偏差须在文档中解释
+  (评分口径、quick_match 等),不接受无解释偏差。
 - **验收**:`predictions/mineru/` 1651 个 .md;
-  `eval-infra/03-scoring/verify.ps1` exit 0;四指标真实数字。
-- **风险声明**:MinerU 官方主打 CUDA/vLLM,Windows AMD 上 GPU 路径可能不通。
-  这是实测要回答的问题;若不通,B2 降级为 CPU 实测并在文档中如实记录,不编造数字。
+  `eval-infra/03-scoring/verify.ps1` exit 0;四指标真实数字 + 与 model card
+  的核对结论写入 `docs/benchmarks/`。
 
 ### B3 多模型对比 Leaderboard(README 新章节)
-- 表:PaddleOCR-VL-ROCm / PaddleOCR official / MinerU × 四指标 + 推理耗时 + 显存峰值。
-- 每格数字链接到证据(release doc / metric_result.json 存档于 `docs/benchmarks/`)。
+- 表:PaddleOCR-VL-ROCm / PaddleOCR official / MinerU(pipeline, GPU)× 四指标
+  + 推理耗时 + 显存峰值。
+- 每格数字链接到证据(release doc / metric_result.json 存档于 `docs/benchmarks/`);
+  MinerU 列同时引用 MinerU-ROCm 的 windows-hip model card 作为外部佐证。
 - **验收**:表格每格可溯源。
 
 ### B4 Strix Halo 平台证据页
