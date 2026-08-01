@@ -1508,7 +1508,7 @@ Get-Content $cfgPath | ForEach-Object {
     if ($_ -match "^\s*(\w+):\s*(.*)") {
         $key = $matches[1]
         $val = $matches[2].Trim()
-        if ($val -match "^['`"](.*)['`"]$") { $val = $matches[1] }
+        if ($val -match "^['`"]" + "(.*)['`"]$") { $val = $matches[1] }
         $cfg[$key] = $val
     }
 }
@@ -2094,7 +2094,7 @@ git commit -m "docs(benchmark): bilingual README for 04-benchmark module"
 In `docs/architecture.md`, after line 61 (the `03-scoring` row), insert:
 
 ```markdown
-| [`04-benchmark`](../../../eval-infra/04-benchmark/) | Capability reports with GPU/RAM profiling + stability statistics | Windows (`run.ps1`) |
+| [`04-benchmark`] (../eval-infra/04-benchmark/) | Capability reports with GPU/RAM profiling + stability statistics | Windows (`run.ps1`) |
 ```
 
 Also, in the data-flow diagram (lines 8-34), add the benchmark module:
@@ -2116,7 +2116,7 @@ After the `+-------------------+` block ending at line 28, add the benchmark flo
 In `eval-infra/README.md`, after line 19 (the `03-scoring` row), insert:
 
 ```markdown
-| [`04-benchmark/`](04-benchmark/) | Capability reports: GPU/RAM profiling, per-page timing, score stability across N runs. Observe-only -- zero adapter changes required. | `run.ps1` Windows, `verify.ps1` Windows |
+| [`04-benchmark/`] (04-benchmark/) | Capability reports: GPU/RAM profiling, per-page timing, score stability across N runs. Observe-only -- zero adapter changes required. | `run.ps1` Windows, `verify.ps1` Windows |
 ```
 
 - [ ] **Step 3: Update `scripts/full-verify.ps1`**
@@ -2151,7 +2151,7 @@ if (Test-Path $benchVerify) {
     $benchDirs = @(Get-ChildItem (Join-Path $rootDir "benchmark-results") -Directory -ErrorAction SilentlyContinue | Where-Object { $_.Name -ne "reference" } | Sort-Object LastWriteTime -Descending)
     if ($benchDirs.Count -gt 0) {
         $latestBench = $benchDirs[0].FullName
-        [void](Invoke-Verify "04-benchmark/verify" "$benchVerify -ReportDir '$latestBench'")
+        [void] (Invoke-Verify "04-benchmark/verify" "$benchVerify -ReportDir '$latestBench'")
     } else {
         Add-Result "04-benchmark/verify" "SKIP" "no benchmark runs found"
     }

@@ -486,7 +486,7 @@ if ($SkipWindowsCdm) {
     Add-Result "02-cdm-environment/verify-windows" "SKIP" "-SkipWindowsCdm"
 } else {
     $winCdmVerify = Join-Path $rootDir "eval-infra\02-cdm-environment\verify-windows.ps1"
-    [void](Invoke-Verify "02-cdm-environment/verify-windows" $winCdmVerify)
+    [void] (Invoke-Verify "02-cdm-environment/verify-windows" $winCdmVerify)
 }
 ```
 
