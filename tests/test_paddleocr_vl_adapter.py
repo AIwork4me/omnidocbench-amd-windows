@@ -9,6 +9,8 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parents[1]
 ADAPTER = REPO_ROOT / "adapters" / "paddleocr-vl-1.6" / "run_adapter.py"
 VLM_SETUP = REPO_ROOT / "adapters" / "paddleocr-vl-1.6" / "01-vlm-server" / "setup.ps1"
+LAYOUT_SETUP = REPO_ROOT / "adapters" / "paddleocr-vl-1.6" / "02-layout-model" / "setup.ps1"
+DEPS_SETUP = REPO_ROOT / "adapters" / "paddleocr-vl-1.6" / "00-install-deps" / "setup.ps1"
 
 
 def load_adapter():
@@ -72,6 +74,62 @@ def test_expected_md_name_preserves_stem():
 
     assert adapter.expected_md_name("scan.JPG") == "scan.md"
     assert adapter.expected_md_name("abc.page-01.png") == "abc.page-01.md"
+
+
+def test_select_images_applies_deterministic_positive_limit(tmp_path):
+    adapter = load_adapter()
+    for name in ("c.png", "a.png", "b.jpg", "ignored.txt"):
+        (tmp_path / name).write_bytes(b"fake")
+
+    assert [path.name for path in adapter._select_images(tmp_path, 2)] == ["a.png", "b.jpg"]
+
+    try:
+        adapter._select_images(tmp_path, 0)
+    except ValueError as error:
+        assert str(error) == "max_pages must be positive"
+    else:
+        raise AssertionError("zero max_pages should fail")
+
+
+def test_run_adapter_passes_page_limit_to_both_engines(tmp_path, monkeypatch):
+    adapter = load_adapter()
+    img_dir = tmp_path / "images"
+    out_dir = tmp_path / "pred"
+    img_dir.mkdir()
+    calls = []
+
+    def fake_folder(**kwargs):
+        calls.append(kwargs)
+        return {"count": 0, "ok": 0, "fail": 0}
+
+    monkeypatch.setattr(adapter, "run_lightweight_folder", fake_folder)
+    monkeypatch.setattr(adapter, "run_official_folder", fake_folder)
+
+    adapter.run_adapter(img_dir, out_dir, engine="lightweight", max_pages=200)
+    adapter.run_adapter(img_dir, out_dir, engine="official", max_pages=200)
+
+    assert [call["max_pages"] for call in calls] == [200, 200]
+
+
+def test_repo_paths_are_routed_through_windows_short_alias(monkeypatch):
+    adapter = load_adapter()
+    calls = []
+
+    def fake_short_path(path, repo_root):
+        calls.append((Path(path), repo_root))
+        return Path("C:/short") / Path(path).name
+
+    def fake_lightweight(**kwargs):
+        return kwargs
+
+    monkeypatch.setattr(adapter, "through_short_repo", fake_short_path)
+    monkeypatch.setattr(adapter, "run_lightweight_folder", fake_lightweight)
+
+    result = adapter.run_adapter("images", "predictions")
+
+    assert result["img_dir"] == Path("C:/short/images")
+    assert result["out_dir"] == Path("C:/short/predictions")
+    assert len(calls) == 2
 
 
 def test_official_result_to_markdown_reads_markdown_attribute():
@@ -205,7 +263,91 @@ def test_vlm_setup_checks_llama_server_full_name():
     assert "Test-Path -LiteralPath $serverExe.FullName" in text
 
 
+def test_vlm_setup_uses_locked_hugging_face_cli_without_xet():
+    text = VLM_SETUP.read_text(encoding="utf-8")
+
+    assert 'Join-Path $repoRoot ".venv\\Scripts\\hf.exe"' in text
+    assert '$env:HF_HUB_DISABLE_XET = "1"' in text
+    assert "--max-workers 4" in text
+    assert "--revision $vlmRevision" in text
+    assert "    huggingface-cli download" not in text
+
+
+def test_vlm_setup_verifies_locked_archive_and_model_files():
+    text = VLM_SETUP.read_text(encoding="utf-8")
+
+    assert "$lockedLlamaTag" in text
+    assert "LlamaHipZip" in text and "LlamaCpuZip" in text
+    assert "-Component $llamaComponent -Path $zip" in text
+    assert "-Component Vlm -Path $vlmModelDir" in text
+    assert "Adopted lock-verified seeded GGUF files" in text
+    assert "PADDLEOCR_VL_MMPROJ = $lockedMmproj" in text
+
+
 def test_vlm_setup_uses_served_gguf_path_as_api_model_id():
     text = VLM_SETUP.read_text(encoding="utf-8")
 
-    assert "VL_REC_API_MODEL_NAME = $mainGguf" in text
+    assert "VL_REC_API_MODEL_NAME = (Split-Path $mainGguf -Leaf)" in text
+    assert "VL_REC_API_MODEL_NAME = $mainGguf" not in text
+
+
+def test_vlm_verifier_fails_on_served_model_mismatch():
+    verifier = (VLM_SETUP.parent / "verify.ps1").read_text(encoding="utf-8")
+
+    assert "FAIL: VL_REC_API_MODEL_NAME=" in verifier
+    assert "$ok = $false" in verifier
+
+
+def test_vlm_setup_enables_gpu_layers_only_for_hip_variant():
+    text = VLM_SETUP.read_text(encoding="utf-8")
+
+    assert '$gpuLayers = if ($Variant -eq "hip") { "99" } else { "0" }' in text
+    assert '"-ngl", $gpuLayers' in text
+    assert "LLAMA_GPU_LAYERS" in text
+
+
+def test_vlm_setup_replaces_binary_when_variant_changes():
+    text = VLM_SETUP.read_text(encoding="utf-8")
+
+    assert '$variantFile = Join-Path $llamaDir ".variant"' in text
+    assert "$installedVariant -eq $Variant" in text
+    assert "llama.cpp variant mismatch" in text
+    assert "Set-Content -LiteralPath $variantFile -Value $Variant" in text
+
+
+def test_layout_setup_serializes_required_files_for_python():
+    text = LAYOUT_SETUP.read_text(encoding="utf-8")
+
+    assert "$requiredJson = $required | ConvertTo-Json -Compress" in text
+    assert "required = $requiredJson" in text
+    assert "required = $required" not in text.replace("required = $requiredJson", "")
+    assert "HF_HUB_DISABLE_XET" in text
+    assert "revision=revision" in text
+    assert "-Component Layout -Path $ModelDir" in text
+
+
+def test_dependency_setup_handles_expected_missing_import():
+    text = DEPS_SETUP.read_text(encoding="utf-8")
+
+    assert '$ErrorActionPreference = "Continue"' in text
+    assert "$importExit = $LASTEXITCODE" in text
+    assert "if ($importExit -eq 0 -and (Test-Path -LiteralPath $probe))" in text
+
+
+def test_dependency_setup_supports_uv_env_without_pip():
+    text = DEPS_SETUP.read_text(encoding="utf-8")
+
+    assert "Get-Command uv" in text
+    assert "pip install --python $Python" in text
+    assert '$env:UV_LINK_MODE = "copy"' in text
+    assert "$env:UV_LINK_MODE = $previousLinkMode" in text
+    assert "$Python -m ensurepip --upgrade" in text
+
+
+def test_dependency_setup_fetches_and_verifies_locked_pipeline_commit():
+    text = DEPS_SETUP.read_text(encoding="utf-8")
+
+    assert "$pipelineCommit" in text
+    assert "fetch --depth 1 origin $pipelineCommit" in text
+    assert "checkout --detach FETCH_HEAD" in text
+    assert "verify-upstream-lock.ps1" in text

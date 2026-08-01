@@ -50,6 +50,11 @@ if ([string]::IsNullOrWhiteSpace($ModelDir)) {
     $ModelDir = Join-Path $adapterRoot "models\PP-DocLayoutV3-onnx"
 }
 $envFile = Join-Path $adapterRoot ".env.local"
+$lockFile = Join-Path $repoRoot "upstream-lock.json"
+$lockVerify = Join-Path $repoRoot "scripts\verify-upstream-lock.ps1"
+if (-not (Test-Path -LiteralPath $lockFile)) { throw "Upstream lock missing: $lockFile" }
+$upstreamLock = Get-Content -Raw -Encoding UTF8 -LiteralPath $lockFile | ConvertFrom-Json
+$layoutRevision = [string]$upstreamLock.huggingface.layout.revision
 
 # --- mirrors.env (HF_OR_MS) ---
 $mirrorsFile = Join-Path $repoRoot "mirrors.env"
@@ -105,6 +110,8 @@ function Set-DotEnv {
 
 $onnxFile = Join-Path $ModelDir "inference.onnx"
 if ((Test-Path $onnxFile) -and -not $Force) {
+    & powershell -ExecutionPolicy Bypass -File $lockVerify -Component Layout -Path $ModelDir
+    if ($LASTEXITCODE -ne 0) { throw "Existing layout model does not match upstream-lock.json" }
     $sizeMB = [math]::Round((Get-Item $onnxFile).Length / 1MB, 1)
     Write-Host "PP-DocLayoutV3 ONNX already present: $onnxFile ($sizeMB MB)" -ForegroundColor Green
 } else {
@@ -115,22 +122,26 @@ if ((Test-Path $onnxFile) -and -not $Force) {
 
     # Drive the download from python so the same snippet works for both
     # huggingface_hub and modelscope. Either lib is a one-line pip install.
+    $requiredJson = $required | ConvertTo-Json -Compress
     $dl = @"
 import sys
+import os
 from pathlib import Path
 model_dir = Path(r'$ModelDir')
 model_dir.mkdir(parents=True, exist_ok=True)
-required = $required
+required = $requiredJson
 source = '$Source'
 repo_id = '$repoId'
+revision = '$layoutRevision'
 
 if source == 'huggingface':
+    os.environ['HF_HUB_DISABLE_XET'] = '1'
     try:
         from huggingface_hub import hf_hub_download
     except ImportError:
         sys.exit('huggingface_hub not installed. Run: pip install huggingface_hub')
     for name in required:
-        p = hf_hub_download(repo_id=repo_id, filename=name, local_dir=str(model_dir))
+        p = hf_hub_download(repo_id=repo_id, filename=name, revision=revision, local_dir=str(model_dir))
         print(f'Downloaded {name} -> {p}')
 elif source == 'modelscope':
     try:
@@ -156,6 +167,8 @@ else:
 if (-not (Test-Path $onnxFile)) {
     throw "inference.onnx not found after download at $ModelDir"
 }
+& powershell -ExecutionPolicy Bypass -File $lockVerify -Component Layout -Path $ModelDir
+if ($LASTEXITCODE -ne 0) { throw "Downloaded layout model does not match upstream-lock.json" }
 
 # Verify both required files are present.
 $missing = @($required | Where-Object { -not (Test-Path (Join-Path $ModelDir $_)) })

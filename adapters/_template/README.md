@@ -39,10 +39,19 @@ def run_adapter(img_dir: Path, out_dir: Path, server_url: str = "") -> dict:
    `score.ps1` / `full-verify.ps1` assume):
    ```powershell
    powershell -ExecutionPolicy Bypass -File adapters\<your-model>\setup.ps1
-   python adapters\<your-model>\run_adapter.py `
+      .\.venv\Scripts\python.exe adapters\<your-model>\run_adapter.py `
        --img-dir  eval-infra\01-omnidocbench\data\images `
        --out-dir  predictions\<your-model>
    ```
-5. Point the scoring module at `predictions/<your-model>/` and run the scorer.
+   5. Validate the shared output contract, then point the scorer at the same
+      directory:
+      ```powershell
+      .\.venv\Scripts\python.exe scripts\validate_predictions.py `
+         --img-dir eval-infra\01-omnidocbench\data\images `
+         --pred-dir predictions\<your-model> `
+         --min-coverage 0.95
+      powershell -ExecutionPolicy Bypass -File eval-infra\03-scoring\score.ps1 `
+         -PredictionDir predictions\<your-model>
+      ```
 
 See `../paddleocr-vl-1.6/README.md` for a complete, proven reference adapter.

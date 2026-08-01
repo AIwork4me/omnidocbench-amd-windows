@@ -1,0 +1,17 @@
+# Local 200-page CPU capability subset (Edit_dist + TEDS; CDM disabled).
+#
+# The ground-truth manifest is generated from exactly 200 non-empty prediction
+# stems by scripts/build_prediction_subset.py. This is a constrained-hardware
+# reproduction path, not an OmniDocBench full-set leaderboard result.
+end2end_eval:
+  metrics:
+    text_block:      { metric: [Edit_dist] }
+    display_formula: { metric: [Edit_dist] }
+    table:           { metric: [TEDS, Edit_dist], teds_workers: 1 }
+    reading_order:   { metric: [Edit_dist] }
+  dataset:
+    dataset_name: end2end_dataset
+    ground_truth: { data_path: <REPO_ROOT>/eval-infra/01-omnidocbench/data/OmniDocBench_cpu_200.json }
+    prediction:   { data_path: <REPO_ROOT>/predictions/paddleocrvl_cpu_860m_200 }
+    match_method: quick_match
+    match_workers: 1

@@ -5,6 +5,7 @@
 [![OmniDocBench v1.6](https://img.shields.io/badge/OmniDocBench-v1.6-00C853.svg)](https://github.com/opendatalab/OmniDocBench)
 [![Python 3.10+](https://img.shields.io/badge/Python-3.10+-3776AB.svg)](https://www.python.org/downloads/)
 [![GitHub stars](https://img.shields.io/github/stars/AIwork4me/omnidocbench-amd-windows)](https://github.com/AIwork4me/omnidocbench-amd-windows)
+[![ci](https://github.com/AIwork4me/omnidocbench-amd-windows/actions/workflows/ci.yml/badge.svg)](https://github.com/AIwork4me/omnidocbench-amd-windows/actions/workflows/ci.yml)
 
 [English](README.md) · [架构图](docs/architecture.md) · [踩坑知识库](docs/pitfalls.md) · [AGENTS.md](AGENTS.md)
 
@@ -16,7 +17,10 @@
 
 ![OmniDocBench AMD Windows 概览](overview.jpg)
 
-| 指标 | PaddleOCR-VL (论文) | PaddleOCR-VL-ROCm (实测) |
+> **历史全量参考目标：**下表是已有发布证据记录的 1651 页结果，并非当前
+> Radeon 860M 机器本轮重跑结果；本机物理复现结果见下方独立小节。
+
+| 指标 | PaddleOCR-VL (论文) | PaddleOCR-VL-ROCm（全量参考） |
 |---:|---:|---:|
 | 整体 Overall | 96.33 | **95.99** |
 | 文本 Edit-dist | 0.033 | 0.03488 |
@@ -25,6 +29,37 @@
 | 公式 CDM | 97.49 | **97.36** |
 
 G4 推理加速比: **1.7x** (27 页分层抽样，9 类别、0 结构错配)。 PaddleOCR-VL-ROCm 默认 `vlm_max_workers=8` 即可获得此加速。 | > Overall = (文本准确率 + CDM + TEDS) / 3，其中文本准确率 = (1 − Edit_dist) × 100。阅读顺序不纳入 Overall（布局指标，非内容准确率）。
+
+<details>
+<summary><strong>本机已验核结果</strong></summary>
+
+<br>
+
+2026-07-26，一台 Ryzen AI 7 PRO 350 / Radeon 860M 机器完成了严格固定的
+200 页 CPU fallback 运行。这是本机能力证据，**不是** 1651 页 leaderboard
+全量结果。
+
+| 指标 | 已验核 200 页结果 |
+|---|---:|
+| Overall（官方 notebook 聚合） | **96.6362** |
+| 文本 Edit-distance | **0.02446** |
+| 阅读顺序 Edit-distance | **0.11668** |
+| 表格 TEDS | **96.2597** |
+| 公式 CDM | **96.0949** |
+
+确定性单 worker 评分后，Windows 与 WSL 的共同指标完全一致；CDM/TEDS 的
+timeout、error、exception 均为 0。完整命令、分母、raw 值、限制与 hash 见
+[`docs/reproduction-cpu-200-2026-07-26.md`](docs/reproduction-cpu-200-2026-07-26.md)。
+
+Radeon 860M（gfx1152）无法运行本次测试的官方 Windows HIP llama.cpp：
+b9637 与 b10107 都报 `ROCm error: invalid device function`。此类 GPU 应使用
+`-Variant cpu`，除非已有兼容 gfx1152 的构建，因此本次已验核运行被迫回退到
+CPU。该 Windows HIP 打包缺口已提交至上游
+[`ggml-org/llama.cpp#26127`](https://github.com/ggml-org/llama.cpp/issues/26127)；
+本地复现细节见
+[`docs/llama-cpp-radeon-860m-gfx1152-issue-draft-2026-07-26.md`](docs/llama-cpp-radeon-860m-gfx1152-issue-draft-2026-07-26.md)。
+
+</details>
 
 ## 系统需求
 
@@ -38,13 +73,16 @@ G4 推理加速比: **1.7x** (27 页分层抽样，9 类别、0 结构错配)。
 | CPU 核数 | 4（TEDS/CDM 的 worker 数随核数扩展） | 8+ |
 | WSL | Ubuntu 22.04（rootfs 导入或商店安装） | 同左 |
 | Python | 3.10 或 3.11（**不可** 3.12/3.13——OmniDocBench 会报错） | 3.11 |
+| Python 环境 | [uv](https://docs.astral.sh/uv/) | 最新稳定版 |
 | PowerShell | Windows PowerShell 5.1（自带）或 PowerShell 7+ | 同左 |
 
 全量 1651 页运行的时间估算：步骤 1（数据集下载）国内网络约 15-20 分钟；步骤 2（CDM 环境）约 30 分钟（TeX Live 是大头）；步骤 3（适配器推理）取决于 GPU（CPU 数小时，Radeon HIP 数十分钟）；步骤 4（评分）约 5 分钟（Edit_dist+TEDS）+ 20-30 分钟（CDM，每条公式都要跑 LaTeX）。
 
 ### 快速开始
 
-克隆，然后跑四个搭建阶段。每个 `setup.*` 都是幂等的；之后跑对应的 `verify.*`。**所有命令都假定在 repo 根目录执行。**
+无需再次运行精度全量评测，可用标准 10 页 CPU profile 验证 AMD Windows
+是否真正搭通。它包含 WSL CDM，并将可恢复证据写到
+`outputs/reproduction/cpu-smoke-10/`：
 
 ```bash
 git clone https://github.com/AIwork4me/omnidocbench-amd-windows
@@ -52,41 +90,127 @@ cd omnidocbench-amd-windows
 ```
 
 ```powershell
-# 步骤 0：环境 + 网络 + WSL
+powershell -ExecutionPolicy Bypass -File scripts\reproduce.ps1 `
+  -Profile cpu-smoke-10
+```
+
+中断后才使用 `-Resume`。首次运行会拒绝已有的该 profile 预测/结果，严格处理
+10 张图，验证全部锁定的上游输入，并完成 Windows 指标和 WSL CDM 评分。这是
+能力 smoke test，不是 leaderboard 结果。可执行输入锁见
+[`docs/upstream-lock.md`](docs/upstream-lock.md)。
+
+如果另一 checkout 已有锁定的 dataset/GGUF/layout，可避免重复 bulk 下载，
+同时保持推理和评分为本次新生成：
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts\reproduce.ps1 `
+  -Profile cpu-smoke-10 `
+  -SeedFrom "C:\path\to\existing\locked-checkout" `
+  -SkipCdmSetup
+```
+
+seed 的 source 与 destination 都会完整执行 lock 校验；预测、分数、环境、
+checkout 和 `.env.local` 均不会复制。
+
+<details>
+<summary><strong>手工分阶段搭建</strong></summary>
+
+<br>
+
+每个 `setup.*` 都是幂等的；之后跑对应的 `verify.*`。**所有命令都假定在 repo
+根目录执行。**
+
+```powershell
+# 步骤 0：可复现的本地 Python + 网络 + WSL
+winget install --id astral-sh.uv -e
+uv python install 3.11
+uv sync --locked --all-groups
 powershell -ExecutionPolicy Bypass -File scripts\detect-mirrors.ps1
 powershell -ExecutionPolicy Bypass -File scripts\wsl-ensure.ps1
+# 官方 Windows HIP 二进制不含 Radeon 860M/gfx1152，因此该机型自动选 CPU。
+$gpuNames = @(Get-CimInstance Win32_VideoController | ForEach-Object Name)
+$useCpu = ($gpuNames -match 'Radeon.*860M') -or -not ($gpuNames -match 'AMD|Radeon')
+$variant = if ($useCpu) { 'cpu' } else { 'hip' }
+powershell -ExecutionPolicy Bypass -File scripts\preflight.ps1 -CdmPath Wsl -Variant $variant
+$repoWsl = (wsl -d Ubuntu2204 -- wslpath -a $PWD.Path).Trim()
 
 # 步骤 1：OmniDocBench 代码 + 数据集
 powershell -ExecutionPolicy Bypass -File eval-infra\01-omnidocbench\setup.ps1
 powershell -ExecutionPolicy Bypass -File eval-infra\01-omnidocbench\verify.ps1
 
-# 可选的原生 CDM 验证（optional；需要本机 TeX Live、ImageMagick 和 Ghostscript）。
-# 使用下方 WSL 兼容/参考路径时跳过此项。
-powershell -ExecutionPolicy Bypass -File eval-infra\02-cdm-environment\verify-windows.ps1
-
 # 步骤 2：CDM 环境（WSL 兼容/参考路径）
-# 把 /mnt/c/<path-to-repo> 换成你 clone 的 WSL 路径。
-wsl -d Ubuntu2204 bash /mnt/c/<path-to-repo>/eval-infra/02-cdm-environment/setup.sh
-wsl -d Ubuntu2204 bash /mnt/c/<path-to-repo>/eval-infra/02-cdm-environment/verify.sh
+wsl -d Ubuntu2204 bash "$repoWsl/eval-infra/02-cdm-environment/setup.sh"
+wsl -d Ubuntu2204 bash "$repoWsl/eval-infra/02-cdm-environment/verify.sh"
 
 # 步骤 3：参考适配器（PaddleOCR-VL-1.6）
-powershell -ExecutionPolicy Bypass -File adapters\paddleocr-vl-1.6\01-vlm-server\setup.ps1 -Variant hip
+# CPU 用户可改用下方 200 页路径，避免直接执行 1651 页全量推理。
+powershell -ExecutionPolicy Bypass -File adapters\paddleocr-vl-1.6\01-vlm-server\setup.ps1 -Variant $variant
+powershell -ExecutionPolicy Bypass -File adapters\paddleocr-vl-1.6\01-vlm-server\verify.ps1
 powershell -ExecutionPolicy Bypass -File adapters\paddleocr-vl-1.6\02-layout-model\setup.ps1
+powershell -ExecutionPolicy Bypass -File adapters\paddleocr-vl-1.6\02-layout-model\verify.ps1
 powershell -ExecutionPolicy Bypass -File adapters\paddleocr-vl-1.6\00-install-deps\setup.ps1
-python adapters\paddleocr-vl-1.6\run_adapter.py `
+.\.venv\Scripts\python.exe adapters\paddleocr-vl-1.6\run_adapter.py `
     --img-dir  eval-infra\01-omnidocbench\data\images `
     --out-dir  predictions\paddleocrvl_rocm
 
 # 步骤 4：评分 + 最终验证
 powershell -ExecutionPolicy Bypass -File eval-infra\03-scoring\score.ps1
-# 原生 Windows CDM 路径：verify-windows.ps1 通过后运行：
-powershell -ExecutionPolicy Bypass -File eval-infra\03-scoring\score.ps1 -Config v16-cdm.yaml
-# WSL CDM 兼容/参考路径：
-wsl -d Ubuntu2204 bash /mnt/c/<path-to-repo>/eval-infra/03-scoring/score-cdm.sh
-powershell -ExecutionPolicy Bypass -File eval-infra\03-scoring\verify.ps1
-# 或一次性跑完：
-powershell -ExecutionPolicy Bypass -File scripts\full-verify.ps1
+powershell -ExecutionPolicy Bypass -File eval-infra\03-scoring\verify.ps1 `
+  -WindowsOnly -SaveName paddleocrvl_rocm_quick_match
+wsl -d Ubuntu2204 bash "$repoWsl/eval-infra/03-scoring/score-cdm.sh" v16-cdm.yaml predictions/paddleocrvl_rocm
+powershell -ExecutionPolicy Bypass -File eval-infra\03-scoring\verify.ps1 `
+  -WslOnly -RequireCdm -SaveName paddleocrvl_rocm_quick_match
+powershell -ExecutionPolicy Bypass -File scripts\full-verify.ps1 `
+  -PredictionDir predictions\paddleocrvl_rocm `
+  -ScoreSaveName paddleocrvl_rocm_quick_match
 ```
+
+</details>
+
+受限硬件可使用 `v16-cpu-200.yaml` 与 `v16-cdm-cpu-200.yaml` 的显式 200 页
+能力路径。用它替代全量步骤 3 推理，启动 CPU server，并确定性地在 200 张图
+后停止：
+
+```powershell
+powershell -ExecutionPolicy Bypass -File adapters\paddleocr-vl-1.6\01-vlm-server\setup.ps1 -Variant cpu
+powershell -ExecutionPolicy Bypass -File adapters\paddleocr-vl-1.6\01-vlm-server\verify.ps1
+powershell -ExecutionPolicy Bypass -File adapters\paddleocr-vl-1.6\02-layout-model\setup.ps1
+powershell -ExecutionPolicy Bypass -File adapters\paddleocr-vl-1.6\02-layout-model\verify.ps1
+powershell -ExecutionPolicy Bypass -File adapters\paddleocr-vl-1.6\00-install-deps\setup.ps1
+.\.venv\Scripts\python.exe adapters\paddleocr-vl-1.6\run_adapter.py `
+  --img-dir eval-infra\01-omnidocbench\data\images `
+  --out-dir predictions\paddleocrvl_cpu_860m_200 `
+  --max-pages 200
+.\.venv\Scripts\python.exe scripts\build_prediction_subset.py `
+  --full-manifest eval-infra\01-omnidocbench\data\OmniDocBench.json `
+  --pred-dir predictions\paddleocrvl_cpu_860m_200 `
+  --output eval-infra\01-omnidocbench\data\OmniDocBench_cpu_200.json `
+  --limit 200
+.\.venv\Scripts\python.exe scripts\validate_predictions.py `
+  --manifest eval-infra\01-omnidocbench\data\OmniDocBench_cpu_200.json `
+  --pred-dir predictions\paddleocrvl_cpu_860m_200 `
+  --min-coverage 1.0
+powershell -ExecutionPolicy Bypass -File eval-infra\03-scoring\score.ps1 `
+  -Config v16-cpu-200.yaml
+```
+
+WSL CDM 使用同一预测目录与 CDM 配置，最终验证显式绑定到本次产物：
+
+```powershell
+wsl -d Ubuntu2204 bash "$repoWsl/eval-infra/03-scoring/score-cdm.sh" `
+  v16-cdm-cpu-200.yaml `
+  predictions/paddleocrvl_cpu_860m_200
+powershell -ExecutionPolicy Bypass -File scripts\full-verify.ps1 `
+  -PredictionDir predictions\paddleocrvl_cpu_860m_200 `
+  -PredictionManifest eval-infra\01-omnidocbench\data\OmniDocBench_cpu_200.json `
+  -ScoreSaveName paddleocrvl_cpu_860m_200_quick_match
+```
+
+不得把该子集分数标记为 1651 页全量分数。已验证命令、证据哈希与限制见
+[`docs/reproduction-cpu-200-2026-07-26.md`](docs/reproduction-cpu-200-2026-07-26.md)。
+
+10 页 smoke 使用 `v16-cpu-smoke-10.yaml` 与
+`v16-cdm-cpu-smoke-10.yaml`；请使用上方单入口，不要手工拼接这些命令。
 
 Windows 原生 CDM 已受支持：`eval-infra/01-omnidocbench/setup.ps1` 会自动应用
 `patches/omnidocbench/windows-cdm.patch`，并由
@@ -95,6 +219,8 @@ TeX Live、ImageMagick 和 Ghostscript。WSL CDM 仍保留为兼容和 reference
 选择 WSL 的用户无需进行原生 CDM 验证。
 `scripts/full-verify.ps1` 只有在显式传入 `-WindowsCdm` 时才检查原生路径。
 
+可选的原生 CDM 验证独立于 WSL 快速开始路径。
+
 如果用 PaddleOCR 官方 `PaddleOCRVL` engine 跑基准评测，请用
 `_to_markdown(pretty=False)` 导出评测型 Markdown。默认 pretty Markdown
 面向展示，可能因为 HTML 图片/标题包装导致 OmniDocBench Text Edit-distance
@@ -102,15 +228,15 @@ TeX Live、ImageMagick 和 Ghostscript。WSL CDM 仍保留为兼容和 reference
 
 这些本地分数默认采用 OmniDocBench 官方 leaderboard notebook
 （`tools/generate_result_tables.ipynb`）一致的 page-level 聚合口径。最新
-Windows AMD llama.cpp/GGUF official-local 路线 Formula CDM 为 `97.36`；
-最新 ROCm lightweight 路线 Formula CDM 为 `97.36`。相对官方 `97.49`
+Windows AMD llama.cpp/GGUF official-local 路线 Formula CDM 为 `96.5022`；
+修正后的 ROCm CDM 为 `97.36`（修复 Windows 上 CDM 评测路径/编码 bug 之后）。相对官方 `97.49`
 的剩余差距，主要来自官方 Linux vLLM-style 路径与本项目 Windows AMD
 llama.cpp/GGUF 路径之间的推理后端/模型输出差异。official-local 路线仍有
 1 页稳定 VLM 500，已在上游记录为
 [PaddleOCR issue #18248](https://github.com/PaddlePaddle/PaddleOCR/issues/18248)。
 
 ```powershell
-python adapters\paddleocr-vl-1.6\run_adapter.py `
+.\.venv\Scripts\python.exe adapters\paddleocr-vl-1.6\run_adapter.py `
     --engine official `
     --img-dir eval-infra\01-omnidocbench\data\images `
     --out-dir predictions\paddleocr_official_prettyfalse_full_2026-07-09
@@ -187,8 +313,8 @@ G4 推理加速比: **1.7x** (27 页分层抽样，9 类别、0 结构错配)。
 
 这些行使用 OmniDocBench 官方 leaderboard/notebook page-level 聚合口径；
 底层 raw `metric_result` all-values 保留在对应产物中用于审计。official-local
-路线 Formula CDM 为 `97.36`，ROCm lightweight 路线 Formula CDM 为
-`97.36`；相对 `97.49` 的剩余差距主要来自官方 Linux vLLM-style 基线与
+路线 Formula CDM 为 `96.5022`。修正后的 ROCm CDM 为 `97.36`；相对 `97.49`
+的剩余差距主要来自官方 Linux vLLM-style 基线与
 本机 Windows AMD llama.cpp/GGUF server 路径的推理后端/模型输出差异。本轮
 official-local 仍有 1 个稳定 VLM 500 页面：
 `newspaper_The Times UK_0801@magazinesclubnew_page_031.png`，
@@ -233,4 +359,12 @@ agent 驱动的流程和异常速查表见 [`AGENTS.md`](AGENTS.md)。
 
 ## 许可证
 
-评测代码与数据集的条款以上游 [OmniDocBench](https://github.com/opendatalab/OmniDocBench) 许可证为准。本 repo 中的基础设施与适配器代码按原样提供，用于复现该基准。
+本仓库原创代码按 [`LICENSE`](LICENSE) 中的 Apache-2.0 发布。下载的
+OmniDocBench 代码/数据集、PaddleOCR/PaddleOCR-VL 权重、PP-DocLayoutV3、
+llama.cpp 二进制及系统包仍受各自上游许可证和条款约束。本仓库不会重新授权
+这些第三方资产；生成的 checkout、数据、模型、预测和结果均保持 gitignored。
+重新分发前请检查对应上游条款。
+
+安全问题报告见 [`SECURITY.md`](SECURITY.md)，社区行为规范见
+[`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md)。托管 CI 只验证确定性测试和脚本
+语法，不代替 WSL、AMD GPU、CDM、评分或 benchmark 的物理机器证据。

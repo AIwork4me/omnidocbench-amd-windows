@@ -1,6 +1,9 @@
 """Tests for report.py benchmark report generator."""
 import json
+import math
 from pathlib import Path
+
+import pytest
 
 import report
 
@@ -21,6 +24,7 @@ class TestExtractScores:
         scores = report.extract_scores(metric)
 
         assert scores["text_edit_dist"] == 0.035
+        assert scores["formula_edit_dist"] == 0.034
         assert scores["reading_order"] == 0.129
         assert scores["table_teds"] == 0.940
         assert scores["formula_cdm"] == 0.944
@@ -35,6 +39,14 @@ class TestExtractScores:
         scores = report.extract_scores(metric)
         assert scores["formula_cdm"] is None
         assert scores["text_edit_dist"] == 0.035
+
+    @pytest.mark.parametrize("invalid_value", ["NaN", math.nan, math.inf])
+    def test_rejects_non_numeric_or_nonfinite_metric(self, invalid_value):
+        metric = _load_json(FIXTURE_DIR / "mock_metric_result.json")
+        metric["text_block"]["all"]["Edit_dist"]["ALL_page_avg"] = invalid_value
+
+        with pytest.raises(ValueError, match="text_edit_dist"):
+            report.extract_scores(metric)
 
 
 class TestSingleRunReport:
@@ -59,6 +71,7 @@ class TestSingleRunReport:
         assert "generate" in result.lower() or "<!-- generated" in result
         assert "# " in result
         assert "Test Platform" in result
+        assert "# OmniDocBench v1.6 -- Test Platform Capability Report" in result
         assert "test_q4km" in result
 
     def test_single_run_has_generated_marker(self):
@@ -78,6 +91,13 @@ class TestSingleRunReport:
         )
 
         assert "<!-- generated: true" in result
+
+    def test_empty_platform_is_rejected(self):
+        metric = _load_json(FIXTURE_DIR / "mock_metric_result.json")
+        stats = _load_json(FIXTURE_DIR / "mock_run_stats.json")
+
+        with pytest.raises(ValueError, match="platform"):
+            report.generate_report(scores=metric, stats=stats, platform="   ")
 
 
 class TestResourceRendering:
@@ -149,6 +169,36 @@ class TestResourceRendering:
 
         assert "unavailable" in result.lower()
 
+    def test_resource_note_is_rendered(self, tmp_path):
+        metric = _load_json(FIXTURE_DIR / "mock_metric_result.json")
+        stats = _load_json(FIXTURE_DIR / "mock_run_stats.json")
+        resource = tmp_path / "resource.jsonl"
+        resource.write_text(
+            '{"ts":1,"gpu_mem_mib":null,"gpu_util_pct":null,"ram_gib":4,'
+            '"gpu_level":"gpu-unavailable","note":"CPU fallback: gfx test failed"}\n',
+            encoding="utf-8",
+        )
+
+        result = report.generate_report(
+            scores=metric,
+            stats=stats,
+            resource_log_path=str(resource),
+            platform="Test",
+        )
+
+        assert "Resource note: CPU fallback: gfx test failed" in result
+
+    def test_resource_log_accepts_utf8_bom(self, tmp_path):
+        resource = tmp_path / "resource.jsonl"
+        resource.write_text(
+            '{"ts":1,"gpu_mem_mib":null,"gpu_util_pct":null,"ram_gib":4,"gpu_level":"gpu-unavailable"}\n',
+            encoding="utf-8-sig",
+        )
+
+        rows = report._read_resource_log(str(resource))
+
+        assert rows[0]["gpu_level"] == "gpu-unavailable"
+
 
 class TestTimingRendering:
     """Timing chapter: P50/P95/P99, throughput, decomposition."""
@@ -167,6 +217,34 @@ class TestTimingRendering:
         assert "P95" in result
         assert "P99" in result
         assert "pages/min" in result
+
+    def test_reconstructed_timing_uses_completion_intervals(self):
+        metric = _load_json(FIXTURE_DIR / "mock_metric_result.json")
+        stats = {
+            "count": 3,
+            "ok": 3,
+            "fail": 0,
+            "timing_source": "file_mtime_reconstruction",
+            "duration_sec": 60.0,
+            "stats": [
+                {"status": "ok", "seconds": 0.0, "completed_at_epoch": 100.0},
+                {"status": "ok", "seconds": 0.0, "completed_at_epoch": 120.0},
+                {"status": "ok", "seconds": 0.0, "completed_at_epoch": 160.0},
+            ],
+        }
+
+        result = report.generate_report(
+            scores=metric,
+            stats=stats,
+            platform="Test",
+            qualifier="cpu-reconstructed",
+            run_id="r1",
+        )
+
+        assert "reconstructed from prediction file completion timestamps" in result
+        assert "Median (P50) | 40.0s / page" in result
+        assert "Throughput | 3.0 pages/min" in result
+        assert "Timing provenance | File mtime reconstruction" in result
 
 
 class TestAsciiChart:

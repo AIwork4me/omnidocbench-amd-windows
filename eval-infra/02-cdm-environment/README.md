@@ -58,12 +58,11 @@ powershell -ExecutionPolicy Bypass -File verify-windows.ps1
 Or use the WSL compatibility/reference path:
 
 ```powershell
-# In WSL, this repo is at /mnt/c/<your-clone-path>/omnidocbench-amd-windows.
-# Replace the path below with your actual clone location:
-wsl -d Ubuntu2204 bash /mnt/c/<path-to-repo>/eval-infra/02-cdm-environment/setup.sh
+$repoWsl = (wsl -d Ubuntu2204 -- wslpath -a $PWD.Path).Trim()
+wsl -d Ubuntu2204 bash "$repoWsl/eval-infra/02-cdm-environment/setup.sh"
 
 # Verify it works (should print "VERIFY OK: CDM environment fully functional.").
-wsl -d Ubuntu2204 bash /mnt/c/<path-to-repo>/eval-infra/02-cdm-environment/verify.sh
+wsl -d Ubuntu2204 bash "$repoWsl/eval-infra/02-cdm-environment/verify.sh"
 ```
 
 `setup.sh` reads `../../mirrors.env` (produced by `scripts/detect-mirrors.ps1`)
@@ -342,7 +341,8 @@ prints `already installed` / `already active` for each step.
   OmniDocBench source tree that Step 8 copies.
 - [`scripts/wsl-ensure.ps1`](../../scripts/wsl-ensure.ps1) — provisions the WSL
   Ubuntu 22.04 instance this all runs inside.
-- [`mirrors.env`](../../mirrors.env) — `CTAN_MIRROR`, `GITHUB_PROXY`,
+- `mirrors.env` (generated at repo root by `scripts/detect-mirrors.ps1`,
+  gitignored) — `CTAN_MIRROR`, `GITHUB_PROXY`,
   `PYPI_INDEX` consumed by setup.sh.
 - [`docs/pitfalls.md`](../../docs/pitfalls.md) — full narrative of each CDM
   landmine (`#grayscale`, `#mathcolor`, `#cjk-sty-missing`, `#gkaiu-map`,

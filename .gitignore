@@ -26,3 +26,13 @@ benchmark-results/*
 
 # Local git worktrees for agent implementation branches.
 .worktrees/
+
+# Machine-local tooling archives/runtimes (re-downloadable by setup.ps1)
+llama-*/
+*.zip
+
+# One-off debug scratch (diagnostics live in eval-infra/03-scoring/)
+cdm_debug.py
+cdm_diag.py
+tmp_cdm-*.txt
+tmp/

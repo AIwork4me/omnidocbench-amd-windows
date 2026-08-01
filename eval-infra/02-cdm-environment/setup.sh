@@ -23,7 +23,7 @@ ODB_CODE="$REPO_ROOT/eval-infra/01-omnidocbench/OmniDocBench"
 # Parse mirrors.env (CTAN_MIRROR, GITHUB_PROXY, PYPI_INDEX, ...).
 CTAN_MIRROR="https://mirrors.ustc.edu.cn/CTAN/systems/texlive/tlnet"
 if [ -f "$REPO_ROOT/mirrors.env" ]; then
-    source <(grep -E "^[A-Z_]+=." "$REPO_ROOT/mirrors.env" | sed 's/^/export /')
+    source <(tr -d '\r' < "$REPO_ROOT/mirrors.env" | grep -E "^[A-Z_]+=." | sed 's/^/export /')
 fi
 
 # Resolve install locations relative to $HOME (not a hardcoded /root/...) so
@@ -33,6 +33,13 @@ fi
 # read the same $HOME-relative paths.
 ODB_LOCAL="${HOME}/OmniDocBench"
 ODB_VENV="${HOME}/odb-venv"
+LOCK_FILE="$REPO_ROOT/upstream-lock.json"
+[ -f "$LOCK_FILE" ] || { echo "Missing upstream lock: $LOCK_FILE" >&2; exit 1; }
+IM7_EXPECTED_SIZE=$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1], encoding="utf-8"))["downloads"]["imagemagick_appimage"]["bytes"])' "$LOCK_FILE")
+IM7_EXPECTED_SHA=$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1], encoding="utf-8"))["downloads"]["imagemagick_appimage"]["sha256"])' "$LOCK_FILE")
+TLPDB_EXPECTED_SIZE=$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1], encoding="utf-8"))["wsl_cdm"]["texlive_tlpdb_bytes"])' "$LOCK_FILE")
+TLPDB_EXPECTED_SHA=$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1], encoding="utf-8"))["wsl_cdm"]["texlive_tlpdb_sha256"])' "$LOCK_FILE")
+WSL_REQUIREMENTS="$REPO_ROOT/eval-infra/02-cdm-environment/requirements.lock.txt"
 
 step() { echo ""; echo "=== Step $1: $2 ==="; }
 ok()   { echo "  ✓ $1"; }
@@ -43,32 +50,59 @@ step 1 "apt base CDM deps (texlive-lang-cjk/chinese + imagemagick + ghostscript)
 dpkg -s texlive-lang-chinese >/dev/null 2>&1 && ok "already installed" || {
     apt-get update -qq && DEBIAN_FRONTEND=noninteractive apt-get install -y -qq \
         texlive-lang-cjk texlive-lang-chinese texlive-latex-extra texlive-fonts-recommended \
-        texlive-science imagemagick ghostscript curl perl git >/dev/null 2>&1
+        texlive-science imagemagick ghostscript curl perl git python3-venv >/dev/null 2>&1
     ok "apt deps installed"
+}
+# The primary dpkg sentinel predates python3-venv, so existing installations
+# need a separate idempotent check when this prerequisite is added later.
+dpkg -s python3-venv >/dev/null 2>&1 || {
+    DEBIAN_FRONTEND=noninteractive apt-get install -y -qq python3-venv >/dev/null 2>&1
+    ok "python3-venv installed"
 }
 
 # ── Step 2: Install TeX Live 2026 (official, for \mathcolor + complete CJK) ──
 step 2 "TeX Live 2026 (official — has \\mathcolor + complete CJK package)"
 TLBIN="/usr/local/texlive/2026/bin/x86_64-linux"
 if [ -x "$TLBIN/pdflatex" ]; then ok "TL2026 already installed"; else
-    cd "$HOME"
-    curl -sL --retry 3 --retry-delay 5 -m 180 -o install-tl.tar.gz "${CTAN_MIRROR}/install-tl-unx.tar.gz"
-    tar xzf install-tl.tar.gz && cd install-tl-2*
-    cat > tl.profile <<'PROF'
-selected_scheme scheme-medium
+    if [ -x "$TLBIN/tlmgr" ]; then
+        ok "partial TL2026 detected; resuming required collections"
+    else
+        cd "$HOME"
+        curl -sL --retry 3 --retry-delay 5 -m 180 -o install-tl.tar.gz "${CTAN_MIRROR}/install-tl-unx.tar.gz"
+        tar xzf install-tl.tar.gz && cd install-tl-2*
+        cat > tl.profile <<'PROF'
+selected_scheme scheme-infraonly
 instopt_adjustpath 0
 instopt_adjustrepo 0
 instopt_letter 0
 instopt_portable 0
+collection-basic 1
+collection-latex 1
+collection-latexrecommended 1
+collection-latexextra 1
+collection-fontsrecommended 1
+collection-mathscience 1
 collection-langcjk 1
 collection-langchinese 1
 tlpdbopt_install_docfiles 0
 tlpdbopt_install_srcfiles 0
 PROF
-    ./install-tl --no-interaction --profile tl.profile --repository "$CTAN_MIRROR" 2>&1 | tail -3
+        ./install-tl --no-interaction --profile tl.profile --repository "$CTAN_MIRROR" > install-tl-output.log 2>&1
+        tail -3 install-tl-output.log
+    fi
+    "$TLBIN/tlmgr" install collection-basic collection-latex collection-latexrecommended \
+        collection-latexextra collection-fontsrecommended collection-mathscience \
+        collection-langcjk collection-langchinese --repository "$CTAN_MIRROR" >/root/tlmgr-cdm-collections.log 2>&1
+    "$TLBIN/fmtutil-sys" --all >/root/fmtutil-cdm.log 2>&1
     [ -x "$TLBIN/pdflatex" ] && ok "TL2026 installed" || fail "TL2026 install"
 fi
 export PATH="$TLBIN:$PATH"
+TLPDB="/usr/local/texlive/2026/tlpkg/texlive.tlpdb"
+[ "$(stat -c%s "$TLPDB" 2>/dev/null || echo 0)" = "$TLPDB_EXPECTED_SIZE" ] \
+    || fail "TeX Live package database size differs from upstream-lock.json"
+[ "$(sha256sum "$TLPDB" | awk '{print $1}')" = "$TLPDB_EXPECTED_SHA" ] \
+    || fail "TeX Live package database SHA-256 differs from upstream-lock.json"
+ok "TeX Live package database lock verified"
 
 # ── Step 2b: Install CDM-critical LaTeX packages missing from scheme-medium ──
 step 2b "Install CDM-critical LaTeX packages (standalone, was/upgreek)"
@@ -122,13 +156,36 @@ step 5 "ImageMagick 7 (IM6 renders color-coded formulas as grayscale → CDM fai
 if magick --version 2>/dev/null | grep -q "ImageMagick 7"; then ok "IM7 already active"
 else
     cd "$HOME"
-    if [ ! -f magick7.AppImage ] || [ "$(stat -c%s magick7.AppImage 2>/dev/null || echo 0)" -lt 10000000 ]; then
-        PROXY="${GITHUB_PROXY:-https://ghproxy.net}"
-        curl -sL --retry 3 --retry-delay 5 -m 300 -o magick7.AppImage "$PROXY/https://github.com/ImageMagick/ImageMagick/releases/download/7.1.2-26/ImageMagick-7.1.2-26-gcc-x86_64.AppImage"
+    IM7_URL="https://github.com/ImageMagick/ImageMagick/releases/download/7.1.2-26/ImageMagick-7.1.2-26-gcc-x86_64.AppImage"
+    appimage_valid() {
+        [ -f "$1" ] \
+            && [ "$(stat -c%s "$1" 2>/dev/null || echo 0)" = "$IM7_EXPECTED_SIZE" ] \
+            && [ "$(od -An -tx1 -N4 "$1" 2>/dev/null | tr -d ' \n')" = "7f454c46" ] \
+            && [ "$(sha256sum "$1" | awk '{print $1}')" = "$IM7_EXPECTED_SHA" ]
+    }
+    if ! appimage_valid magick7.AppImage; then
+        rm -f magick7.AppImage.part
+        IM7_SOURCES=("$IM7_URL")
+        if [ -n "${GITHUB_PROXY:-}" ]; then IM7_SOURCES+=("${GITHUB_PROXY%/}/$IM7_URL"); fi
+        downloaded=false
+        for source_url in "${IM7_SOURCES[@]}"; do
+            echo "  downloading IM7 from $source_url"
+            if curl -fL --retry 3 --retry-delay 5 -m 300 -o magick7.AppImage.part "$source_url" \
+                && appimage_valid magick7.AppImage.part; then
+                mv -f magick7.AppImage.part magick7.AppImage
+                downloaded=true
+                break
+            fi
+            rm -f magick7.AppImage.part
+        done
+        $downloaded || fail "IM7 AppImage download is truncated or invalid"
     fi
     chmod +x magick7.AppImage
     rm -rf squashfs-root
-    ./magick7.AppImage --appimage-extract >/dev/null 2>&1
+    ./magick7.AppImage --appimage-extract >/root/im7-extract.log 2>&1 || {
+        tail -40 /root/im7-extract.log >&2
+        fail "IM7 AppImage extraction"
+    }
     # Install system-wide (avoids LD_LIBRARY_PATH shadowing gs)
     cp squashfs-root/usr/bin/magick /usr/local/bin/magick7
     mkdir -p /usr/local/lib/im7
@@ -228,19 +285,28 @@ fi
 
 # ── Step 9: Python venv + OmniDocBench deps ──
 step 9 "Python venv + OmniDocBench dependencies"
-if [ ! -d "$ODB_VENV" ]; then
+if [ ! -x "$ODB_VENV/bin/python" ]; then
+    if [ -d "$ODB_VENV" ]; then
+        rm -rf "$ODB_VENV"
+        ok "removed incomplete venv"
+    fi
     python3 -m venv "$ODB_VENV"
-    # PyPI index: honour PYPI_INDEX from mirrors.env (written by
-    # detect-mirrors.ps1) so a China-network machine uses Tsinghua and an
-    # open-egress machine uses pypi.org. Fall back to Tsinghua if unset.
-    PYPI_MIRROR="${PYPI_INDEX:-https://pypi.tuna.tsinghua.edu.cn/simple}"
-    "$ODB_VENV/bin/pip" install -q -i "$PYPI_MIRROR" \
-        apted beautifulsoup4 evaluate func-timeout Levenshtein loguru lxml numpy pandas \
-        Pillow pylatexenc PyYAML scipy tabulate tqdm nltk matplotlib
-    ok "venv + deps installed (index: $PYPI_MIRROR) at $ODB_VENV"
+    ok "venv created at $ODB_VENV"
 else
     ok "venv already exists at $ODB_VENV"
 fi
+IMPORT_PROBE="import apted, bs4, evaluate, Levenshtein, lxml, numpy, pandas, PIL, pylatexenc, yaml"
+[ -f "$WSL_REQUIREMENTS" ] || fail "WSL Python requirements lock missing: $WSL_REQUIREMENTS"
+"$ODB_VENV/bin/python" -m pip --version >/dev/null 2>&1 \
+    || "$ODB_VENV/bin/python" -m ensurepip --upgrade >/dev/null 2>&1
+# PyPI index: honour PYPI_INDEX from mirrors.env (written by
+# detect-mirrors.ps1) so a China-network machine uses Tsinghua and an
+# open-egress machine uses pypi.org. Fall back to Tsinghua if unset.
+PYPI_MIRROR="${PYPI_INDEX:-https://pypi.tuna.tsinghua.edu.cn/simple}"
+"$ODB_VENV/bin/python" -m pip install -q --require-hashes -r "$WSL_REQUIREMENTS" -i "$PYPI_MIRROR"
+ok "venv dependencies synchronized from requirements.lock.txt (index: $PYPI_MIRROR)"
+"$ODB_VENV/bin/python" -c "$IMPORT_PROBE" \
+    && ok "venv imports verified" || fail "venv dependency imports"
 
 echo ""
 echo "========================================"

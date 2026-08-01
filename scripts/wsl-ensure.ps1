@@ -22,6 +22,11 @@ latter via export/unregister/import.
 Idempotent: a no-op if `Ubuntu2204` already exists and is startable.
 #>
 $ErrorActionPreference = "Stop"
+$repoRoot = Split-Path -Parent $PSScriptRoot
+$lockFile = Join-Path $repoRoot "upstream-lock.json"
+$lockVerify = Join-Path $PSScriptRoot "verify-upstream-lock.ps1"
+if (-not (Test-Path -LiteralPath $lockFile)) { throw "Upstream lock missing: $lockFile" }
+$upstreamLock = Get-Content -Raw -Encoding UTF8 -LiteralPath $lockFile | ConvertFrom-Json
 
 # Canonical distro name used by every other script in this repo.
 $DistroName = "Ubuntu2204"
@@ -31,8 +36,37 @@ $InstallName = "Ubuntu-22.04"
 # wsl --list writes UTF-16LE text with embedded NUL bytes; PowerShell 5.1
 # captures those NULs, which breaks -match on the distro name. Strip them.
 function Get-WslDistros {
-    $cleaned = (wsl --list --quiet 2>$null) | ForEach-Object { ($_ -replace "`0","").Trim() } | Where-Object { $_ }
+    # An installed wsl.exe returns non-zero and writes an installation hint to
+    # stderr when the optional Windows feature is not enabled yet. Under
+    # Windows PowerShell 5.1 + ErrorActionPreference=Stop that stderr becomes a
+    # terminating NativeCommandError before this script can reach `wsl
+    # --install`. Treat a failed list probe as an empty distro list instead.
+    $previousErrorActionPreference = $ErrorActionPreference
+    try {
+        $ErrorActionPreference = "Continue"
+        $output = wsl --list --quiet 2>$null
+        $listExit = $LASTEXITCODE
+    } finally {
+        $ErrorActionPreference = $previousErrorActionPreference
+    }
+    if ($listExit -ne 0) { return "" }
+
+    $cleaned = @($output) | ForEach-Object { ($_ -replace "`0","").Trim() } | Where-Object { $_ }
     return ($cleaned -join "`n")
+}
+
+function Test-WslDistro {
+    param([string]$Name)
+    $previousErrorActionPreference = $ErrorActionPreference
+    try {
+        $ErrorActionPreference = "Continue"
+        $probeOutput = wsl -d $Name -- echo OK 2>$null
+        $probeExit = $LASTEXITCODE
+    } finally {
+        $ErrorActionPreference = $previousErrorActionPreference
+    }
+    $cleaned = ((@($probeOutput) -join "") -replace "`0", "").Trim()
+    return ($probeExit -eq 0 -and $cleaned -eq "OK")
 }
 
 # Rename $From -> $To via export/unregister/import. Used to normalize the
@@ -70,10 +104,10 @@ function Rename-WslDistro {
 $distros = Get-WslDistros
 if ($distros -match $DistroName) {
     Write-Host "WSL $DistroName already installed." -ForegroundColor Green
-    # Escape the $ so WSL (bash) evaluates whoami/hostname, not PowerShell.
-    # Without the backtick-escaping PowerShell would interpolate the WINDOWS
-    # user/host here, printing a misleading "OK" host string.
-    wsl -d $DistroName -- bash -c 'echo "WSL OK: $(whoami)@$(hostname)"'
+    if (-not (Test-WslDistro -Name $DistroName)) {
+        throw "WSL distro '$DistroName' is registered but cannot start. A Windows reboot may be required."
+    }
+    Write-Host "WSL start probe: OK" -ForegroundColor Green
     exit 0
 }
 
@@ -96,7 +130,7 @@ if ($installOk) {
     # NOTE: Join-Path is nested (rather than the PS 7+ 3-arg form) so this runs on
     # Windows PowerShell 5.1 as well as PowerShell 7+.
     $envFile = Join-Path (Join-Path $PSScriptRoot "..") "mirrors.env"
-    $rootfsUrl = "https://mirrors.ustc.edu.cn/ubuntu-cdimage/ubuntu-base/releases/22.04/release/ubuntu-base-22.04.5-base-amd64.tar.gz"
+    $rootfsUrl = [string]$upstreamLock.downloads.ubuntu_rootfs.canonical_url
     if (Test-Path $envFile) {
         $cfg = Get-Content $envFile | Where-Object { $_ -match "^UBUNTU_ROOTFS=" }
         if ($cfg) { $rootfsUrl = ($cfg -split "=", 2)[1] }
@@ -109,15 +143,20 @@ if ($installOk) {
     $tarball = "$env:TEMP\ubuntu-22.04.tar.gz"
     $rootfsSources = @(
         $rootfsUrl,
-        "https://mirrors.tuna.tsinghua.edu.cn/ubuntu-cdimage/ubuntu-base/releases/22.04/release/ubuntu-base-22.04.5-base-amd64.tar.gz"
+        "https://mirrors.tuna.tsinghua.edu.cn/ubuntu-cdimage/ubuntu-base/releases/22.04/release/$($upstreamLock.downloads.ubuntu_rootfs.file)"
     )
     $downloaded = $false
     foreach ($src in $rootfsSources) {
         Write-Host "Downloading Ubuntu rootfs from $src ..." -ForegroundColor Cyan
         try {
             Invoke-WebRequest -Uri $src -OutFile $tarball -TimeoutSec 300 -ErrorAction Stop
-            $downloaded = $true
-            break
+            & powershell -ExecutionPolicy Bypass -File $lockVerify -Component UbuntuRootfs -Path $tarball *> $null
+            if ($LASTEXITCODE -eq 0) {
+                $downloaded = $true
+                break
+            }
+            Write-Host "  downloaded content failed upstream lock verification; trying next source." -ForegroundColor Yellow
+            Remove-Item -LiteralPath $tarball -Force -ErrorAction SilentlyContinue
         } catch {
             Write-Host "  download from $src failed: $($_.Exception.Message)" -ForegroundColor Yellow
         }
@@ -150,8 +189,10 @@ if ($installOk) {
 if (-not ((Get-WslDistros) -match $DistroName)) {
     throw "WSL provisioning finished but distro '$DistroName' is still not registered. Inspect 'wsl --list'."
 }
-# Escape $ so WSL evaluates the command substitution (not PowerShell).
-wsl -d $DistroName -- bash -c 'echo "WSL OK: $(whoami)@$(hostname) | $(grep VERSION= /etc/os-release)"'
+if (-not (Test-WslDistro -Name $DistroName)) {
+    throw "WSL distro '$DistroName' was registered but cannot start. A Windows reboot may be required."
+}
+Write-Host "WSL start probe: OK" -ForegroundColor Green
 Write-Host "WSL $DistroName ready." -ForegroundColor Green
 Write-Host "NOTE: If this is a fresh WSL install, a system REBOOT may be required before WSL works." -ForegroundColor Yellow
 exit 0

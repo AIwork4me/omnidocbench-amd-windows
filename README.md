@@ -5,6 +5,7 @@
 [![OmniDocBench v1.6](https://img.shields.io/badge/OmniDocBench-v1.6-00C853.svg)](https://github.com/opendatalab/OmniDocBench)
 [![Python 3.10+](https://img.shields.io/badge/Python-3.10+-3776AB.svg)](https://www.python.org/downloads/)
 [![GitHub stars](https://img.shields.io/github/stars/AIwork4me/omnidocbench-amd-windows)](https://github.com/AIwork4me/omnidocbench-amd-windows)
+[![ci](https://github.com/AIwork4me/omnidocbench-amd-windows/actions/workflows/ci.yml/badge.svg)](https://github.com/AIwork4me/omnidocbench-amd-windows/actions/workflows/ci.yml)
 
 [中文文档](README.zh-CN.md) · [Architecture](docs/architecture.md) · [Pitfalls KB](docs/pitfalls.md) · [AGENTS.md](AGENTS.md)
 
@@ -17,7 +18,11 @@ model via [adapters](adapters/). PaddleOCR-VL-1.6 ships as the validated referen
 
 ![OmniDocBench AMD Windows overview](overview.jpg)
 
-| Metric | PaddleOCR-VL (paper) | PaddleOCR-VL-ROCm (measured) |
+> **Historical full-set reference targets:** the table below is the dated
+> 1651-page result documented in the linked release evidence. It was not rerun
+> on the current Radeon 860M machine; see the physical-machine result below.
+
+| Metric | PaddleOCR-VL (paper) | PaddleOCR-VL-ROCm (full-set reference) |
 |---:|---:|---:|
 | Overall | 96.33 | **95.99** |
 | Text Edit-dist | 0.033 | 0.03488 |
@@ -27,6 +32,39 @@ model via [adapters](adapters/). PaddleOCR-VL-1.6 ships as the validated referen
 
 > G4 inference speedup: **1.7x** (27-page stratified benchmark, 9 categories, 0 structural mismatches). The default `vlm_max_workers=8` in PaddleOCR-VL-ROCm enables this automatically. | Overall = (Text accuracy + CDM + TEDS) / 3, where Text accuracy = (1 − Edit_dist) × 100.
 > Reading order is excluded from Overall (layout metric, not content accuracy).
+
+<details>
+<summary><strong>Verified result on this machine</strong></summary>
+
+<br>
+
+On 2026-07-26, a Ryzen AI 7 PRO 350 / Radeon 860M machine completed an exact
+200-page CPU fallback run. This is machine-capability evidence, **not** a
+1651-page leaderboard result.
+
+| Metric | Verified 200-page result |
+|---|---:|
+| Overall (official notebook aggregation) | **96.6362** |
+| Text Edit-distance | **0.02446** |
+| Reading-order Edit-distance | **0.11668** |
+| Table TEDS | **96.2597** |
+| Formula CDM | **96.0949** |
+
+Windows and WSL shared metrics were identical after deterministic single-worker
+scoring; CDM/TEDS recorded zero timeout, error, or exception cases. Commands,
+denominators, raw values, limitations, and hashes are in
+[`docs/reproduction-cpu-200-2026-07-26.md`](docs/reproduction-cpu-200-2026-07-26.md).
+
+The Radeon 860M (gfx1152) cannot run the tested official Windows HIP llama.cpp
+binaries: b9637 and b10107 fail with `ROCm error: invalid device function`. Use
+`-Variant cpu` on this GPU class unless you have a gfx1152-compatible build.
+This forced the verified run to fall back to CPU. The Windows HIP packaging
+gap has been reported upstream as
+[`ggml-org/llama.cpp#26127`](https://github.com/ggml-org/llama.cpp/issues/26127);
+local reproduction details are in
+[`docs/llama-cpp-radeon-860m-gfx1152-issue-draft-2026-07-26.md`](docs/llama-cpp-radeon-860m-gfx1152-issue-draft-2026-07-26.md).
+
+</details>
 
 ## System Requirements
 
@@ -40,6 +78,7 @@ model via [adapters](adapters/). PaddleOCR-VL-1.6 ships as the validated referen
 | CPU cores | 4 (TEDS/CDM workers scale with cores) | 8+ |
 | WSL | Ubuntu 22.04 (rootfs import or Store) | Same |
 | Python | 3.10 or 3.11 (**not** 3.12/3.13 — OmniDocBench breaks) | 3.11 |
+| Python environment | [uv](https://docs.astral.sh/uv/) | Latest stable |
 | PowerShell | Windows PowerShell 5.1 (built in) or PowerShell 7+ | Same |
 
 Wall-clock estimates for the full 1651-page run: Step 1 (dataset download) ~15-20 min
@@ -49,8 +88,9 @@ Step 4 (scoring) ~5 min (Edit_dist+TEDS) + ~20-30 min (CDM, per-formula LaTeX).
 
 ### Quick Start
 
-Clone, then run the four setup phases. Each `setup.*` is idempotent; run the
-matching `verify.*` after each. **All commands assume the repo root as CWD.**
+For a real AMD Windows provisioning check without rerunning the accuracy
+benchmark, clone and run the canonical ten-page CPU profile. It includes WSL
+CDM and writes resumable evidence under `outputs/reproduction/cpu-smoke-10/`:
 
 ```bash
 git clone https://github.com/AIwork4me/omnidocbench-amd-windows
@@ -58,41 +98,131 @@ cd omnidocbench-amd-windows
 ```
 
 ```powershell
-# Step 0: environment + network + WSL
+powershell -ExecutionPolicy Bypass -File scripts\reproduce.ps1 `
+  -Profile cpu-smoke-10
+```
+
+Use `-Resume` only after an interrupted run. The first run refuses existing
+profile predictions/results, processes exactly ten images, verifies all locked
+upstream inputs, and scores Windows metrics plus WSL CDM. This is a capability
+smoke test, not a leaderboard result. See
+[`docs/upstream-lock.md`](docs/upstream-lock.md) for the executable input lock.
+
+If the locked dataset/GGUF/layout files already exist in another checkout,
+avoid repeating bulk downloads while keeping inference and scoring fresh:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts\reproduce.ps1 `
+  -Profile cpu-smoke-10 `
+  -SeedFrom "C:\path\to\existing\locked-checkout" `
+  -SkipCdmSetup
+```
+
+The seed source and destination are both fully lock-verified; predictions,
+scores, environments, checkouts, and `.env.local` are never copied.
+
+<details>
+<summary><strong>Manual phase-by-phase setup</strong></summary>
+
+<br>
+
+Each `setup.*` is idempotent; run the matching `verify.*` after each. **All
+commands assume the repo root as CWD.**
+
+```powershell
+# Step 0: reproducible local Python + network + WSL
+winget install --id astral-sh.uv -e
+uv python install 3.11
+uv sync --locked --all-groups
 powershell -ExecutionPolicy Bypass -File scripts\detect-mirrors.ps1
 powershell -ExecutionPolicy Bypass -File scripts\wsl-ensure.ps1
+# Official Windows HIP binaries omit Radeon 860M/gfx1152, so select CPU there.
+$gpuNames = @(Get-CimInstance Win32_VideoController | ForEach-Object Name)
+$useCpu = ($gpuNames -match 'Radeon.*860M') -or -not ($gpuNames -match 'AMD|Radeon')
+$variant = if ($useCpu) { 'cpu' } else { 'hip' }
+powershell -ExecutionPolicy Bypass -File scripts\preflight.ps1 -CdmPath Wsl -Variant $variant
+$repoWsl = (wsl -d Ubuntu2204 -- wslpath -a $PWD.Path).Trim()
 
 # Step 1: OmniDocBench code + dataset
 powershell -ExecutionPolicy Bypass -File eval-infra\01-omnidocbench\setup.ps1
 powershell -ExecutionPolicy Bypass -File eval-infra\01-omnidocbench\verify.ps1
 
-# Optional native-CDM verification (requires native TeX Live, ImageMagick, and Ghostscript).
-# Skip this when using the WSL compatibility/reference path below.
-powershell -ExecutionPolicy Bypass -File eval-infra\02-cdm-environment\verify-windows.ps1
-
 # Step 2: CDM environment (WSL compatibility/reference path)
-# Replace /mnt/c/<path-to-repo> with your clone's WSL path.
-wsl -d Ubuntu2204 bash /mnt/c/<path-to-repo>/eval-infra/02-cdm-environment/setup.sh
-wsl -d Ubuntu2204 bash /mnt/c/<path-to-repo>/eval-infra/02-cdm-environment/verify.sh
+wsl -d Ubuntu2204 bash "$repoWsl/eval-infra/02-cdm-environment/setup.sh"
+wsl -d Ubuntu2204 bash "$repoWsl/eval-infra/02-cdm-environment/verify.sh"
 
 # Step 3: reference adapter (PaddleOCR-VL-1.6)
-powershell -ExecutionPolicy Bypass -File adapters\paddleocr-vl-1.6\01-vlm-server\setup.ps1 -Variant hip
+# CPU users can choose the 200-page path below instead of this full 1651-page run.
+powershell -ExecutionPolicy Bypass -File adapters\paddleocr-vl-1.6\01-vlm-server\setup.ps1 -Variant $variant
+powershell -ExecutionPolicy Bypass -File adapters\paddleocr-vl-1.6\01-vlm-server\verify.ps1
 powershell -ExecutionPolicy Bypass -File adapters\paddleocr-vl-1.6\02-layout-model\setup.ps1
+powershell -ExecutionPolicy Bypass -File adapters\paddleocr-vl-1.6\02-layout-model\verify.ps1
 powershell -ExecutionPolicy Bypass -File adapters\paddleocr-vl-1.6\00-install-deps\setup.ps1
-python adapters\paddleocr-vl-1.6\run_adapter.py `
+.\.venv\Scripts\python.exe adapters\paddleocr-vl-1.6\run_adapter.py `
     --img-dir  eval-infra\01-omnidocbench\data\images `
     --out-dir  predictions\paddleocrvl_rocm
 
 # Step 4: scoring + final verification
 powershell -ExecutionPolicy Bypass -File eval-infra\03-scoring\score.ps1
-# Native CDM path, after verify-windows.ps1 passes:
-powershell -ExecutionPolicy Bypass -File eval-infra\03-scoring\score.ps1 -Config v16-cdm.yaml
-# WSL CDM compatibility/reference path:
-wsl -d Ubuntu2204 bash /mnt/c/<path-to-repo>/eval-infra/03-scoring/score-cdm.sh
-powershell -ExecutionPolicy Bypass -File eval-infra\03-scoring\verify.ps1
-# Or all-at-once:
-powershell -ExecutionPolicy Bypass -File scripts\full-verify.ps1
+powershell -ExecutionPolicy Bypass -File eval-infra\03-scoring\verify.ps1 `
+  -WindowsOnly -SaveName paddleocrvl_rocm_quick_match
+wsl -d Ubuntu2204 bash "$repoWsl/eval-infra/03-scoring/score-cdm.sh" v16-cdm.yaml predictions/paddleocrvl_rocm
+powershell -ExecutionPolicy Bypass -File eval-infra\03-scoring\verify.ps1 `
+  -WslOnly -RequireCdm -SaveName paddleocrvl_rocm_quick_match
+powershell -ExecutionPolicy Bypass -File scripts\full-verify.ps1 `
+  -PredictionDir predictions\paddleocrvl_rocm `
+  -ScoreSaveName paddleocrvl_rocm_quick_match
 ```
+
+</details>
+
+For constrained hardware, `v16-cpu-200.yaml` and `v16-cdm-cpu-200.yaml` provide
+an explicit 200-page capability path. Choose this instead of the full Step 3
+inference, provision the CPU server, and stop deterministically after 200 images:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File adapters\paddleocr-vl-1.6\01-vlm-server\setup.ps1 -Variant cpu
+powershell -ExecutionPolicy Bypass -File adapters\paddleocr-vl-1.6\01-vlm-server\verify.ps1
+powershell -ExecutionPolicy Bypass -File adapters\paddleocr-vl-1.6\02-layout-model\setup.ps1
+powershell -ExecutionPolicy Bypass -File adapters\paddleocr-vl-1.6\02-layout-model\verify.ps1
+powershell -ExecutionPolicy Bypass -File adapters\paddleocr-vl-1.6\00-install-deps\setup.ps1
+.\.venv\Scripts\python.exe adapters\paddleocr-vl-1.6\run_adapter.py `
+  --img-dir eval-infra\01-omnidocbench\data\images `
+  --out-dir predictions\paddleocrvl_cpu_860m_200 `
+  --max-pages 200
+.\.venv\Scripts\python.exe scripts\build_prediction_subset.py `
+  --full-manifest eval-infra\01-omnidocbench\data\OmniDocBench.json `
+  --pred-dir predictions\paddleocrvl_cpu_860m_200 `
+  --output eval-infra\01-omnidocbench\data\OmniDocBench_cpu_200.json `
+  --limit 200
+.\.venv\Scripts\python.exe scripts\validate_predictions.py `
+  --manifest eval-infra\01-omnidocbench\data\OmniDocBench_cpu_200.json `
+  --pred-dir predictions\paddleocrvl_cpu_860m_200 `
+  --min-coverage 1.0
+powershell -ExecutionPolicy Bypass -File eval-infra\03-scoring\score.ps1 `
+  -Config v16-cpu-200.yaml
+```
+
+For WSL CDM, pass the same prediction directory and CDM config to
+`score-cdm.sh`, then bind final verification to the exact artifacts:
+
+```powershell
+wsl -d Ubuntu2204 bash "$repoWsl/eval-infra/03-scoring/score-cdm.sh" `
+  v16-cdm-cpu-200.yaml `
+  predictions/paddleocrvl_cpu_860m_200
+powershell -ExecutionPolicy Bypass -File scripts\full-verify.ps1 `
+  -PredictionDir predictions\paddleocrvl_cpu_860m_200 `
+  -PredictionManifest eval-infra\01-omnidocbench\data\OmniDocBench_cpu_200.json `
+  -ScoreSaveName paddleocrvl_cpu_860m_200_quick_match
+```
+
+Never label this subset as a full-set score. The verified command provenance
+and limitations are in
+[`docs/reproduction-cpu-200-2026-07-26.md`](docs/reproduction-cpu-200-2026-07-26.md).
+
+The ten-page smoke uses `v16-cpu-smoke-10.yaml` and
+`v16-cdm-cpu-smoke-10.yaml`; use the single entry point above rather than
+assembling those commands manually.
 
 Windows-native CDM is supported when `patches/omnidocbench/windows-cdm.patch`
 has been applied by `eval-infra/01-omnidocbench/setup.ps1` and
@@ -101,6 +231,8 @@ requires native TeX Live, ImageMagick, and Ghostscript. WSL CDM remains the
 compatibility/reference path; users choosing WSL do not need native-CDM
 verification. `scripts/full-verify.ps1` runs the native check only with the
 explicit `-WindowsCdm` opt-in.
+
+Optional native-CDM verification is separate from the WSL quick-start path.
 
 For benchmark scoring with PaddleOCR's official `PaddleOCRVL` engine, export
 evaluation-oriented Markdown with `_to_markdown(pretty=False)`. The default
@@ -118,7 +250,7 @@ upstream in
 [PaddleOCR issue #18248](https://github.com/PaddlePaddle/PaddleOCR/issues/18248).
 
 ```powershell
-python adapters\paddleocr-vl-1.6\run_adapter.py `
+.\.venv\Scripts\python.exe adapters\paddleocr-vl-1.6\run_adapter.py `
     --engine official `
     --img-dir eval-infra\01-omnidocbench\data\images `
     --out-dir predictions\paddleocr_official_prettyfalse_full_2026-07-09
@@ -270,11 +402,17 @@ local single-machine setups, the four standard metrics.
 
 **Out of scope** (by design — see spec §8): Docker-based setups (kept as a
 fallback, not the main path), OmniDocBench v1.5 (config template provided, not
-automated), non-AMD GPU adapters (template provided, community contributions
-welcome), CI/CD (local verify scripts, not GitHub Actions).
+automated), and hosted validation of WSL, AMD GPUs, model/data downloads, CDM,
+scoring, or benchmarks. GitHub Actions runs deterministic tests and script
+syntax only; physical-machine evidence remains mandatory for hardware claims.
 
 ## License
 
-See the upstream [OmniDocBench](https://github.com/opendatalab/OmniDocBench)
-license for the eval code and dataset terms. The infrastructure and adapter
-code in this repo is provided as-is for reproducing the benchmark.
+This repository's original code is Apache-2.0 under [`LICENSE`](LICENSE).
+Downloaded OmniDocBench code/dataset, PaddleOCR/PaddleOCR-VL model weights,
+PP-DocLayoutV3, llama.cpp binaries, and system packages remain governed by
+their respective upstream licenses and terms. Generated checkouts, datasets,
+models, predictions, and results are gitignored and are not relicensed here.
+
+Security reporting is documented in [`SECURITY.md`](SECURITY.md); community
+expectations are in [`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md).

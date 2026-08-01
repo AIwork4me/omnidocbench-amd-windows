@@ -14,6 +14,7 @@ Inputs (all via CLI):
 from __future__ import annotations
 
 import json
+import math
 import statistics
 from datetime import datetime, timezone
 from pathlib import Path
@@ -73,10 +74,18 @@ def extract_scores(metric_result: dict) -> dict[str, float | None]:
     """Extract the 4 standard metrics from an OmniDocBench metric_result.json."""
     scores = {}
     scores["text_edit_dist"] = metric_result["text_block"]["all"]["Edit_dist"]["ALL_page_avg"]
+    scores["formula_edit_dist"] = metric_result["display_formula"]["all"]["Edit_dist"]["ALL_page_avg"]
     scores["reading_order"] = metric_result["reading_order"]["all"]["Edit_dist"]["ALL_page_avg"]
     scores["table_teds"] = metric_result["table"]["all"]["TEDS"]["all"]
     cdm_node = metric_result.get("display_formula", {}).get("all", {}).get("CDM")
     scores["formula_cdm"] = cdm_node["all"] if cdm_node else None
+    for name, value in scores.items():
+        if value is None:
+            continue
+        if isinstance(value, bool) or not isinstance(value, (int, float)):
+            raise ValueError(f"{name} must be numeric, got {value!r}")
+        if not math.isfinite(value):
+            raise ValueError(f"{name} must be finite, got {value!r}")
     return scores
 
 
@@ -166,7 +175,10 @@ def generate_report(
 
     lines.append(f"<!-- generated: true {now} -->")
     lines.append("")
-    lines.append(f"# OmniDocBench v1.6 -- AI MAX+ 395 Capability Report")
+    report_platform = platform.strip()
+    if not report_platform:
+        raise ValueError("platform must be a non-empty hardware identifier")
+    lines.append(f"# OmniDocBench v1.6 -- {report_platform} Capability Report")
     lines.append("")
     lines.append(
         f"> Platform: {platform} | Qualifier: {qualifier} | "
@@ -181,6 +193,20 @@ def generate_report(
     total = stats.get("count", 0)
     all_times = [s.get("seconds", 0) for s in stats.get("stats", []) if s.get("status") == "ok"]
     total_time = sum(s["seconds"] for s in stats.get("stats", []))
+    timing_source = stats.get("timing_source", "native")
+    if timing_source == "file_mtime_reconstruction":
+        completion_times = sorted(
+            float(item["completed_at_epoch"])
+            for item in stats.get("stats", [])
+            if item.get("status") == "ok" and item.get("completed_at_epoch") is not None
+        )
+        if len(completion_times) >= 2:
+            all_times = [
+                current - previous
+                for previous, current in zip(completion_times, completion_times[1:])
+                if current >= previous
+            ]
+        total_time = float(stats.get("duration_sec", 0))
     lines.append("| Metric | Value | Direction | Threshold | Pass |")
     lines.append("|---|---|---|---|---|")
     for row in _threshold_check(extracted):
@@ -188,6 +214,12 @@ def generate_report(
     lines.append(f"| Total time | {_format_duration(total_time)} | -- | -- | -- |")
     lines.append(f"| Successful pages | {ok_count} / {total} ({100*ok_count/max(total,1):.1f}%) | -- | -- | -- |")
     lines.append("")
+    if timing_source == "file_mtime_reconstruction":
+        lines.append(
+            "> Timing source: reconstructed from prediction file completion timestamps; "
+            "values are wall-clock completion intervals, not model-internal latency."
+        )
+        lines.append("")
 
     # Chapter 2: Quality scores
     lines.append("## 2. Quality Scores")
@@ -201,7 +233,7 @@ def generate_report(
         f"<!-- trace: *_metric_result.json#/text_block/all/Edit_dist/ALL_page_avg --> |"
     )
     lines.append(
-        f"| display_formula | Edit_dist | {extracted.get('formula_edit_dist', 'N/A')} |"
+        f"| display_formula | Edit_dist | **{extracted['formula_edit_dist']:.4f}** |"
     )
     cdm_val = extracted.get("formula_cdm")
     cdm_str = f"**{cdm_val:.4f}**" if cdm_val is not None else "N/A"
@@ -286,12 +318,16 @@ def generate_report(
         avg_ram = statistics.mean(s.get("ram_gib", 0) for s in resource_data)
 
         gpu_levels = set(s.get("gpu_level", "gpu-full") for s in resource_data)
+        resource_notes = sorted({str(s["note"]) for s in resource_data if s.get("note")})
         if "gpu-unavailable" in gpu_levels:
             lines.append("> :warning: GPU data unavailable -- install ROCm HIP SDK for GPU metrics.")
             lines.append("")
         elif "gpu-degraded" in gpu_levels:
             full_count = sum(1 for s in resource_data if s.get("gpu_level") == "gpu-full")
             lines.append(f"> :warning: GPU data partial ({full_count} of {len(resource_data)} samples).")
+            lines.append("")
+        for note in resource_notes:
+            lines.append(f"> Resource note: {note}")
             lines.append("")
 
         lines.append("### 3.1 GPU Memory")
@@ -335,6 +371,8 @@ def generate_report(
         lines.append(f"| P99 | {sorted_times[min(p99_idx, len(sorted_times)-1)]:.1f}s / page |")
         lines.append(f"| Slowest | {sorted_times[-1]:.1f}s |")
         lines.append(f"| Throughput | {ok_count / max(total_time, 1) * 60:.1f} pages/min |")
+        if timing_source == "file_mtime_reconstruction":
+            lines.append("| Timing provenance | File mtime reconstruction |")
         lines.append("")
 
     # Chapter 5: Environment snapshot
@@ -354,7 +392,7 @@ def generate_report(
 def _read_resource_log(path: str) -> list[dict]:
     """Read resource_log.jsonl into a list of dicts."""
     data = []
-    with open(path, encoding="utf-8") as f:
+    with open(path, encoding="utf-8-sig") as f:
         for line in f:
             line = line.strip()
             if line:
@@ -374,13 +412,17 @@ def main():
     p.add_argument("--platform", default="AMD Ryzen AI Max+ 395", help="Hardware identifier")
     p.add_argument("--qualifier", default="", help="Quantization x backend label")
     p.add_argument("--run-id", default="", help="Unique run identifier")
+    p.add_argument("--runs-manifest", default="", help="Stability runs manifest JSON")
     args = p.parse_args()
 
-    scores_data = json.loads(Path(args.scores).read_text(encoding="utf-8"))
-    stats_data = json.loads(Path(args.stats).read_text(encoding="utf-8"))
+    scores_data = json.loads(Path(args.scores).read_text(encoding="utf-8-sig"))
+    stats_data = json.loads(Path(args.stats).read_text(encoding="utf-8-sig"))
     phase_data = None
     if args.phase_log and Path(args.phase_log).exists():
-        phase_data = json.loads(Path(args.phase_log).read_text(encoding="utf-8"))
+        phase_data = json.loads(Path(args.phase_log).read_text(encoding="utf-8-sig"))
+    runs_manifest = None
+    if args.runs_manifest:
+        runs_manifest = json.loads(Path(args.runs_manifest).read_text(encoding="utf-8-sig"))
 
     report_md = generate_report(
         scores=scores_data,
@@ -391,6 +433,7 @@ def main():
         platform=args.platform,
         qualifier=args.qualifier,
         run_id=args.run_id,
+        runs_manifest=runs_manifest,
     )
     Path(args.output).write_text(report_md, encoding="utf-8")
     print(f"Report written to {args.output}")

@@ -18,11 +18,24 @@ export MAGICK_CONFIGURE_PATH=/usr/local/etc/ImageMagick-7
 ODB_HOME="${HOME}"
 ODB_LOCAL="${ODB_HOME}/OmniDocBench"
 ODB_VENV="${ODB_HOME}/odb-venv"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
+LOCK_FILE="$REPO_ROOT/upstream-lock.json"
+[ -f "$LOCK_FILE" ] || { echo "FAIL: upstream-lock.json missing"; exit 1; }
+TLPDB_EXPECTED_SIZE=$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1], encoding="utf-8"))["wsl_cdm"]["texlive_tlpdb_bytes"])' "$LOCK_FILE")
+TLPDB_EXPECTED_SHA=$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1], encoding="utf-8"))["wsl_cdm"]["texlive_tlpdb_sha256"])' "$LOCK_FILE")
+WSL_REQUIREMENTS="$REPO_ROOT/eval-infra/02-cdm-environment/requirements.lock.txt"
 
 echo "=== Checking tools ==="
 which pdflatex >/dev/null 2>&1 || { echo "FAIL: pdflatex not found"; exit 1; }
 magick --version 2>/dev/null | grep -q "ImageMagick 7" || { echo "FAIL: IM7 not active"; exit 1; }
 which gs >/dev/null 2>&1 || { echo "FAIL: gs not found"; exit 1; }
+[ -x "$ODB_VENV/bin/python" ] || { echo "FAIL: CDM venv Python not found: $ODB_VENV/bin/python"; exit 1; }
+TLPDB="/usr/local/texlive/2026/tlpkg/texlive.tlpdb"
+[ "$(stat -c%s "$TLPDB" 2>/dev/null || echo 0)" = "$TLPDB_EXPECTED_SIZE" ] || { echo "FAIL: TeX Live lock size mismatch"; exit 1; }
+[ "$(sha256sum "$TLPDB" | awk '{print $1}')" = "$TLPDB_EXPECTED_SHA" ] || { echo "FAIL: TeX Live lock SHA mismatch"; exit 1; }
+"$ODB_VENV/bin/python" "$REPO_ROOT/scripts/verify_requirements_lock.py" "$WSL_REQUIREMENTS" >/dev/null 2>&1 \
+	|| { echo "FAIL: WSL Python environment differs from requirements.lock.txt"; exit 1; }
 echo "  tools OK"
 
 echo "=== Checking CJK + gkai ==="
@@ -40,14 +53,13 @@ TEX
 pdflatex -interaction=nonstopmode -halt-on-error cdm_verify.tex >/dev/null 2>&1 || { echo "FAIL: pdflatex compile"; exit 1; }
 magick -density 100 cdm_verify.pdf cdm_verify.png 2>/dev/null
 [ -f cdm_verify.png ] || { echo "FAIL: magick PDF→PNG"; exit 1; }
-source "$ODB_VENV/bin/activate"
-COLORS=$(python3 -c "from PIL import Image; c=Image.open('/tmp/cdm_verify.png').convert('RGB').getcolors(10**6); print(len(c) if c else 0)")
+COLORS=$("$ODB_VENV/bin/python" -c "from PIL import Image; c=Image.open('/tmp/cdm_verify.png').convert('RGB').getcolors(10**6); print(len(c) if c else 0)")
 [ "$COLORS" -gt 2 ] || { echo "FAIL: PNG is grayscale ($COLORS colors) — \\mathcolor fix not working"; exit 1; }
 echo "  PDF→PNG color OK ($COLORS colors)"
 
 echo "=== CDM F1 test ==="
 cd "$ODB_LOCAL"
-python3 -c "
+"$ODB_VENV/bin/python" -c "
 import sys; sys.path.insert(0,'.')
 from src.metrics.cdm_metric import CDM
 c=CDM(output_root='/tmp/cdm_verify_cdm')

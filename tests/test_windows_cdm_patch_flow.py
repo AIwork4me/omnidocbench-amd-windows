@@ -16,6 +16,7 @@ FULL_VERIFY = REPO_ROOT / "scripts" / "full-verify.ps1"
 SCORING_README = REPO_ROOT / "eval-infra" / "03-scoring" / "README.md"
 SCORE_PS1 = REPO_ROOT / "eval-infra" / "03-scoring" / "score.ps1"
 SCORE_CDM_SH = REPO_ROOT / "eval-infra" / "03-scoring" / "score-cdm.sh"
+CDM_SETUP_SH = REPO_ROOT / "eval-infra" / "02-cdm-environment" / "setup.sh"
 SCORING_VERIFY = REPO_ROOT / "eval-infra" / "03-scoring" / "verify.ps1"
 DOC_FILES = [
     REPO_ROOT / "README.md",
@@ -65,6 +66,23 @@ def run_scoring_verify(*args: str) -> subprocess.CompletedProcess[str]:
             "Bypass",
             "-File",
             str(SCORING_VERIFY),
+            *args,
+        ],
+        cwd=REPO_ROOT,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+
+def run_score(*args: str) -> subprocess.CompletedProcess[str]:
+    return subprocess.run(
+        [
+            "powershell",
+            "-ExecutionPolicy",
+            "Bypass",
+            "-File",
+            str(SCORE_PS1),
             *args,
         ],
         cwd=REPO_ROOT,
@@ -189,6 +207,30 @@ def test_scoring_verifier_rejects_present_non_numeric_cdm_all(tmp_path: Path):
     assert "must be numeric" in result.stdout + result.stderr
 
 
+def test_scoring_verifier_rejects_non_numeric_mandatory_metric(tmp_path: Path):
+    metric_result = tmp_path / "metric_result.json"
+    write_metric_result(metric_result, mandatory_value="not-a-number")
+
+    result = run_scoring_verify("-MetricResult", str(metric_result))
+
+    assert result.returncode != 0
+    output = result.stdout + result.stderr
+    assert "text_block.Edit_dist" in output
+    assert "must be numeric" in output
+
+
+def test_scoring_verifier_rejects_nan_string_mandatory_metric(tmp_path: Path):
+    metric_result = tmp_path / "metric_result.json"
+    write_metric_result(metric_result, mandatory_value="NaN")
+
+    result = run_scoring_verify("-MetricResult", str(metric_result))
+
+    assert result.returncode != 0
+    output = result.stdout + result.stderr
+    assert "text_block.Edit_dist" in output
+    assert "must be numeric" in output
+
+
 def test_scoring_verifier_rejects_raw_json_nonfinite_cdm_all(tmp_path: Path):
     metric_result = tmp_path / "metric_result.json"
     metric_result.write_text(
@@ -225,6 +267,92 @@ def test_scoring_verifier_windows_only_excludes_wsl_candidates():
     output = result.stdout + result.stderr
     assert "eval-infra\\01-omnidocbench\\OmniDocBench\\result" in output
     assert "\\\\wsl$" not in output
+
+
+def test_score_rejects_empty_prediction_override_before_scoring(tmp_path: Path):
+    prediction_dir = tmp_path / "empty-predictions"
+    prediction_dir.mkdir()
+
+    result = run_score("-PredictionDir", str(prediction_dir))
+
+    assert result.returncode != 0
+    output = result.stdout + result.stderr
+    assert "contains no Markdown files" in output
+    assert prediction_dir.name in output
+    assert "Run the adapter before scoring" in output
+
+
+def test_hard_subset_derivation_cannot_degrade_to_warning():
+    text = read(SCORE_PS1)
+
+    assert "Hard-subset derivation produced 0 pages" in text
+    assert "$_.page_info.page_attribute.subset" in text
+    assert "Could not derive $hardMan from $fullMan" in text
+    assert "WARN: 0 hard pages found" not in text
+    assert "WARN: could not auto-derive" not in text
+
+
+def test_windows_scorer_routes_explicit_predictions_through_short_repo_path():
+    text = read(SCORE_PS1)
+
+    assert "function ConvertTo-ShortRepoPath" in text
+    assert "ConvertTo-ShortRepoPath -Path $PredictionDir -RepoRoot $rootDir" in text
+
+
+def test_wsl_cdm_setup_strips_crlf_before_sourcing_mirror_values():
+    text = read(CDM_SETUP_SH)
+
+    assert "tr -d '\\r' < \"$REPO_ROOT/mirrors.env\"" in text
+
+
+def test_wsl_cdm_setup_uses_explicit_resumable_tex_collections():
+    text = read(CDM_SETUP_SH)
+
+    assert "selected_scheme scheme-infraonly" in text
+    assert "collection-latex 1" in text
+    assert "collection-latexextra 1" in text
+    assert 'if [ -x "$TLBIN/tlmgr" ]' in text
+    assert '"$TLBIN/tlmgr" install collection-basic collection-latex' in text
+    assert "2>&1 | tail -3" not in text
+
+
+def test_wsl_cdm_setup_rejects_truncated_imagemagick_appimage():
+    text = read(CDM_SETUP_SH)
+
+    assert "appimage_valid()" in text
+    assert "IM7_EXPECTED_SIZE" in text
+    assert "IM7_EXPECTED_SHA" in text
+    assert "sha256sum" in text
+    assert "TLPDB_EXPECTED_SHA" in text
+    assert "--require-hashes" in text
+    assert "requirements.lock.txt" in text
+    assert 'stat -c%s "$1"' in text
+    assert '"7f454c46"' in text
+    assert "magick7.AppImage.part" in text
+    assert "curl -fL --retry 3" in text
+    assert "IM7 AppImage download is truncated or invalid" in text
+    assert ">/root/im7-extract.log" in text
+
+
+def test_wsl_cdm_setup_recovers_incomplete_python_venv():
+    text = read(CDM_SETUP_SH)
+
+    assert "python3-venv" in text
+    assert 'if [ ! -x "$ODB_VENV/bin/python" ]' in text
+    assert 'rm -rf "$ODB_VENV"' in text
+    assert '"$ODB_VENV/bin/python" -m ensurepip --upgrade' in text
+    assert '"$ODB_VENV/bin/python" -m pip install -q --require-hashes' in text
+    assert "requirements.lock.txt" in text
+    assert "venv dependencies synchronized" in text
+    assert "venv imports verified" in text
+
+
+def test_wsl_cdm_verifier_uses_venv_python_without_activation():
+    verifier = read(REPO_ROOT / "eval-infra" / "02-cdm-environment" / "verify.sh")
+
+    assert '"$ODB_VENV/bin/python" -c' in verifier
+    assert "verify_requirements_lock.py" in verifier
+    assert 'source "$ODB_VENV/bin/activate"' not in verifier
 
 
 def test_windows_cdm_patch_exists_and_targets_only_cdm_toolchain_files():
@@ -307,12 +435,8 @@ def test_full_verify_can_run_windows_native_cdm_without_wsl():
 def test_full_verify_default_wsl_scoring_requires_wsl_cdm_result():
     text = read(FULL_VERIFY)
 
-    assert (
-        '} else {\n'
-        '    [void](Invoke-Verify "03-scoring/verify-wsl" $scoreVerify '
-        '@("-WslOnly", "-RequireCdm"))\n'
-        '}'
-    ) in text
+    assert '$wslScoreArguments = @("-WslOnly", "-RequireCdm")' in text
+    assert 'Invoke-Verify "03-scoring/verify-wsl" $scoreVerify $wslScoreArguments' in text
 
 
 def test_full_verify_wsl_cdm_verifier_temporarily_allows_stderr():
@@ -605,6 +729,14 @@ def test_full_verify_docs_include_the_native_only_cdm_command():
     assert command in read(REPO_ROOT / "eval-infra" / "README.md")
 
 
+def test_full_verify_accepts_explicit_subset_artifacts():
+    text = read(FULL_VERIFY)
+
+    for parameter in ("PredictionDir", "PredictionManifest", "ScoreSaveName", "BenchmarkDir"):
+        assert f"[string] ${parameter}" in text
+    assert 'if ($ScoreSaveName)' in text
+
+
 def test_agents_success_criteria_accepts_the_applicable_cdm_verifier():
     text = read(REPO_ROOT / "AGENTS.md")
     normalized = " ".join(text.split())
@@ -662,3 +794,61 @@ def test_user_facing_docs_do_not_describe_cdm_as_wsl_only():
         text = read(REPO_ROOT / relative_path)
         for claim in claims:
             assert claim not in text, f"stale WSL-only CDM claim in {relative_path}: {claim}"
+
+
+def test_fresh_clone_docs_order_wsl_provisioning_before_wsl_preflight():
+    for path in (REPO_ROOT / "README.md", REPO_ROOT / "README.zh-CN.md", REPO_ROOT / "AGENTS.md"):
+        text = read(path)
+        assert text.index("scripts\\wsl-ensure.ps1") < text.index(
+            "scripts\\preflight.ps1 -CdmPath Wsl"
+        ), path
+
+
+def test_fresh_clone_docs_remove_manual_wsl_path_placeholders():
+    for path in (REPO_ROOT / "README.md", REPO_ROOT / "README.zh-CN.md", REPO_ROOT / "AGENTS.md"):
+        text = read(path)
+        assert "$repoWsl" in text
+        assert "/mnt/c/<path-to-repo>" not in text
+        assert "wslpath -a" in text
+
+
+def test_quick_start_verifies_models_and_reuses_predictions_for_cdm():
+    for path in (REPO_ROOT / "README.md", REPO_ROOT / "README.zh-CN.md", REPO_ROOT / "AGENTS.md"):
+        text = read(path)
+        assert "01-vlm-server\\verify.ps1" in text
+        assert "02-layout-model\\verify.ps1" in text
+        assert "score-cdm.sh\" v16-cdm.yaml predictions/paddleocrvl_rocm" in text
+
+
+def test_docs_make_cpu_200_inference_executable_and_score_official_output_explicitly():
+    readme = read(REPO_ROOT / "README.md")
+    readme_zh = read(REPO_ROOT / "README.zh-CN.md")
+    agents = read(REPO_ROOT / "AGENTS.md")
+    for text in (readme, readme_zh):
+        assert "-Variant cpu" in text
+        assert "--out-dir predictions\\paddleocrvl_cpu_860m_200" in text
+        assert "--max-pages 200" in text
+        assert "-not ($gpuNames -match 'AMD|Radeon')" in text
+        inference = text.index("--out-dir predictions\\paddleocrvl_cpu_860m_200")
+        cpu_setup = text[text.rfind("-Variant cpu", 0, inference) : inference]
+        assert "02-layout-model\\setup.ps1" in cpu_setup
+        assert "02-layout-model\\verify.ps1" in cpu_setup
+        assert "00-install-deps\\setup.ps1" in cpu_setup
+        assert "-Config v16-cpu-200.yaml -SaveName" not in text[inference:]
+    assert "v16-official-prettyfalse-full-2026-07-09.yaml" in agents
+    assert "-not ($gpuNames -match 'AMD|Radeon')" in agents
+
+
+def test_verified_machine_results_are_collapsed_by_default():
+    for path, label in (
+        (REPO_ROOT / "README.md", "Verified result on this machine"),
+        (REPO_ROOT / "README.zh-CN.md", "本机已验核结果"),
+    ):
+        text = read(path)
+        summary = f"<summary><strong>{label}</strong></summary>"
+        start = text.index(summary)
+        end = text.index("</details>", start)
+        block = text[text.rfind("<details", 0, start) : end]
+        assert "<details open" not in block
+        assert "ggml-org/llama.cpp#26127" in block
+        assert "96.0949" in block

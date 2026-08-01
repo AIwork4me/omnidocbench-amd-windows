@@ -283,7 +283,7 @@ def test_referenced_configs_exist():
     for name in ("README.md", "README.zh-CN.md", "AGENTS.md"):
         text = (ROOT / name).read_text(encoding="utf-8")
         refs |= set(re.findall(r"-Config\s+([A-Za-z0-9_.-]+\.yaml)", text))
-        refs |= set(re.findall(r"configs[\\/]([A-Za-z0-9_.-]+\.yaml)", text))
+        refs |= set(re.findall(r"configs[\\/]" r"([A-Za-z0-9_.-]+\.yaml)", text))
     assert refs, "no config references found"
     missing = [r for r in sorted(refs) if not (CONFIG_DIR / r).is_file()]
     assert not missing, f"referenced configs missing: {missing}"
