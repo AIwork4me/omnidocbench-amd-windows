@@ -176,8 +176,23 @@ foreach ($c in $checks) {
         Write-Host ("FAIL: {0,-28} value key '{1}' missing" -f $c.Label, $c.Key) -ForegroundColor Red
         $ok = $false; continue
     }
+    $isNumeric = (
+        ($val -is [byte]) -or ($val -is [sbyte]) -or
+        ($val -is [int16]) -or ($val -is [uint16]) -or
+        ($val -is [int32]) -or ($val -is [uint32]) -or
+        ($val -is [int64]) -or ($val -is [uint64]) -or
+        ($val -is [single]) -or ($val -is [double]) -or
+        ($val -is [decimal])
+    )
+    if (-not $isNumeric) {
+        Write-Host ("FAIL: {0,-28} must be numeric" -f $c.Label) -ForegroundColor Red
+        $ok = $false; continue
+    }
     $num = [double]$val
-    if ($num -lt 0.0) {
+    if ([double]::IsNaN($num) -or [double]::IsInfinity($num)) {
+        Write-Host ("FAIL: {0,-28} must be finite" -f $c.Label) -ForegroundColor Red
+        $ok = $false
+    } elseif ($num -lt 0.0) {
         # Negative = a genuine scoring bug (OmniDocBench never produces negatives).
         Write-Host ("FAIL: {0,-28} = {1}  (negative - silent run failure / scoring bug)" -f $c.Label, $num) -ForegroundColor Red
         $ok = $false

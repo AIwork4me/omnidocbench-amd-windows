@@ -169,17 +169,22 @@ interpreter.
 `apted`) use APIs removed in Python 3.12 (`inspect.getargspec`, `distutils`,
 `imp`). It works on 3.10 and 3.11.
 
-**Fix.** Use Python 3.10 or 3.11 for the OmniDocBench venv. The venv created by
-`eval-infra/01-omnidocbench` pins 3.11. If you build your own venv, pin
-explicitly:
+**Fix.** Use the repository's locked uv environment. It installs a managed
+Python 3.11 and synchronizes the same dependency set on every machine:
 
 ```powershell
-py -3.11 -m venv .venv
-.\.venv\Scripts\Activate.ps1
-python -m pip install -r eval-infra\01-omnidocbench\OmniDocBench\requirements.txt
+winget install --id astral-sh.uv -e
+uv python install 3.11
+uv sync --locked --all-groups
 ```
 
-**Verify.** `python --version` reports `3.11.x` (or `3.10.x`) inside the venv.
+`eval-infra/01-omnidocbench/setup.ps1` also uses uv when available and retains a
+Python 3.10/3.11 compatibility fallback for existing installations. It now
+stops before downloads or scoring rather than creating an unsupported venv.
+
+**Verify.** `.\.venv\Scripts\python.exe --version` reports `3.11.x` (or a
+deliberately selected `3.10.x`), then
+`.\.venv\Scripts\python.exe -m pytest -q` passes.
 
 **If you skip it.** Cryptic import errors mid-scoring, often deep inside
 `evaluate`/`apted`. The version mismatch is not obvious from the traceback.

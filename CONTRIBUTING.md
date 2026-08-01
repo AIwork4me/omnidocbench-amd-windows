@@ -2,6 +2,28 @@
 
 Thank you for your interest in improving OmniDocBench AMD Windows!
 
+## Development Setup
+
+Use the locked uv environment so local and CI checks run with the supported
+Python and dependency versions:
+
+```powershell
+winget install --id astral-sh.uv -e
+uv python install 3.11
+uv sync --locked --all-groups
+.\.venv\Scripts\python.exe -m pytest -q
+```
+
+Do not use Python 3.12 or newer for OmniDocBench. The repository pins Python
+3.11 in `.python-version` and constrains supported versions in `pyproject.toml`.
+When changing Python support, update both files and regenerate `uv.lock` with
+`uv lock`.
+
+Hosted CI validates deterministic tests and PowerShell/Bash syntax on Python
+3.10/3.11. It does not validate WSL provisioning, AMD GPU execution,
+third-party downloads, CDM, scoring, or benchmarks; those require dated
+physical-machine evidence and matching verifier output.
+
 ## Adding a New Model Adapter
 
 The most valuable contribution is a **new model adapter** — it lets other users evaluate their favorite document parsing model without rebuilding the eval infrastructure.
@@ -18,6 +40,11 @@ The most valuable contribution is a **new model adapter** — it lets other user
 4. Add a `README.md` explaining what/why
 5. Test: run your adapter on a few OmniDocBench images → verify .md output
 6. Submit a PR
+
+Before submitting, complete the pull-request template. Keep generated datasets,
+models, predictions, environments, results, credentials, and machine-local
+paths out of Git. Update English and Chinese entry-point documentation together
+when commands or user-visible behavior change.
 
 ### Adapter Interface
 
@@ -51,3 +78,5 @@ We'll add it to the knowledge base.
 - Bash scripts: `set -euo pipefail`, idempotent (safe to re-run)
 - Each script: `verify` companion that returns exit 0/1
 - READMEs: explain **what** / **why** / **what problem it solves**
+- Python dependencies: update `pyproject.toml` and commit the regenerated
+  `uv.lock`; do not rely on an undocumented global package

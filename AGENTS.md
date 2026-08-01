@@ -60,18 +60,48 @@ Work top to bottom. Run each `verify.*` immediately after its `setup.*`; only
 proceed when it exits 0. All paths are relative to the repo root. Launch
 PowerShell scripts with `powershell -ExecutionPolicy Bypass -File ...`.
 
+For a clean-room AMD Windows capability acceptance run (not accuracy
+benchmarking), prefer the canonical single entry point:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts\reproduce.ps1 `
+   -Profile cpu-smoke-10
+```
+
+It executes the same setup/verify ownership chain below, verifies
+`upstream-lock.json`, produces exactly ten fresh CPU predictions, scores Windows
+metrics and WSL CDM, and writes resumable state. Use `-Resume` only after an
+interrupted run.
+
+When bulk dataset/GGUF/layout bytes already exist in another checkout, add
+`-SeedFrom <path> -SkipCdmSetup`. The orchestrator verifies source and
+destination locks and still creates fresh predictions and scores.
+
 ### Step 0 — environment + network + WSL  (Windows)
 
 ```powershell
-# 0a. Probe reachable mirrors → writes mirrors.env (consumed by everything).
+# 0a. Install the supported Python through uv and sync the locked local venv.
+winget install --id astral-sh.uv -e
+uv python install 3.11
+uv sync --locked --all-groups
+
+# 0b. Probe reachable mirrors → writes mirrors.env (consumed by everything).
 powershell -ExecutionPolicy Bypass -File scripts\detect-mirrors.ps1
 #   On failure → ⚠️ 4 / docs/pitfalls.md#network
 
-# 0b. Guarantee a WSL Ubuntu 22.04 distro exists (handles Store-blocked case).
+# 0c. Guarantee a WSL Ubuntu 22.04 distro exists (handles Store-blocked case).
 powershell -ExecutionPolicy Bypass -File scripts\wsl-ensure.ps1
 wsl -d Ubuntu2204 -- echo OK
 #   If "missing kernel component" or distro won't start → ⚠️ 1 (reboot)
 #   If wsl --install hangs/fails → docs/pitfalls.md#wsl
+
+# 0d. Select inference backend, then fail fast on selected-path prerequisites.
+# Official Windows HIP releases omit Radeon 860M/gfx1152; use CPU there.
+$gpuNames = @(Get-CimInstance Win32_VideoController | ForEach-Object Name)
+$useCpu = ($gpuNames -match 'Radeon.*860M') -or -not ($gpuNames -match 'AMD|Radeon')
+$variant = if ($useCpu) { 'cpu' } else { 'hip' }
+powershell -ExecutionPolicy Bypass -File scripts\preflight.ps1 -CdmPath Wsl -Variant $variant
+$repoWsl = (wsl -d Ubuntu2204 -- wslpath -a $PWD.Path).Trim()
 ```
 
 ### Step 1 — OmniDocBench code + dataset  (Windows, `eval-infra/01-omnidocbench/`)
@@ -92,12 +122,10 @@ powershell -ExecutionPolicy Bypass -File eval-infra\01-omnidocbench\verify.ps1
 # WSL users can skip this verification.
 powershell -ExecutionPolicy Bypass -File eval-infra\02-cdm-environment\verify-windows.ps1
 
-# WSL CDM remains the compatibility/reference path.
-# In WSL, this repo is reachable at /mnt/c/<your-clone-path>/omnidocbench-amd-windows.
-# Replace the path below with your actual clone location:
-wsl -d Ubuntu2204 bash /mnt/c/<path-to-repo>/eval-infra/02-cdm-environment/setup.sh
+# WSL CDM remains the compatibility/reference path. Step 0 computed $repoWsl.
+wsl -d Ubuntu2204 bash "$repoWsl/eval-infra/02-cdm-environment/setup.sh"
 # End-to-end verify: CJK formula → PDF → color PNG → CDM F1 > 0.
-wsl -d Ubuntu2204 bash /mnt/c/<path-to-repo>/eval-infra/02-cdm-environment/verify.sh
+wsl -d Ubuntu2204 bash "$repoWsl/eval-infra/02-cdm-environment/verify.sh"
 #   verify exit 1 at "IM7 not active"      → pitfalls.md#grayscale
 #   verify exit 1 at "PDF→PNG"              → pitfalls.md#im7-libs or #im7-gs
 #   verify exit 1 at "PNG is grayscale"     → pitfalls.md#mathcolor
@@ -111,14 +139,15 @@ the 9 steps self-skips when already done.
 ### Step 3 — reference adapter (PaddleOCR-VL-1.6)  (Windows, `adapters/paddleocr-vl-1.6/`)
 
 ```powershell
-# 3a. VLM server: llama.cpp HIP build + ~1.7 GB GGUF, starts llama-server.
-powershell -ExecutionPolicy Bypass -File adapters\paddleocr-vl-1.6\01-vlm-server\setup.ps1 -Variant hip
+# 3a. VLM server: selected llama.cpp build + ~1.7 GB GGUF, starts llama-server.
+powershell -ExecutionPolicy Bypass -File adapters\paddleocr-vl-1.6\01-vlm-server\setup.ps1 -Variant $variant
 powershell -ExecutionPolicy Bypass -File adapters\paddleocr-vl-1.6\01-vlm-server\verify.ps1
-#   → ⚠️ 2 (confirm GPU in use)
+#   hip only → ⚠️ 2 (confirm GPU in use)
 #   verify exit 1 / 500 errors → pitfalls.md#vlm
 
 # 3b. Layout model: PP-DocLayoutV3 ONNX (~16 MB).
 powershell -ExecutionPolicy Bypass -File adapters\paddleocr-vl-1.6\02-layout-model\setup.ps1
+powershell -ExecutionPolicy Bypass -File adapters\paddleocr-vl-1.6\02-layout-model\verify.ps1
 #   model not found → pitfalls.md#layout
 
 # 3c. Install the pipeline package (clones PaddleOCR-VL-ROCm + pip install -e), then run.
@@ -126,7 +155,7 @@ powershell -ExecutionPolicy Bypass -File adapters\paddleocr-vl-1.6\00-install-de
 # NOTE: --out-dir must match the prediction path the scoring configs read
 # (eval-infra\01-omnidocbench\configs\v16*.yaml -> predictions/paddleocrvl_rocm).
 # A different name here means score.ps1 finds no predictions and every metric is 0.
-python adapters\paddleocr-vl-1.6\run_adapter.py `
+.\.venv\Scripts\python.exe adapters\paddleocr-vl-1.6\run_adapter.py `
     --img-dir  eval-infra\01-omnidocbench\data\images `
     --out-dir  predictions\paddleocrvl_rocm
 #   → produces predictions\paddleocrvl_rocm\<stem>.md per page
@@ -141,6 +170,11 @@ python adapters\paddleocr-vl-1.6\run_adapter.py `
 #     CPU; faster on hip). The VLM server must stay up the whole time.
 #   - run_adapter.py exits non-zero / few predictions → docs/pitfalls.md#vlm
 #     (server down) or docs/pitfalls.md#layout (model missing).
+# Validate names, UTF-8, non-empty content, error logs, and >=95% coverage:
+.\.venv\Scripts\python.exe scripts\validate_predictions.py `
+   --img-dir eval-infra\01-omnidocbench\data\images `
+   --pred-dir predictions\paddleocrvl_rocm `
+   --min-coverage 0.95
 ```
 
 For the PaddleOCR official doc_parser score-comparison path, run the same
@@ -149,13 +183,16 @@ Markdown with `_to_markdown(pretty=False)` and writes to the explicit
 official prediction directory:
 
 ```powershell
-python adapters\paddleocr-vl-1.6\run_adapter.py `
+.\.venv\Scripts\python.exe adapters\paddleocr-vl-1.6\run_adapter.py `
     --engine official `
     --img-dir eval-infra\01-omnidocbench\data\images `
     --out-dir predictions\paddleocr_official_prettyfalse_full_2026-07-09
 ```
 
 Use `-Variant cpu` instead of `-Variant hip` on non-AMD-Radeon hardware.
+For the verified constrained-hardware path, run the adapter with
+`--out-dir predictions\paddleocrvl_cpu_860m_200 --max-pages 200`, then follow
+the exact subset build/scoring commands in `README.md`.
 
 ### Step 4 — scoring + final verification  (Windows + WSL, `eval-infra/03-scoring/`)
 
@@ -165,9 +202,8 @@ powershell -ExecutionPolicy Bypass -File eval-infra\03-scoring\score.ps1
 # 4b. Native Windows CDM pass (requires windows-cdm.patch and a passing
 # verify-windows.ps1 from Step 2).
 powershell -ExecutionPolicy Bypass -File eval-infra\03-scoring\score.ps1 -Config v16-cdm.yaml
-# 4c. WSL compatibility/reference CDM pass (needs Step 2's WSL environment).
-# Replace /mnt/c/<path-to-repo> with your clone location:
-wsl -d Ubuntu2204 bash /mnt/c/<path-to-repo>/eval-infra/03-scoring/score-cdm.sh
+# 4c. WSL compatibility/reference CDM pass, reusing the Step 3 predictions.
+wsl -d Ubuntu2204 bash "$repoWsl/eval-infra/03-scoring/score-cdm.sh" v16-cdm.yaml predictions/paddleocrvl_rocm
 # 4d. Verify mandatory non-CDM metrics; zero non-CDM metrics warn but can pass.
 # CDM must be positive when present or required.
 powershell -ExecutionPolicy Bypass -File eval-infra\03-scoring\verify.ps1
@@ -179,6 +215,13 @@ powershell -ExecutionPolicy Bypass -File scripts\full-verify.ps1
 powershell -ExecutionPolicy Bypass -File scripts\full-verify.ps1 -SkipWsl -WindowsCdm
 # Without -SkipWsl, -WindowsCdm performs dual-path verification (native + WSL).
 powershell -ExecutionPolicy Bypass -File scripts\full-verify.ps1 -WindowsCdm
+```
+
+If Step 3 used the official engine, score its matching output explicitly:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File eval-infra\03-scoring\score.ps1 `
+   -Config v16-official-prettyfalse-full-2026-07-09.yaml
 ```
 
 ### Step 5 — benchmark + capability report  (Windows, `eval-infra/04-benchmark/`)

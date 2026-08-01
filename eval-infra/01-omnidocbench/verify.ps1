@@ -14,6 +14,33 @@ Exit code 0 = OK, 1 = FAIL. Suitable for chaining in full-verify.ps1 (Task 7).
 #>
 $ErrorActionPreference = "Stop"
 
+function ConvertTo-ExtendedPath {
+    param([string]$Path)
+    $fullPath = [System.IO.Path]::GetFullPath($Path)
+    if ($fullPath.StartsWith("\\")) {
+        return "\\?\UNC\" + $fullPath.Substring(2)
+    }
+    return "\\?\" + $fullPath
+}
+
+function Test-FileExtended {
+    param([string]$Path)
+    return [System.IO.File]::Exists((ConvertTo-ExtendedPath -Path $Path))
+}
+
+function Get-ShortRepoRoot {
+    param([string]$RepoRoot)
+    $normalizedRoot = [System.IO.Path]::GetFullPath($RepoRoot)
+    $sha = [System.Security.Cryptography.SHA256]::Create()
+    try {
+        $hashBytes = $sha.ComputeHash([System.Text.Encoding]::UTF8.GetBytes($normalizedRoot.ToLowerInvariant()))
+    } finally {
+        $sha.Dispose()
+    }
+    $hash = ([System.BitConverter]::ToString($hashBytes) -replace "-", "").ToLowerInvariant().Substring(0, 12)
+    return Join-Path (Join-Path (Join-Path $env:LOCALAPPDATA "OmniDocBenchAMD") $hash) "repo"
+}
+
 $odbDir  = Join-Path $PSScriptRoot "OmniDocBench"
 $dataDir = Join-Path $PSScriptRoot "data"
 
@@ -39,23 +66,43 @@ if (-not (Test-Path $manifest)) {
     Write-Host "OK: GT manifest present ($manifest)" -ForegroundColor Green
 }
 
-# --- Images (~1651 expected) ---
+# --- Images (every manifest reference must exist) ---
 $imgDir   = Join-Path $dataDir "images"
-$imgCount = 0
-if (Test-Path $imgDir) {
-    # Count any image file (dataset is PNG, but accept jpg/jpeg too for robustness).
-    # @() forces array context: on PS 5.1 a single-match Get-ChildItem pipeline
-    # unwraps to a scalar whose .Count is empty (reads as 0). @() fixes that.
-    $imgCount = @(Get-ChildItem $imgDir -File -ErrorAction SilentlyContinue | Where-Object {
-        $_.Extension -in @(".png", ".jpg", ".jpeg")
-    }).Count
-}
-
-if ($imgCount -lt 1000) {
-    Write-Host ("FAIL: only {0} images in {1} (expected ~1651)." -f $imgCount, $imgDir) -ForegroundColor Red
-    $ok = $false
-} else {
-    Write-Host ("OK: {0} page images present (expected ~1651)." -f $imgCount) -ForegroundColor Green
+if (Test-Path $manifest) {
+    try {
+        $manifestPages = @(Get-Content -Raw -Encoding UTF8 -LiteralPath $manifest | ConvertFrom-Json)
+        $imagePaths = @($manifestPages | ForEach-Object { $_.page_info.image_path } | Where-Object { $_ })
+        $missingImages = @($imagePaths | Where-Object { -not (Test-FileExtended -Path (Join-Path $imgDir $_)) })
+        if ($imagePaths.Count -eq 0) {
+            Write-Host "FAIL: manifest contains no page_info.image_path entries." -ForegroundColor Red
+            $ok = $false
+        } elseif ($missingImages.Count -gt 0) {
+            Write-Host ("FAIL: {0}/{1} manifest-referenced images are missing from {2}." -f $missingImages.Count, $imagePaths.Count, $imgDir) -ForegroundColor Red
+            Write-Host ("      First missing: " + (($missingImages | Select-Object -First 5) -join ", ")) -ForegroundColor DarkGray
+            $ok = $false
+        } else {
+            Write-Host ("OK: all {0} manifest-referenced page images are present." -f $imagePaths.Count) -ForegroundColor Green
+            $rootDir = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
+            $shortRoot = Get-ShortRepoRoot -RepoRoot $rootDir
+            $shortImages = Join-Path $shortRoot "eval-infra\01-omnidocbench\data\images"
+            if (-not (Test-Path -LiteralPath $shortRoot)) {
+                Write-Host "FAIL: Windows short repository path missing: $shortRoot" -ForegroundColor Red
+                Write-Host "      Re-run setup.ps1 so Python adapters can consume MAX_PATH images." -ForegroundColor DarkGray
+                $ok = $false
+            } else {
+                $shortMissing = @($imagePaths | Where-Object { -not (Test-Path -LiteralPath (Join-Path $shortImages $_)) })
+                if ($shortMissing.Count -gt 0) {
+                    Write-Host "FAIL: $($shortMissing.Count) images are not readable through the Windows short repository path." -ForegroundColor Red
+                    $ok = $false
+                } else {
+                    Write-Host "OK: all images are consumable through short path $shortImages" -ForegroundColor Green
+                }
+            }
+        }
+    } catch {
+        Write-Host "FAIL: could not validate manifest image references: $($_.Exception.Message)" -ForegroundColor Red
+        $ok = $false
+    }
 }
 
 # --- Hard subset manifest (optional derivative; WARNING only) ---

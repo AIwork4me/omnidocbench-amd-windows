@@ -92,9 +92,13 @@ if ($expectedModel) {
     if ($ids -contains $expectedModel) {
         Write-Host "OK: expected model id present ($expectedModel)" -ForegroundColor Green
     } else {
-        Write-Host "WARN: VL_REC_API_MODEL_NAME='$expectedModel' not in /v1/models list." -ForegroundColor Yellow
+        Write-Host "FAIL: VL_REC_API_MODEL_NAME='$expectedModel' not in /v1/models list." -ForegroundColor Red
         Write-Host "      run_adapter.py will fail unless --api-model-name matches a served id." -ForegroundColor DarkGray
+        $ok = $false
     }
+} else {
+    Write-Host "FAIL: VL_REC_API_MODEL_NAME is not set in $envFile." -ForegroundColor Red
+    $ok = $false
 }
 
 if ($ok) {

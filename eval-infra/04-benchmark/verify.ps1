@@ -52,10 +52,15 @@ Write-Host "[2/5] Report file ..." -ForegroundColor Cyan
 if (-not (Test-Path $reportFile)) { Fail "benchmark-report.md missing at $reportFile" }
 $reportContent = Get-Content -Raw $reportFile -Encoding UTF8
 if ($reportContent.Length -lt 500) { Fail "benchmark-report.md too short ($($reportContent.Length) chars)" }
-if ($reportContent -notmatch "AMD Ryzen AI Max\+ 395") {
-    Fail "report does not declare target hardware"
+$platformLine = @($reportContent -split "`r?`n" | Where-Object { $_ -match '^\| Platform \|' } | Select-Object -First 1)
+if ($platformLine.Count -eq 0 -or $platformLine[0] -notmatch '^\| Platform \|\s*([^|]+?)\s*\|\s*$') {
+    Fail "report does not declare a non-empty platform in Environment Snapshot"
 }
-Pass "benchmark-report.md: $($reportContent.Length) chars, hardware declared"
+$declaredPlatform = $matches[1].Trim()
+if ([string]::IsNullOrWhiteSpace($declaredPlatform)) {
+    Fail "report platform is empty"
+}
+Pass "benchmark-report.md: $($reportContent.Length) chars, platform=$declaredPlatform"
 
 # 3. Machine-generated mark
 Write-Host "[3/5] Machine-generated check ..." -ForegroundColor Cyan

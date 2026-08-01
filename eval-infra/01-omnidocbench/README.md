@@ -77,6 +77,10 @@ absent it falls back to GitHub + ModelScope with a warning.
 | `v16-cdm.yaml` | Edit_dist + TEDS **+ CDM** | full (1651) | `paddleocrvl_rocm_cdm` | needs CDM env (Task 3) |
 | `v16-official-prettyfalse-full-2026-07-09.yaml` | Edit_dist + TEDS (no CDM) | full (1651) | `paddleocr_official_prettyfalse_full_2026-07-09` | PaddleOCR official engine with `_to_markdown(pretty=False)` |
 | `v16-cdm-official-prettyfalse-full-2026-07-09.yaml` | Edit_dist + TEDS **+ CDM** | full (1651) | `paddleocr_official_prettyfalse_full_2026-07-09` | WSL CDM pair for the published official-engine score |
+| `v16-cpu-200.yaml` | Edit_dist + TEDS (no CDM) | exact CPU subset (200) | `paddleocrvl_cpu_860m_200` | constrained-hardware capability evidence; not a full-set score |
+| `v16-cdm-cpu-200.yaml` | Edit_dist + TEDS **+ CDM** | exact CPU subset (200) | `paddleocrvl_cpu_860m_200` | same subset with CDM; not a full-set score |
+| `v16-cpu-smoke-10.yaml` | Edit_dist + TEDS (no CDM) | exact smoke subset (10) | `paddleocrvl_cpu_smoke_10` | clean-room provisioning capability only |
+| `v16-cdm-cpu-smoke-10.yaml` | Edit_dist + TEDS **+ CDM** | exact smoke subset (10) | `paddleocrvl_cpu_smoke_10` | canonical `scripts/reproduce.ps1` profile |
 
 The hard-subset manifest (`OmniDocBench_hard296.json`) is **not** part of the
 dataset download; `score.ps1 -Config v16-hard.yaml` auto-derives it from the
@@ -88,6 +92,13 @@ The `official-prettyfalse` configs are not a separate benchmark. They score the
 same OmniDocBench v1.6 ground truth against predictions produced by the
 PaddleOCR official `PaddleOCRVL` doc_parser engine. The default `v16*.yaml`
 configs score the PaddleOCR-VL-ROCm engine used by the quick start.
+
+The `cpu-200` configs require
+`data/OmniDocBench_cpu_200.json`, generated from exactly 200 non-empty UTF-8
+predictions by `scripts/build_prediction_subset.py --limit 200`. This keeps the
+ground truth and prediction stems identical. These configs are for validating
+that constrained hardware can execute the complete pipeline; their scores are
+not comparable to the 1651-page leaderboard result.
 
 ## Notes
 
