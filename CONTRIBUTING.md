@@ -24,6 +24,29 @@ Hosted CI validates deterministic tests and PowerShell/Bash syntax on Python
 third-party downloads, CDM, scoring, or benchmarks; those require dated
 physical-machine evidence and matching verifier output.
 
+## Pull Request Process
+
+1. Fork, branch from `main`, one logical change per PR.
+2. Commit messages use Conventional Commits (`feat:`, `fix:`, `docs:`, `test:`, `ci:`, `chore:`).
+3. Before pushing, run the local verification checklist below; CI enforces it on every PR.
+4. Scores or benchmark claims in docs must link to evidence (metric_result.json / release doc).
+
+## Local Verification Checklist
+
+These two commands mirror the hosted CI jobs in `.github/workflows/ci.yml`
+(pytest on Python 3.10/3.11, windows-latest; PSScriptAnalyzer failing on
+Error-level findings):
+
+```powershell
+python -m pytest -q                     # all tests incl. guard tests
+powershell -NoProfile -Command "Invoke-ScriptAnalyzer -Path . -Recurse -Severity Error"   # must print nothing
+```
+
+The pytest run includes the guard tests `tests/test_readme_consistency.py`,
+`tests/test_markdown_links.py`, `tests/test_scoring_configs.py`, and
+`tests/test_full_verify_params.py`, which fail the build when documentation,
+links, scoring configs, or verifier parameters drift out of sync.
+
 ## Adding a New Model Adapter
 
 The most valuable contribution is a **new model adapter** — it lets other users evaluate their favorite document parsing model without rebuilding the eval infrastructure.
@@ -49,6 +72,8 @@ when commands or user-visible behavior change.
 ### Adapter Interface
 
 The only contract: **input** is a directory of page images (jpg/png), **output** is `<image_stem>.md` files (one Markdown per image). The eval infrastructure reads these .md files — your model's internals don't matter.
+
+See [adapters/_template/README.md](adapters/_template/README.md) for the full walkthrough. The scorer never imports adapters; the only contract is `run_adapter(img_dir, out_dir, server_url)` writing `out_dir/<image_stem>.md` per page.
 
 ## Reporting Issues
 
