@@ -292,6 +292,7 @@ eval-infra/        ← model-agnostic infrastructure, set up once
 adapters/          ← model-specific, one directory per model
   _template/          minimal skeleton to copy
   paddleocr-vl-1.6/   validated reference (ONNX layout + llama.cpp GGUF VLM)
+  mineru/             validated reference (MinerU 3.4.4 pipeline, ROCm PyTorch + ONNX DirectML)
 
 scripts/           ← cross-cutting tools
   detect-mirrors.ps1  probe reachable mirrors → mirrors.env

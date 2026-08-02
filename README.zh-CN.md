@@ -268,6 +268,7 @@ eval-infra/        ← 模型无关的基础设施，搭一次永久受益
 adapters/          ← 模型相关，每个模型一个目录
   _template/          最小骨架，直接拷贝
   paddleocr-vl-1.6/   已验证的参考范例（ONNX 版面 + llama.cpp GGUF VLM）
+  mineru/             已验证的参考范例（MinerU 3.4.4 pipeline,ROCm PyTorch + ONNX DirectML）
 
 scripts/           ← 跨模块工具
   detect-mirrors.ps1  探测可达镜像 → 写入 mirrors.env
@@ -379,7 +380,7 @@ agent 驱动的流程和异常速查表见 [`AGENTS.md`](AGENTS.md)。
 
 **在范围内：** OmniDocBench v1.6、AMD Radeon / Windows、llama.cpp 服务的模型、本地单机部署、四项标准指标。
 
-**不在范围内**（设计取舍——见 spec §8）：Docker 方案（保留为备选，不作主线）、OmniDocBench v1.5（提供配置模板，不自动化）、非 AMD GPU 适配器（提供模板，欢迎社区贡献）、CI/CD（用本地 verify 脚本，不上 GitHub Actions）。
+**不在范围内**（设计取舍——见 spec §8）：Docker 方案（保留为备选，不作主线）、OmniDocBench v1.5（提供配置模板，不自动化），以及 WSL、AMD GPU、模型/数据下载、CDM、评分或基准的托管验证。GitHub Actions 仅运行确定性测试与脚本语法检查；硬件相关声明仍以实体机证据为准。
 
 ## 许可证
 
