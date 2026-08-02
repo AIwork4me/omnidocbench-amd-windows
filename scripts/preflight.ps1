@@ -165,6 +165,13 @@ if ($Variant -eq "hip") {
             Add-Pass "AMD GPU detected: $($amdGpus -join ' + ')"
             Add-Warn "Usable VRAM and HIP execution must still be confirmed after the VLM server starts."
         }
+        # The locked HIP llama.cpp releases do not cover Radeon 860M / gfx1152
+        # (official Windows HIP builds omit that architecture). Refuse the hip
+        # variant on such adapters instead of silently running on CPU.
+        $unsupportedHipGpus = @($gpuNames | Where-Object { $_ -match 'Radeon.*860M' })
+        if ($unsupportedHipGpus.Count -gt 0) {
+            Add-Fail "Radeon 860M/gfx1152 ($($unsupportedHipGpus -join ', ')) is not covered by the locked HIP llama.cpp binary. Do NOT fall back to CPU for a hip profile. Use -Variant cpu for a CPU capability run and read docs/llama-cpp-radeon-860m-gfx1152-issue-draft-2026-07-26.md."
+        }
     } catch {
         Add-Fail "Could not query display adapters: $($_.Exception.Message)"
     }
