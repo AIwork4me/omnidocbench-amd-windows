@@ -9,7 +9,11 @@ exact artifacts. Progress is written atomically after every phase to
 outputs/reproduction/cpu-smoke-10/state.json.
 
 .PARAMETER Profile
-Currently supported: cpu-smoke-10.
+Reproduction profile name (see -ListProfiles). Default: cpu-smoke-10.
+
+.PARAMETER ListProfiles
+List the available profiles (name, backend, pages, kind, expected runtime) and
+exit without touching anything.
 
 .PARAMETER Resume
 Reuse completed stages in this clone. Without -Resume, existing prediction,
@@ -24,7 +28,8 @@ Reuse an already verified machine-global Ubuntu2204 CDM environment. The CDM
 verifier still runs and CDM scoring remains mandatory.
 
 .PARAMETER DryRun
-Print the ordered phase commands without executing them.
+Print the resolved profile and the ordered stage commands without executing
+them (no downloads, no servers, no prediction/scoring writes).
 
 .PARAMETER SeedFrom
 Explicitly reuse lock-verified dataset/GGUF/layout bytes from another checkout.
@@ -32,30 +37,59 @@ This skips repeated bulk downloads but remains a fresh inference/scoring run.
 #>
 [CmdletBinding()]
 param(
-    [ValidateSet("cpu-smoke-10")]
     [Alias("Profile")]
     [string] $RunProfile = "cpu-smoke-10",
+    [switch] $ListProfiles,
     [switch] $Resume,
     [switch] $ForceInference,
     [switch] $SkipCdmSetup,
     [switch] $DryRun,
     [string] $SeedFrom = "",
-    [string] $ServerPort = "8121"
+    [string] $ServerPort = ""
 )
 $ErrorActionPreference = "Stop"
 $rootDir = Split-Path -Parent $PSScriptRoot
+. (Join-Path $rootDir "scripts\repro-profiles.ps1")
+
+if ($ListProfiles) {
+    try {
+        Format-ProfileList | Write-Host
+    } catch {
+        Write-Host $_.Exception.Message -ForegroundColor Red
+        exit 1
+    }
+    exit 0
+}
+
+$profile = $null
+try {
+    $profile = Get-ReproProfile -Name $RunProfile
+} catch {
+    Write-Host $_.Exception.Message -ForegroundColor Red
+    try {
+        $valid = @(Get-ProfileCatalog | ForEach-Object { $_.name }) -join ", "
+        Write-Host "Valid profiles: $valid" -ForegroundColor Yellow
+    } catch { }
+    exit 1
+}
+$serverPort = if ($PSBoundParameters.ContainsKey("ServerPort")) { $ServerPort } else { $profile.Port }
+
 $python = Join-Path $rootDir ".venv\Scripts\python.exe"
-$predictionRel = "predictions\paddleocrvl_cpu_smoke_10"
-$predictionDir = Join-Path $rootDir $predictionRel
-$manifestRel = "eval-infra\01-omnidocbench\data\OmniDocBench_cpu_smoke_10.json"
-$manifest = Join-Path $rootDir $manifestRel
+$predictionRel = ([string]$profile.prediction_dir) -replace "/", "\"
+$predictionDir = $profile.PredictionDirAbs
+$manifestRel = ([string]$profile.prediction_manifest) -replace "/", "\"
+$manifest = $profile.ManifestAbs
 $fullManifest = Join-Path $rootDir "eval-infra\01-omnidocbench\data\OmniDocBench.json"
-$windowsResult = Join-Path $rootDir "eval-infra\01-omnidocbench\OmniDocBench\result\paddleocrvl_cpu_smoke_10_quick_match_metric_result.json"
-$evidenceDir = Join-Path $rootDir "outputs\reproduction\$RunProfile"
+$windowsResult = $profile.WindowsResultPath
+$evidenceDir = $profile.EvidenceDir
 $pipelineCheckout = Join-Path $rootDir "outputs\checkouts\PaddleOCR-VL-ROCm"
-$stateFile = Join-Path $evidenceDir "state.json"
-$saveName = "paddleocrvl_cpu_smoke_10_quick_match"
+$stateFile = $profile.StateFile
+$saveName = $profile.SaveName
 $repoWsl = ""
+
+Write-Host ""
+Write-Host "=== Reproduction profile: $($profile.name) ($($profile.run_kind), $($profile.variant) backend) ===" -ForegroundColor Cyan
+Show-ResolvedProfile -Profile $profile | Format-List | Out-Host
 $state = [ordered]@{
     schema_version = 1
     profile = $RunProfile
@@ -223,11 +257,11 @@ Invoke-Phase "WSL CDM environment" {
 } "WSL setup.sh; verify.sh"
 
 Invoke-Phase "CPU VLM server" {
-    & powershell -ExecutionPolicy Bypass -File (Join-Path $rootDir "adapters\paddleocr-vl-1.6\01-vlm-server\setup.ps1") -Variant cpu -Port $ServerPort
+    & powershell -ExecutionPolicy Bypass -File (Join-Path $rootDir "adapters\paddleocr-vl-1.6\01-vlm-server\setup.ps1") -Variant cpu -Port $serverPort
     Assert-LastExit "CPU VLM setup"
     & powershell -ExecutionPolicy Bypass -File (Join-Path $rootDir "adapters\paddleocr-vl-1.6\01-vlm-server\verify.ps1")
     Assert-LastExit "CPU VLM verify"
-} "01-vlm-server\setup.ps1 -Variant cpu -Port $ServerPort; verify.ps1"
+} "01-vlm-server\setup.ps1 -Variant cpu -Port $serverPort; verify.ps1"
 
 Invoke-Phase "Layout model" {
     & powershell -ExecutionPolicy Bypass -File (Join-Path $rootDir "adapters\paddleocr-vl-1.6\02-layout-model\setup.ps1")
@@ -252,12 +286,12 @@ Invoke-Phase "Inference input locks" {
 
 Invoke-Phase "Ten-page CPU inference" {
     if (-not $Resume -or @(Get-ChildItem -LiteralPath $predictionDir -Filter *.md -File -ErrorAction SilentlyContinue).Count -lt 10) {
-        & $python (Join-Path $rootDir "adapters\paddleocr-vl-1.6\run_adapter.py") --img-dir (Join-Path $rootDir "eval-infra\01-omnidocbench\data\images") --out-dir $predictionDir --server-url "http://127.0.0.1:$ServerPort/v1" --max-pages 10
+        & $python (Join-Path $rootDir "adapters\paddleocr-vl-1.6\run_adapter.py") --img-dir (Join-Path $rootDir "eval-infra\01-omnidocbench\data\images") --out-dir $predictionDir --server-url "http://127.0.0.1:$serverPort/v1" --max-pages 10
         Assert-LastExit "ten-page inference"
     }
     $predictionCount = @(Get-ChildItem -LiteralPath $predictionDir -Filter *.md -File -ErrorAction SilentlyContinue).Count
     if ($predictionCount -ne 10) { throw "Ten-page inference requires exactly 10 Markdown predictions; found $predictionCount" }
-} "run_adapter.py --server-url http://127.0.0.1:$ServerPort/v1 --max-pages 10"
+} "run_adapter.py --server-url http://127.0.0.1:$serverPort/v1 --max-pages 10"
 
 Invoke-Phase "Exact ten-page manifest" {
     $predictionCount = @(Get-ChildItem -LiteralPath $predictionDir -Filter *.md -File -ErrorAction SilentlyContinue).Count
