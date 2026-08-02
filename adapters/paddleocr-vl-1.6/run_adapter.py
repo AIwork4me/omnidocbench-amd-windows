@@ -91,6 +91,83 @@ def expected_md_name(image_name: str) -> str:
     return Path(image_name).stem + ".md"
 
 
+def _prediction_is_reusable(md_path: Path) -> bool:
+    """True only when a previous prediction can be safely reused.
+
+    A previous Markdown may be skipped only if it is a regular file, decodes
+    as UTF-8, and is non-empty (empty-page predictions are not legal in this
+    benchmark). Anything else must be regenerated.
+    """
+    if not md_path.is_file():
+        return False
+    try:
+        content = md_path.read_text(encoding="utf-8")
+    except (OSError, UnicodeDecodeError):
+        return False
+    return bool(content.strip())
+
+
+def _load_prior_stats(out_dir: Path) -> dict:
+    """Load the previous ``_run_stats.json`` if any, upgrading v1 to v2 shape.
+
+    v1 stats (``{count, ok, fail, engine, stats:[...]}``) are mapped onto the
+    v2 ``pages`` map so a resume can keep per-page provenance. Invalid or
+    missing files yield an empty v2 skeleton.
+    """
+    stats_path = out_dir / "_run_stats.json"
+    empty = {
+        "schema_version": 2,
+        "engine": "lightweight",
+        "selected_pages": 0,
+        "newly_processed": 0,
+        "skipped_existing": 0,
+        "count": 0,
+        "ok": 0,
+        "fail": 0,
+        "pages": {},
+        "invocations": [],
+        "failed_pages": [],
+    }
+    if not stats_path.is_file():
+        return empty
+    try:
+        prior = json.loads(stats_path.read_text(encoding="utf-8"))
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError):
+        return empty
+    if not isinstance(prior, dict):
+        return empty
+    if prior.get("schema_version") == 2:
+        prior.setdefault("pages", {})
+        prior.setdefault("invocations", [])
+        prior.setdefault("failed_pages", [])
+        return prior
+    pages: dict[str, dict] = {}
+    for entry in prior.get("stats", []) or []:
+        if not isinstance(entry, dict) or "image" not in entry:
+            continue
+        status = "ok" if entry.get("status") == "ok" else "failed"
+        pages[entry["image"]] = {
+            "status": status,
+            "seconds": entry.get("seconds"),
+            "source": "resumed",
+        }
+    return {**empty, "pages": pages, "count": prior.get("count", 0)}
+
+
+def _write_stats_atomic(stats_path: Path, stats: dict) -> None:
+    """Atomically persist stats (temp file + os.replace) so a killed run keeps
+    every completed page and its counters."""
+    temp = stats_path.with_name(stats_path.name + ".tmp")
+    try:
+        temp.write_text(json.dumps(stats, ensure_ascii=False, indent=2), encoding="utf-8")
+        os.replace(temp, stats_path)
+    except OSError:
+        try:
+            temp.unlink(missing_ok=True)
+        except OSError:
+            pass
+
+
 def _select_images(img_dir: Path, max_pages: int | None = None) -> list[Path]:
     images = sorted(p for p in img_dir.iterdir() if p.suffix.lower() in IMAGE_EXTENSIONS)
     if max_pages is None:
@@ -109,6 +186,7 @@ def process_folder(
     api_model_name: str,
     vlm_backend: str = "vllm-server",
     max_pages: int | None = None,
+    skip_existing: bool = False,
 ) -> dict:
     return run_lightweight_folder(
         img_dir=img_dir,
@@ -118,6 +196,7 @@ def process_folder(
         api_model_name=api_model_name,
         vlm_backend=vlm_backend,
         max_pages=max_pages,
+        skip_existing=skip_existing,
     )
 
 
@@ -130,10 +209,20 @@ def run_lightweight_folder(
     api_model_name: str,
     vlm_backend: str = "vllm-server",
     max_pages: int | None = None,
+    skip_existing: bool = False,
 ) -> dict:
     """Run the pipeline over every image in ``img_dir`` and write per-page ``.md``.
 
-    Returns a summary dict with ``count``, ``ok``, and per-image ``stats``.
+    With ``skip_existing`` a previous valid prediction (regular file, UTF-8,
+    non-empty) for a selected page is reused without re-prediction. Page-level
+    progress is persisted atomically after every page, so a killed run retains
+    all completed pages and can be resumed safely.
+
+    Returns a summary dict with ``count``, ``ok``, ``fail``, per-image
+    ``stats`` (kept for backward compatibility), plus the v2 counters
+    ``newly_processed``, ``skipped_existing``, ``failed_pages``,
+    ``schema_version``. Skipped valid pages count toward ``ok`` but never
+    toward ``newly_processed``.
     """
     if not img_dir.is_dir():
         raise SystemExit(f"Image directory not found: {img_dir}")
@@ -150,56 +239,115 @@ def run_lightweight_folder(
         vlm_backend=vlm_backend,
     )
     out_dir.mkdir(parents=True, exist_ok=True)
-    stats: list[dict] = []
+    errors_path = out_dir / "_errors.log"
+    stats_path = out_dir / "_run_stats.json"
+    stats = _load_prior_stats(out_dir)
+    stats["engine"] = "lightweight"
+    stats["selected_pages"] = 0
+    stats["newly_processed"] = 0
+    stats["skipped_existing"] = 0
+    stats["fail"] = 0
+    stats["failed_pages"] = []
+    invocation = {
+        "started_at": time.strftime("%Y-%m-%dT%H:%M:%S"),
+        "newly_processed": 0,
+        "skipped_existing": 0,
+        "failed": 0,
+    }
+    stats["invocations"].append(invocation)
+
+    stats_list: list[dict] = []
     images = _select_images(img_dir, max_pages)
+    ok_count = 0
     for img in images:
         start = time.time()
+        image_name = img.name
+        md_path = out_dir / expected_md_name(image_name)
+        if skip_existing and _prediction_is_reusable(md_path):
+            stats["skipped_existing"] += 1
+            invocation["skipped_existing"] += 1
+            ok_count += 1
+            stats_list.append(
+                {"image": image_name, "status": "ok", "seconds": round(time.time() - start, 2), "source": "resumed"}
+            )
+            stats["pages"][image_name] = {
+                "status": "ok",
+                "seconds": round(time.time() - start, 2),
+                "source": "resumed",
+            }
+            stats["ok"] = ok_count
+            _write_stats_atomic(stats_path, stats)
+            continue
         try:
             result = pipeline.predict(img)
-            md_path = out_dir / expected_md_name(img.name)
             md_path.write_text(result.markdown_text, encoding="utf-8")
-            stats.append(
-                {"image": img.name, "status": "ok", "seconds": round(time.time() - start, 2)}
+            stats["newly_processed"] += 1
+            invocation["newly_processed"] += 1
+            ok_count += 1
+            stats_list.append(
+                {"image": image_name, "status": "ok", "seconds": round(time.time() - start, 2), "source": "fresh"}
             )
+            stats["pages"][image_name] = {
+                "status": "ok",
+                "seconds": round(time.time() - start, 2),
+                "source": "fresh",
+            }
         except Exception as exc:  # noqa: BLE001 - record failure, continue (page scored as empty otherwise)
             # Capture the full traceback so a later post-mortem can distinguish
             # a 500 from the VLM server (message is enough) from an onnxruntime
             # shape error or an internal pipeline failure (needs the traceback).
             tb = traceback.format_exc()
-            stats.append(
+            stats["newly_processed"] += 1
+            invocation["newly_processed"] += 1
+            stats["fail"] += 1
+            invocation["failed"] += 1
+            stats["failed_pages"].append(image_name)
+            stats_list.append(
                 {
-                    "image": img.name,
+                    "image": image_name,
                     "status": f"failed: {exc}",
                     "seconds": round(time.time() - start, 2),
                     "traceback": tb,
                 }
             )
+            stats["pages"][image_name] = {
+                "status": f"failed: {exc}",
+                "seconds": round(time.time() - start, 2),
+                "source": "fresh",
+            }
             # Append each failure to <out_dir>/_errors.log as it happens so the
             # causes survive a killed run or a scrolled terminal. Without this
             # the per-page failures were only held in memory and printed once at
             # the end via print(summary).
             try:
-                with open(out_dir / "_errors.log", "a", encoding="utf-8") as fh:
-                    fh.write(f"[{time.strftime('%Y-%m-%dT%H:%M:%S')}] {img.name}: {exc}\n{tb}\n")
+                with open(errors_path, "a", encoding="utf-8") as fh:
+                    fh.write(f"[{time.strftime('%Y-%m-%dT%H:%M:%S')}] {image_name}: {exc}\n{tb}\n")
             except OSError:
                 pass  # never let error-logging itself abort the run
+        stats["selected_pages"] = stats_list.__len__()
+        stats["count"] = len(images)
+        stats["ok"] = ok_count
+        stats["newly_processed"] = sum(1 for s in stats_list if s["status"] == "ok" and s.get("source") == "fresh") + stats["fail"]
+        invocation["ended_at"] = time.strftime("%Y-%m-%dT%H:%M:%S")
+        _write_stats_atomic(stats_path, stats)
 
-    # Persist the full per-page summary to disk (JSON) so it survives a killed
-    # run and is machine-parseable for post-run sanity checks.
-    try:
-        with open(out_dir / "_run_stats.json", "w", encoding="utf-8") as fh:
-            summary = {
-                "count": len(images),
-                "ok": sum(1 for s in stats if s["status"] == "ok"),
-                "fail": sum(1 for s in stats if s["status"] != "ok"),
-                "engine": "lightweight",
-                "stats": stats,
-            }
-            json.dump(summary, fh, ensure_ascii=False, indent=2)
-    except OSError:
-        pass
+    summary = {
+        "count": len(images),
+        "ok": ok_count,
+        "fail": len(images) - ok_count,
+        "engine": "lightweight",
+        "stats": stats_list,
+        "schema_version": 2,
+        "newly_processed": stats["newly_processed"],
+        "skipped_existing": stats["skipped_existing"],
+        "failed_pages": list(stats["failed_pages"]),
+    }
+    stats["selected_pages"] = len(images)
+    stats["count"] = len(images)
+    stats["ok"] = ok_count
+    stats["newly_processed"] = summary["newly_processed"]
+    _write_stats_atomic(stats_path, stats)
 
-    ok_count = sum(1 for s in stats if s["status"] == "ok")
     # Post-loop sanity check: if the majority of pages failed (e.g. the VLM
     # server is down), surface it loudly rather than letting score.ps1 score
     # 1650 empty .md files as zero hours later. exit code 2 is distinguishable
@@ -209,17 +357,11 @@ def run_lightweight_folder(
         print(
             f"WARNING: {ok_count}/{len(images)} pages succeeded (< 50%). The VLM "
             f"server is likely down or unreachable -- see docs/pitfalls.md#vlm. "
-            f"Per-page failures logged to {out_dir / '_errors.log'}.",
+            f"Per-page failures logged to {errors_path}.",
             file=_sys.stderr,
         )
         _sys.exit(2)
-    return {
-        "count": len(images),
-        "ok": ok_count,
-        "fail": len(images) - ok_count,
-        "engine": "lightweight",
-        "stats": stats,
-    }
+    return summary
 
 
 def _official_result_to_markdown(result: object) -> str:
@@ -463,6 +605,7 @@ def run_adapter(
     page_retries: int = 1,
     fallback_pred_dir: str | Path | None = None,
     max_pages: int | None = None,
+    skip_existing: bool = False,
 ) -> dict:
     """Adapter interface contract: images -> one ``<stem>.md`` per page.
 
@@ -483,13 +626,16 @@ def run_adapter(
         OpenAI-compatible ``/v1`` URL of the VLM server (e.g.
         ``http://127.0.0.1:8111/v1``). Empty string = resolve from
         ``ADAPTER_SERVER_URL`` env var or ``.env.local``.
+    skip_existing : bool
+        Reuse previous valid predictions instead of re-predicting (per-page
+        resume). Only supported by the lightweight engine.
 
     Returns
     -------
     dict
         Summary with ``count``, ``ok``, and per-image ``stats`` (same shape as
-        :func:`process_folder`). The eval-infra ignores this; it only consumes
-        the written ``.md`` files.
+        :func:`process_folder`), plus v2 counters. The eval-infra ignores this;
+        it only consumes the written ``.md`` files.
     """
     img_dir = through_short_repo(Path(img_dir), REPO_ROOT)
     out_dir = through_short_repo(Path(out_dir), REPO_ROOT)
@@ -529,8 +675,11 @@ def run_adapter(
             api_model_name=default_api_model,
             vlm_backend=vlm_backend,
             max_pages=max_pages,
+            skip_existing=skip_existing,
         )
     if engine == "official":
+        if skip_existing:
+            raise ValueError("--skip-existing is only supported by the lightweight engine")
         return run_official_folder(
             img_dir=img_dir,
             out_dir=out_dir,
@@ -582,6 +731,12 @@ def main() -> None:
         default=None,
         help="Process only the first N images in deterministic filename order.",
     )
+    parser.add_argument(
+        "--skip-existing",
+        action="store_true",
+        help="Reuse previous valid (UTF-8, non-empty) predictions for selected "
+        "pages instead of re-predicting; only missing/invalid pages are processed.",
+    )
     args = parser.parse_args()
 
     # Route through the documented contract (run_adapter) when no advanced
@@ -598,6 +753,7 @@ def main() -> None:
             page_retries=args.page_retries,
             fallback_pred_dir=args.fallback_pred_dir,
             max_pages=args.max_pages,
+            skip_existing=args.skip_existing,
         )
     else:
         summary = run_adapter(
@@ -611,6 +767,7 @@ def main() -> None:
             page_retries=args.page_retries,
             fallback_pred_dir=args.fallback_pred_dir,
             max_pages=args.max_pages,
+            skip_existing=args.skip_existing,
         )
     print(summary)
 
