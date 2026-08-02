@@ -49,6 +49,9 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ### Fixed
 - `_run_stats.json` is now written atomically after every page, so killed
   runs keep full per-page progress and statistics.
+- WSL CDM scoring raised the open-file limit (`ulimit -n 65535` in
+  `score-cdm.sh`) — the 1651-page run hit WSL's default 1024-file limit
+  (Errno 24) mid-match.
 - README.zh-CN.md: official-local Formula CDM corrected to 96.5022 (EN parity).
 
 ## [1.0.0] - 2026-07-16
