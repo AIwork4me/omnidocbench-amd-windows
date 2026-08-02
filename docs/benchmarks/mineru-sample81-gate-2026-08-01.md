@@ -17,7 +17,7 @@ Deterministic stratified sample, `scripts/sample_stratified.py --img-dir eval-in
 - `tmp_sample81.txt` — 130 stems, sha256 `01186a281cb045339761b892435a3098046fe5443600c49942a1edf1595cf780`
 - `tmp_sample81_gt.json` — 130-page GT subset of `data/OmniDocBench.json`, sha256 `05dea39c34b4424aecc503c357e45a3525a7e802216f1ec2794f813ba1d5e3ce`
 
-Real category counts (recorded as required; the brief's "~81 pages" assumed ~9 categories, the dataset actually has 15 strata — 14 filename prefixes plus the 296 `page-<uuid>` hard-subset images, which the script groups into one `page` stratum via the documented `-` fallback; 15 × 9 with two strata rounding to 8/6 → **130 pages**):
+Real category counts (recorded as required; the brief's "~81 pages" assumed ~9 categories, the dataset actually has 15 strata — 14 filename prefixes plus the 296 `page-<uuid>` hard-subset images, which the script groups into one `page` stratum via the documented `-` fallback; 15 × 9 with three strata deviating to 6/8/8 (jiaocai 6, jiaocaineedrop 8, scihub 8) → **130 pages**):
 
 ```
 images: 1651  categories: 15  per_category: 9  seed: 42

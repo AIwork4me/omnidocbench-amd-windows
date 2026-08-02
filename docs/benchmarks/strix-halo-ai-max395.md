@@ -52,9 +52,10 @@ GPU allocation ran on the 8060S. Raw data:
 [strix-halo-monitor-2026-08-02.jsonl](strix-halo-monitor-2026-08-02.jsonl) (90 samples),
 [strix-halo-gpu-probe-2026-08-02.jsonl](strix-halo-gpu-probe-2026-08-02.jsonl).
 
-- **Unified memory confirmed**: system RAM rose 21.05 → 25.9 GiB (Δ ≈ 4.9 GiB,
-  min/max over the window) while torch held 4,896 MiB device-allocated — GPU
-  allocations surface directly in system RAM on Strix Halo.
+- **Unified memory confirmed**: system RAM ranged 21.05–25.9 GiB over the
+  window (Δ ≈ 4.9 GiB, min/max; the 21.05 GiB minimum occurs at window END)
+  while torch held 4,896 MiB device-allocated — GPU allocations surface
+  directly in system RAM on Strix Halo.
 - **GPU counters unavailable on Windows**: `rocm-smi` is not on PATH; the
   monitor degraded `gpu-full → gpu-unavailable` and kept RAM-only samples.
   Consistent with the B2 gate note that Windows GPU performance counters stay
