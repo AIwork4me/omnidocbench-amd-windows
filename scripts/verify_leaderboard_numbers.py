@@ -1,0 +1,128 @@
+"""Verify every number published in the README multi-model leaderboard.
+
+Reads the actual JSON/markdown sources and asserts each published cell is a
+correct rounding of the source value. Exit 0 = every cell verified.
+
+Sources:
+- PaddleOCR-VL-ROCm + paper columns: docs/release-paddleocr-vl-1.6-amd-windows-2026-07-16.md
+- PaddleOCR-VL official (local): Windows-native CDM rerun metric_result JSON
+  (2026-07-11, see AGENTS.md "Latest local Windows-native official-engine CDM evidence")
+- MinerU 3.4.4 pipeline: model card JSON + in-repo quick_match metric_result JSON,
+  plus the B2 gate doc verdict.
+"""
+
+import json
+import re
+import sys
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[1]
+RELEASE_0716 = ROOT / "docs" / "release-paddleocr-vl-1.6-amd-windows-2026-07-16.md"
+GATE_DOC = ROOT / "docs" / "benchmarks" / "mineru-sample81-gate-2026-08-01.md"
+MINERU_METRIC = (
+    ROOT / "eval-infra" / "01-omnidocbench" / "OmniDocBench" / "result"
+    / "mineru_pipeline_quick_match_metric_result.json"
+)
+MINERU_CARD = Path(
+    r"C:\Users\rocm\Desktop\MinerU-ROCm\model_card.pipeline.windows-hip.json"
+)
+OFFICIAL_CDM_JSON = Path(
+    r"C:\Users\rocm\Desktop\PaddleOCR-VL-ROCm\results\omnidocbench\v16"
+    r"\paddleocr_official_local_llamacpp_gguf_quick_match_metric_result_cdm.json"
+)
+
+failures = []
+
+
+def check(label, ok, detail=""):
+    status = "PASS" if ok else "FAIL"
+    print(f"{status}  {label}" + (f"  ({detail})" if detail else ""))
+    if not ok:
+        failures.append(label)
+
+
+def close(published, actual, tol, label):
+    check(label, abs(published - actual) <= tol, f"published={published} actual={actual} tol={tol}")
+
+
+def overall_of(text_edit, teds_pct, cdm_pct):
+    return ((1 - text_edit) * 100 + teds_pct + cdm_pct) / 3
+
+
+print("== 1. PaddleOCR-VL-ROCm (reference) <- docs/release-paddleocr-vl-1.6-amd-windows-2026-07-16.md ==")
+doc = RELEASE_0716.read_text(encoding="utf-8")
+for token in ["95.99", "0.03488", "0.12882", "94.0865", "97.36"]:
+    check(f"release-0716 doc contains {token}", token in doc)
+close(94.09, 94.0865, 0.005, "ROCm TEDS 94.09 rounds from 94.0865")
+
+print("== 2. PaddleOCR-VL (paper, Linux vLLM) <- release-0716 public baseline table ==")
+baseline = doc.split("Public official baseline", 1)[1]
+for token in ["96.33", "0.033", "0.127", "94.76", "97.49"]:
+    check(f"baseline table contains {token}", token in baseline)
+
+print("== 3. PaddleOCR-VL official (local) <- Windows-native CDM rerun metric_result (2026-07-11) ==")
+check("official CDM metric_result JSON exists", OFFICIAL_CDM_JSON.exists(), str(OFFICIAL_CDM_JSON))
+if OFFICIAL_CDM_JSON.exists():
+    d = json.loads(OFFICIAL_CDM_JSON.read_text(encoding="utf-8"))
+    o_text = d["text_block"]["page"]["Edit_dist"]["ALL"]
+    o_ro = d["reading_order"]["all"]["Edit_dist"]["ALL_page_avg"]
+    o_teds = d["table"]["page"]["TEDS"]["ALL"] * 100
+    o_cdm = d["display_formula"]["page"]["CDM"]["ALL"] * 100
+    o_overall = overall_of(o_text, o_teds, o_cdm)
+    print(f"  raw: text={o_text} ro={o_ro} teds={o_teds} cdm={o_cdm} overall={o_overall}")
+    close(0.03444, o_text, 5e-6, "official text Edit-dist 0.03444")
+    close(0.12949, o_ro, 5e-6, "official RO Edit-dist 0.12949")
+    close(94.24, o_teds, 0.005, "official TEDS 94.24")
+    close(96.50, o_cdm, 0.005, "official CDM 96.50")
+    close(96.5022, o_cdm, 5e-5, "official CDM 96.5022 (4dp, as cited in README/AGENTS.md)")
+    close(95.77, o_overall, 0.005, "official Overall 95.77")
+
+print("== 4. MinerU 3.4.4 pipeline (Windows HIP) <- model card + in-repo metric_result ==")
+check("MinerU model card exists", MINERU_CARD.exists(), str(MINERU_CARD))
+check("MinerU in-repo metric_result exists", MINERU_METRIC.exists(), str(MINERU_METRIC))
+if MINERU_CARD.exists() and MINERU_METRIC.exists():
+    card = json.loads(MINERU_CARD.read_text(encoding="utf-8"))
+    mr = json.loads(MINERU_METRIC.read_text(encoding="utf-8"))
+    m_text = mr["text_block"]["all"]["Edit_dist"]["ALL_page_avg"]
+    m_ro = mr["reading_order"]["all"]["Edit_dist"]["ALL_page_avg"]
+    m_teds = mr["table"]["page"]["TEDS"]["ALL"] * 100
+    m_cdm = mr["display_formula"]["page"]["CDM"]["ALL"] * 100
+    m_overall = overall_of(m_text, m_teds, m_cdm)
+    print(f"  metric_result raw: text={m_text} ro={m_ro} teds={m_teds} cdm={m_cdm} overall={m_overall}")
+    sub = card["submetrics"]
+    check("card model_version == 3.4.4", card["model_version"] == "3.4.4")
+    check("card text == metric_result", abs(sub["text_edit_dist"] - m_text) < 1e-9)
+    check("card RO == metric_result", abs(sub["reading_order_edit_dist"] - m_ro) < 1e-9)
+    check("card TEDS == metric_result", abs(sub["table_teds_percent"] - m_teds) < 1e-9)
+    check("card CDM == metric_result", abs(sub["formula_cdm_percent"] - m_cdm) < 1e-9)
+    check("card overall == computed overall (rounded to 2dp)", abs(card["overall"] - m_overall) < 0.005,
+          f"card={card['overall']} computed={m_overall}")
+    close(0.05655, m_text, 5e-6, "MinerU text Edit-dist 0.05655")
+    close(0.15314, m_ro, 5e-6, "MinerU RO Edit-dist 0.15314")
+    close(82.04, m_teds, 0.005, "MinerU TEDS 82.04")
+    close(83.39, m_cdm, 0.005, "MinerU CDM 83.39")
+    close(86.59, m_overall, 0.005, "MinerU Overall 86.59")
+
+print("== 5. B2 gate doc verdict (docs/benchmarks/mineru-sample81-gate-2026-08-01.md) ==")
+gate = GATE_DOC.read_text(encoding="utf-8")
+check("gate verdict is ACCEPT", "Gate verdict: ACCEPT" in gate)
+check("gate sample was 130 pages", "sample pages: 130" in gate and "130 stems" in gate)
+check("gate cites the 86.59 series", "86.59" in gate)
+
+print("== 6. README leaderboard rows are numerically identical EN vs ZH ==")
+ROW_RE = re.compile(r"^\|\s*(?:PaddleOCR|MinerU)[^\n]*\|$", re.MULTILINE)
+NUM_RE = re.compile(r"\d+\.\d+")
+tables = {}
+for name in ("README.md", "README.zh-CN.md"):
+    text = (ROOT / name).read_text(encoding="utf-8")
+    rows = ROW_RE.findall(text)
+    tables[name] = [NUM_RE.findall(r) for r in rows]
+    print(f"  {name} leaderboard rows: {tables[name]}")
+check("both READMEs have 4 leaderboard data rows", all(len(v) == 4 for v in tables.values()))
+check("EN/ZH leaderboard numbers identical", tables["README.md"] == tables["README.zh-CN.md"])
+
+print()
+if failures:
+    print(f"VERIFY FAILED: {len(failures)} check(s) failed")
+    sys.exit(1)
+print("VERIFY OK: all leaderboard numbers match their sources")

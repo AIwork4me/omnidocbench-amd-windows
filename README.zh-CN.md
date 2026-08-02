@@ -329,6 +329,27 @@ CDM 环境问题见
 
 ---
 
+## 多模型对比 Leaderboard
+
+口径：页面级聚合，与 OmniDocBench 官方 leaderboard/notebook 一致；MinerU 行为
+快速匹配（quick-match）CDM。每格溯源见
+[`docs/benchmarks/leaderboard-evidence-2026-08-01.md`](docs/benchmarks/leaderboard-evidence-2026-08-01.md)。
+
+| 模型 | Overall | 文本 Edit-dist ↓ | 阅读顺序 Edit-dist ↓ | 表格 TEDS ↑ | 公式 CDM ↑ |
+|---|---:|---:|---:|---:|---:|
+| PaddleOCR-VL-ROCm (reference) | 95.99 | 0.03488 | 0.12882 | 94.09 | 97.36 |
+| PaddleOCR-VL (paper, Linux vLLM) | 96.33 | 0.033 | 0.127 | 94.76 | 97.49 |
+| PaddleOCR-VL official (local run) | 95.77 | 0.03444 | 0.12949 | 94.24 | 96.50 |
+| MinerU 3.4.4 pipeline (Windows HIP) | 86.59 | 0.05655 | 0.15314 | 82.04 | 83.39 |
+
+每个数字都可溯源到评分产物（见上方证据文档）。official-local 行为
+2026-07-11 Windows 原生 CDM 重跑（Formula CDM `96.5022`）。MinerU 数值经
+130 页分层抽样门验证——
+[`docs/benchmarks/mineru-sample81-gate-2026-08-01.md`](docs/benchmarks/mineru-sample81-gate-2026-08-01.md)，
+verdict ACCEPT。
+
+---
+
 ## 如何添加一个新模型
 
 你只需要动 `adapters/`。五个步骤（完整说明见 [`adapters/_template/README.md`](adapters/_template/README.md)）：

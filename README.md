@@ -360,6 +360,28 @@ TEDS > 85, and CDM > 85 on the reported percentage scale. In raw
 
 ---
 
+## Multi-model leaderboard
+
+Page-level aggregation, the same convention as the OmniDocBench official
+leaderboard/notebook; the MinerU row uses quick-match CDM. Per-cell evidence
+traceability:
+[`docs/benchmarks/leaderboard-evidence-2026-08-01.md`](docs/benchmarks/leaderboard-evidence-2026-08-01.md).
+
+| Model | Overall | Text Edit-dist ↓ | RO Edit-dist ↓ | Table TEDS ↑ | Formula CDM ↑ |
+|---|---:|---:|---:|---:|---:|
+| PaddleOCR-VL-ROCm (reference) | 95.99 | 0.03488 | 0.12882 | 94.09 | 97.36 |
+| PaddleOCR-VL (paper, Linux vLLM) | 96.33 | 0.033 | 0.127 | 94.76 | 97.49 |
+| PaddleOCR-VL official (local run) | 95.77 | 0.03444 | 0.12949 | 94.24 | 96.50 |
+| MinerU 3.4.4 pipeline (Windows HIP) | 86.59 | 0.05655 | 0.15314 | 82.04 | 83.39 |
+
+Every cell is traceable to a scorer artifact (see the evidence doc above). The
+official-local row is the 2026-07-11 Windows-native CDM rerun (Formula CDM
+`96.5022`). The MinerU numbers are validated by a 130-page stratified-sample
+gate — [`docs/benchmarks/mineru-sample81-gate-2026-08-01.md`](docs/benchmarks/mineru-sample81-gate-2026-08-01.md),
+verdict ACCEPT.
+
+---
+
 ## How to add a new model
 
 You only touch `adapters/`. Five steps (full detail in
