@@ -93,24 +93,71 @@ CPU。该 Windows HIP 打包缺口已提交至上游
 
 ## 快速开始
 
-无需再次运行精度全量评测，可用标准 10 页 CPU profile 验证 AMD Windows
-是否真正搭通。它包含 WSL CDM，并将可恢复证据写到
-`outputs/reproduction/cpu-smoke-10/`：
+克隆后按需选择三个正式 reproduction profile 之一。每个 profile 都是声明式
+定义（名称、后端、页数、预测目录、manifest、评分配置、save name、端口、
+覆盖率与失败页预算、指标阈值），放在 `scripts/profiles/` 下；
+`reproduce.ps1` 是通用的 profile 驱动编排器，路径与阶段不会按 profile
+复制三份。
 
 ```bash
 git clone https://github.com/AIwork4me/omnidocbench-amd-windows
 cd omnidocbench-amd-windows
 ```
 
+### 快速环境验证（CPU）
+
 ```powershell
 powershell -ExecutionPolicy Bypass -File scripts\reproduce.ps1 `
   -Profile cpu-smoke-10
 ```
 
-中断后才使用 `-Resume`。首次运行会拒绝已有的该 profile 预测/结果，严格处理
-10 张图，验证全部锁定的上游输入，并完成 Windows 指标和 WSL CDM 评分。这是
-能力 smoke test，不是 leaderboard 结果。可执行输入锁见
-[`docs/upstream-lock.md`](docs/upstream-lock.md)。
+固定 10 页 CPU 推理、Windows Edit-distance/TEDS 加 WSL CDM、100% 预测覆盖，
+可恢复证据写到 `outputs/reproduction/cpu-smoke-10/`。这是能力 smoke test，
+不是 leaderboard 结果。
+
+### 快速 AMD GPU 验证
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts\reproduce.ps1 `
+  -Profile hip-smoke-10
+```
+
+固定 10 页 HIP llama.cpp 推理，并自动执行**后端证明**：variant 标记、HIP
+二进制证据、锁定 tag、GPU offload 与 HIP/ROCm 日志证据。禁止 CPU 回退：
+证明或 preflight 失败则 profile 失败。含 Windows 指标和 WSL CDM、100% 预测
+覆盖。在开始数小时全量任务前先跑它。
+
+### AMD GPU 全量 1651 页评测
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts\reproduce.ps1 `
+  -Profile paddleocr-vl-hip-full-1651
+```
+
+正式全量评测：PaddleOCR-VL-1.6 lightweight 管线、锁定的 OmniDocBench v1.6
+数据集（恰好 1651 页）、HIP 后端并带后端证明、全部四项标准指标（文本
+Edit-distance、阅读顺序 Edit-distance、表格 TEDS、公式 CDM）、强制的 WSL
+CDM、严格验收（覆盖率 ≥99.8%、失败页 ≤2、manifest/stats/结果一一绑定）以及
+完整证据包（`outputs/reproduction/paddleocr-vl-hip-full-1651/`）。
+
+**全量命令可能运行数小时。** WSL CDM 仍是默认参考路径。HIP 支持取决于锁定
+二进制是否覆盖你的 GPU 架构——Radeon 860M/gfx1152 当前**不是**受支持的锁定
+HIP 路径（该机型请用 `-Variant cpu`，见上方 Radeon 860M 说明）。smoke 结果
+不能作为 leaderboard 成绩；full 结果必须满足严格证据门槛（见
+[`docs/architecture.md`](docs/architecture.md#reproduction-profiles)）。
+
+`-Resume` 仅用于中断后：它会重新校验输入 fingerprint（profile、锁、
+manifest、评分配置、pipeline commit、仓库状态），并用 `--skip-existing`
+逐页续跑，已完成的页面绝不重新处理。首次运行拒绝已存在的该 profile 产物；
+需要替换旧预测时用 `-ForceInference`，它只删除本 profile 的预测、自有
+manifest 和以 save name 为前缀的结果文件。
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts\reproduce.ps1 -ListProfiles
+powershell -ExecutionPolicy Bypass -File scripts\reproduce.ps1 -Profile cpu-smoke-10 -DryRun
+```
+
+可执行输入锁见 [`docs/upstream-lock.md`](docs/upstream-lock.md)。
 
 如果另一 checkout 已有锁定的 dataset/GGUF/layout，可避免重复 bulk 下载，
 同时保持推理和评分为本次新生成：

@@ -148,6 +148,51 @@ v16-cdm-official-prettyfalse    predictions/paddleocr_...    paddleocr_official_
 on the CDM predictions dir is deliberate — it gives the CDM run a different
 `save_name` so it doesn't clobber the Edit_dist-only run's results.
 
+## Reproduction profiles
+
+`scripts/reproduce.ps1` is a generic profile-driven orchestrator; every
+machine-specific choice lives in a declarative `scripts/profiles/<name>.profile.json`:
+
+```
+profile JSON                 declares
+──────────                   ──────────
+schema_version, name         identity
+run_kind (smoke|subset|full) classification
+model, adapter, engine       what runs
+variant (cpu|hip)            backend
+expected_pages, max_pages    page selection (full profiles must declare 1651
+                             and never set max_pages)
+prediction_dir, manifest     artifact binding (unique per profile)
+windows/wsl scoring configs  config templates whose <REPO_ROOT> paths must
+                             suffix-match the profile's dirs/manifest
+score_save_name              == <prediction-dir-basename>_quick_match
+server_port                  unique per profile
+coverage + failed-page caps  acceptance gates (full: >=0.998, <=2)
+require_gpu_backend_proof    HIP profiles must prove the GPU backend
+metric_thresholds            raw 0-1 sanity gates (never percentage scale)
+```
+
+`scripts/repro-profiles.ps1` loads and fail-closes on any schema violation,
+uniqueness clash, absolute path, HIP/cpu mismatch, full-profile violation or
+config binding mismatch. Stages run under stable machine-readable IDs
+(`environment.python`, `inference.run`, `scoring.wsl_cdm`, ...) so resume
+never depends on display names.
+
+Resume safety: `scripts/compute_fingerprint.py` hashes the profile file,
+upstream lock (which transitively pins GGUF/mmproj/layout bytes), dataset
+manifest, scoring configs, pipeline checkout commit, and repo commit/dirty
+state. `-Resume` refuses to proceed on any difference; `-ForceInference`
+deletes only the profile's own predictions, owned manifest, and
+save-name-scoped result files. The adapter (`--skip-existing`) reuses only
+UTF-8, non-empty prediction files for selected pages and persists
+`schema_version: 2` `_run_stats.json` atomically after every page, so a
+killed full-set run resumes per page instead of from scratch.
+
+Evidence: every run writes `outputs/reproduction/<profile>/` with
+`state.json`, `profile.resolved.json`, `fingerprint.json`, `hardware.json`,
+`backend-proof.json`, `artifact-hashes.json`, `prediction-summary.json`,
+`metrics-summary.json`, and `report.md` (all JSON atomically replaced).
+
 ## Idempotency everywhere
 
 Every `setup.*` script self-checks before doing work (`Test-Path`, `dpkg -s`,
