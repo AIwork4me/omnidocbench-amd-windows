@@ -18,20 +18,61 @@ model via [adapters](adapters/). PaddleOCR-VL-1.6 ships as the validated referen
 
 ![OmniDocBench AMD Windows overview](overview.jpg)
 
-| Metric | This machine (full-set, PaddleOCR-VL-ROCm) | Reproduction threshold |
-|---|---:|---:|
-| Overall | **95.99** | — |
-| Text Edit-dist | 0.03488 | < 0.10 |
-| Reading-order Edit-dist | 0.12882 | < 0.20 |
-| Table TEDS | **94.09** | > 85.0 |
-| Formula CDM | **97.36** | > 85.0 |
+## Measured results on this machine
 
-> Paper-baseline comparison: [docs/release-paddleocr-vl-1.6-amd-windows-2026-07-16.md](docs/release-paddleocr-vl-1.6-amd-windows-2026-07-16.md) (every table number here is measured on this machine).
-> G4 inference speedup: **1.7x** (27-page stratified benchmark, 9 categories, 0 structural mismatches). The default `vlm_max_workers=8` in PaddleOCR-VL-ROCm enables this automatically. | Overall = (Text accuracy + CDM + TEDS) / 3, where Text accuracy = (1 − Edit_dist) × 100.
-> Reading order is excluded from Overall (layout metric, not content accuracy).
+| Model | Backend (this machine) | Overall | Text Edit-dist ↓ | Reading-order Edit-dist ↓ | Table TEDS ↑ | Formula CDM ↑ |
+|---|---|---:|---:|---:|---:|---:|
+| PaddleOCR-VL-1.6 | llama.cpp GGUF (ROCm/HIP) | **95.99** | 0.03488 | 0.12882 | **94.09** | **97.36** |
+| MinerU2.5-Pro-2605-1.2B | llama.cpp GGUF (HIP) | 95.46 | 0.03734 | **0.12250** | 93.11 | 97.01 |
+| MinerU 3.4.4 pipeline | ROCm PyTorch + ONNX DirectML | 86.59 | 0.05655 | 0.15314 | 82.04 | 83.39 |
+
+All rows are full-set (1651-page) results measured on this machine (AI MAX+ 395
+/ Radeon 8060S); page-level aggregation per the OmniDocBench official notebook;
+MinerU rows use quick-match CDM. Per-cell evidence:
+[`docs/benchmarks/leaderboard-evidence-2026-08-01.md`](docs/benchmarks/leaderboard-evidence-2026-08-01.md).
+MinerU pipeline numbers are validated by a 130-page stratified-sample gate
+([`docs/benchmarks/mineru-sample81-gate-2026-08-01.md`](docs/benchmarks/mineru-sample81-gate-2026-08-01.md),
+verdict ACCEPT); MinerU2.5 numbers are cross-checked against the MinerU-ROCm
+windows-hip model card (1e-6). PaddleOCR-VL official-engine comparison
+(official-local Formula CDM `96.5022`; one deterministic VLM-500 page tracked
+upstream as [PaddleOCR issue #18248](https://github.com/PaddlePaddle/PaddleOCR/issues/18248)):
+see the evidence doc.
+
+> **Reproduction thresholds:** Text Edit-dist < 0.10, Reading-order < 0.20,
+> TEDS > 85, CDM > 85 (in raw `metric_result.json`, TEDS/CDM correspond to
+> `> 0.85`).
+> **G4 inference speedup: 1.7x** (27-page stratified benchmark, 9 categories,
+> 0 structural mismatches) — the default `vlm_max_workers=8` in
+> PaddleOCR-VL-ROCm enables it automatically. Overall = (Text accuracy + CDM +
+> TEDS) / 3, where Text accuracy = (1 − Edit_dist) × 100. Reading order is
+> excluded from Overall (layout metric, not content accuracy).
+
+## System Requirements
+
+| Component | Minimum | Recommended |
+|---|---|---|
+| OS | Windows 11 (WSL2) | Same |
+| GPU | AMD Radeon with ROCm/HIP support | Radeon 8060S / RX 7900 XT+ |
+| GPU VRAM | 2 GB (layout ONNX) + VLM model size (~1.7 GB GGUF + ctx/mmproj) | 8 GB+ |
+| RAM | 16 GB | 32 GB+ |
+| Disk | ~50 GB (dataset ~3 GB + GGUF 1.7 GB + TeX Live ~5 GB + IM7 + WSL rootfs) | 100 GB SSD |
+| CPU cores | 4 (TEDS/CDM workers scale with cores) | 8+ |
+| WSL | Ubuntu 22.04 (rootfs import or Store) | Same |
+| Python | 3.10 or 3.11 (**not** 3.12/3.13 — OmniDocBench breaks) | 3.11 |
+| Python environment | [uv](https://docs.astral.sh/uv/) | Latest stable |
+| PowerShell | Windows PowerShell 5.1 (built in) or PowerShell 7+ | Same |
+
+Wall-clock estimates for the full 1651-page run: Step 1 (dataset download) ~15-20 min
+on China networks; Step 2 (CDM environment) ~30 min (TeX Live is the bulk);
+Step 3 (adapter inference) depends on GPU (CPU ~hours, Radeon HIP ~tens of minutes);
+Step 4 (scoring) ~5 min (Edit_dist+TEDS) + ~20-30 min (CDM, per-formula LaTeX).
+
+Measured end-to-end timings and resource data from the reference machine
+(Ryzen AI MAX+ 395 + Radeon 8060S + 128 GB unified memory):
+[`docs/benchmarks/strix-halo-ai-max395.md`](docs/benchmarks/strix-halo-ai-max395.md).
 
 <details>
-<summary><strong>Verified result on this machine</strong></summary>
+<summary><strong>Verified result on a weaker machine (Radeon 860M, 200-page CPU run)</strong></summary>
 
 <br>
 
@@ -63,31 +104,7 @@ local reproduction details are in
 
 </details>
 
-## System Requirements
-
-| Component | Minimum | Recommended |
-|---|---|---|
-| OS | Windows 11 (WSL2) | Same |
-| GPU | AMD Radeon with ROCm/HIP support | Radeon 8060S / RX 7900 XT+ |
-| GPU VRAM | 2 GB (layout ONNX) + VLM model size (~1.7 GB GGUF + ctx/mmproj) | 8 GB+ |
-| RAM | 16 GB | 32 GB+ |
-| Disk | ~50 GB (dataset ~3 GB + GGUF 1.7 GB + TeX Live ~5 GB + IM7 + WSL rootfs) | 100 GB SSD |
-| CPU cores | 4 (TEDS/CDM workers scale with cores) | 8+ |
-| WSL | Ubuntu 22.04 (rootfs import or Store) | Same |
-| Python | 3.10 or 3.11 (**not** 3.12/3.13 — OmniDocBench breaks) | 3.11 |
-| Python environment | [uv](https://docs.astral.sh/uv/) | Latest stable |
-| PowerShell | Windows PowerShell 5.1 (built in) or PowerShell 7+ | Same |
-
-Wall-clock estimates for the full 1651-page run: Step 1 (dataset download) ~15-20 min
-on China networks; Step 2 (CDM environment) ~30 min (TeX Live is the bulk);
-Step 3 (adapter inference) depends on GPU (CPU ~hours, Radeon HIP ~tens of minutes);
-Step 4 (scoring) ~5 min (Edit_dist+TEDS) + ~20-30 min (CDM, per-formula LaTeX).
-
-Measured end-to-end timings and resource data from the reference machine
-(Ryzen AI MAX+ 395 + Radeon 8060S + 128 GB unified memory):
-[`docs/benchmarks/strix-halo-ai-max395.md`](docs/benchmarks/strix-halo-ai-max395.md).
-
-### Quick Start
+## Quick Start
 
 For a real AMD Windows provisioning check without rerunning the accuracy
 benchmark, clone and run the canonical ten-page CPU profile. It includes WSL
@@ -177,6 +194,11 @@ powershell -ExecutionPolicy Bypass -File scripts\full-verify.ps1 `
 
 </details>
 
+<details>
+<summary><strong>Constrained-hardware 200-page path</strong></summary>
+
+<br>
+
 For constrained hardware, `v16-cpu-200.yaml` and `v16-cdm-cpu-200.yaml` provide
 an explicit 200-page capability path. Choose this instead of the full Step 3
 inference, provision the CPU server, and stop deterministically after 200 images:
@@ -188,18 +210,18 @@ powershell -ExecutionPolicy Bypass -File adapters\paddleocr-vl-1.6\02-layout-mod
 powershell -ExecutionPolicy Bypass -File adapters\paddleocr-vl-1.6\02-layout-model\verify.ps1
 powershell -ExecutionPolicy Bypass -File adapters\paddleocr-vl-1.6\00-install-deps\setup.ps1
 .\.venv\Scripts\python.exe adapters\paddleocr-vl-1.6\run_adapter.py `
-  --img-dir eval-infra\01-omnidocbench\data\images `
-  --out-dir predictions\paddleocrvl_cpu_860m_200 `
-  --max-pages 200
+    --img-dir eval-infra\01-omnidocbench\data\images `
+    --out-dir predictions\paddleocrvl_cpu_860m_200 `
+    --max-pages 200
 .\.venv\Scripts\python.exe scripts\build_prediction_subset.py `
-  --full-manifest eval-infra\01-omnidocbench\data\OmniDocBench.json `
-  --pred-dir predictions\paddleocrvl_cpu_860m_200 `
-  --output eval-infra\01-omnidocbench\data\OmniDocBench_cpu_200.json `
-  --limit 200
+    --full-manifest eval-infra\01-omnidocbench\data\OmniDocBench.json `
+    --pred-dir predictions\paddleocrvl_cpu_860m_200 `
+    --output eval-infra\01-omnidocbench\data\OmniDocBench_cpu_200.json `
+    --limit 200
 .\.venv\Scripts\python.exe scripts\validate_predictions.py `
-  --manifest eval-infra\01-omnidocbench\data\OmniDocBench_cpu_200.json `
-  --pred-dir predictions\paddleocrvl_cpu_860m_200 `
-  --min-coverage 1.0
+    --manifest eval-infra\01-omnidocbench\data\OmniDocBench_cpu_200.json `
+    --pred-dir predictions\paddleocrvl_cpu_860m_200 `
+    --min-coverage 1.0
 powershell -ExecutionPolicy Bypass -File eval-infra\03-scoring\score.ps1 `
   -Config v16-cpu-200.yaml
 ```
@@ -225,37 +247,16 @@ The ten-page smoke uses `v16-cpu-smoke-10.yaml` and
 `v16-cdm-cpu-smoke-10.yaml`; use the single entry point above rather than
 assembling those commands manually.
 
+</details>
+
 Windows-native CDM is supported when `patches/omnidocbench/windows-cdm.patch`
 has been applied by `eval-infra/01-omnidocbench/setup.ps1` and
 `eval-infra/02-cdm-environment/verify-windows.ps1` passes. This optional path
 requires native TeX Live, ImageMagick, and Ghostscript. WSL CDM remains the
 compatibility/reference path; users choosing WSL do not need native-CDM
 verification. `scripts/full-verify.ps1` runs the native check only with the
-explicit `-WindowsCdm` opt-in.
-
-Optional native-CDM verification is separate from the WSL quick-start path.
-
-For benchmark scoring with PaddleOCR's official `PaddleOCRVL` engine, export
-evaluation-oriented Markdown with `_to_markdown(pretty=False)`. The default
-pretty Markdown is intended for display and can inflate Text Edit-distance
-because OmniDocBench expects scorer-friendly Markdown.
-
-The published local scores use the same page-level aggregation convention as
-OmniDocBench's official leaderboard notebook (`tools/generate_result_tables.ipynb`).
-The latest Windows AMD llama.cpp/GGUF official-local route records Formula CDM
-`96.5022`. The corrected ROCm CDM is `97.36` (after fixing CDM evaluation path/encoding bugs on Windows).
-The remaining gap to the public `97.49` baseline is attributed to inference
-backend/model-output differences versus the official Linux vLLM-style path. One
-official-local page still fails with a deterministic VLM 500 and is tracked
-upstream in
-[PaddleOCR issue #18248](https://github.com/PaddlePaddle/PaddleOCR/issues/18248).
-
-```powershell
-.\.venv\Scripts\python.exe adapters\paddleocr-vl-1.6\run_adapter.py `
-    --engine official `
-    --img-dir eval-infra\01-omnidocbench\data\images `
-    --out-dir predictions\paddleocr_official_prettyfalse_full_2026-07-09
-```
+explicit `-WindowsCdm` opt-in. Optional native-CDM verification is separate
+from the WSL quick-start path.
 
 Prefer the agent-driven flow? Point **Codex, Claude Code, OpenCode, or any
 agent that reads `AGENTS.md`** at this repo and say "按 AGENTS.md 搭建" /
@@ -308,7 +309,11 @@ compatibility/reference path with an isolated Linux TeX Live, ImageMagick, and
 Ghostscript stack. See [`docs/architecture.md`](docs/architecture.md) and
 [`docs/pitfalls.md#posix`](docs/pitfalls.md#posix).
 
-Each adapter's only contract:
+---
+
+## Adapters: add a new model
+
+You only touch `adapters/`. Each adapter's only contract:
 
 ```python
 def run_adapter(img_dir: Path, out_dir: Path, server_url: str = ""):
@@ -316,74 +321,7 @@ def run_adapter(img_dir: Path, out_dir: Path, server_url: str = ""):
 ```
 
 The scoring layer consumes those `.md` files and never imports the adapter.
-
----
-
-## PaddleOCR-VL-1.6 reference scores
-
-Validated OmniDocBench v1.6 full-set results from this repo. The PaddleOCR
-official engine uses `paddleocr.PaddleOCRVL` with `_to_markdown(pretty=False)`.
-The PaddleOCR-VL-ROCm engine is the default local AMD Windows reference path.
-See [`docs/release-paddleocr-vl-1.6-amd-windows-2026-07-09.md`](docs/release-paddleocr-vl-1.6-amd-windows-2026-07-09.md)
-for commands, run stats, and root-cause notes.
-
-| Metric | This machine (full-set, PaddleOCR-VL-ROCm) | Reproduction threshold |
-|---|---:|---:|
-| Overall | **95.99** | — |
-| Text Edit-dist | 0.03488 | < 0.10 |
-| Reading-order Edit-dist | 0.12882 | < 0.20 |
-| Table TEDS | **94.09** | > 85.0 |
-| Formula CDM | **97.36** | > 85.0 |
-
-> G4 inference speedup: **1.7x** (27-page stratified benchmark, 9 categories, 0 structural mismatches). The default `vlm_max_workers=8` in PaddleOCR-VL-ROCm enables this automatically. | Overall = (Text accuracy + CDM + TEDS) / 3, where Text accuracy = (1 − Edit_dist) × 100.
-
-For benchmark scoring, the official PaddleOCRVL engine must export Markdown
-with `_to_markdown(pretty=False)`. The default pretty Markdown is intended for
-display and can inflate Text Edit-distance because OmniDocBench expects
-evaluation-oriented Markdown.
-
-These rows use OmniDocBench's official leaderboard/notebook page-level
-aggregation convention. The raw `metric_result` all-values are retained in the
-linked artifacts for audit. The official-local route records Formula CDM
-`96.5022`. The corrected ROCm CDM is `97.36` (see above). The
-remaining gap to the public `97.49` baseline is attributed to inference
-backend/model-output differences between the public Linux vLLM-style baseline
-and this Windows AMD llama.cpp/GGUF server path. The official-local run also has
-one deterministic VLM 500 page,
-`newspaper_The Times UK_0801@magazinesclubnew_page_031.png`, tracked upstream
-as [PaddleOCR issue #18248](https://github.com/PaddlePaddle/PaddleOCR/issues/18248).
-For CDM environment issues, see [`docs/pitfalls.md#mathcolor`](docs/pitfalls.md#mathcolor)
-and [`docs/pitfalls.md#cdm-zero`](docs/pitfalls.md#cdm-zero).
-
-These are the success thresholds a fresh run must clear to count as
-reproducing our results: Text Edit-dist < 0.10, Reading-order < 0.20,
-TEDS > 85, and CDM > 85 on the reported percentage scale. In raw
-`metric_result.json`, TEDS/CDM thresholds correspond to `> 0.85`.
-
----
-
-## Multi-model leaderboard
-
-| Model | Backend (this machine) | Overall | Text Edit-dist ↓ | Reading-order Edit-dist ↓ | Table TEDS ↑ | Formula CDM ↑ |
-|---|---|---:|---:|---:|---:|---:|
-| PaddleOCR-VL-1.6 | llama.cpp GGUF (ROCm/HIP) | **95.99** | 0.03488 | 0.12882 | **94.09** | **97.36** |
-| MinerU2.5-Pro-2605-1.2B | llama.cpp GGUF (HIP) | 95.46 | 0.03734 | **0.12250** | 93.11 | 97.01 |
-| MinerU 3.4.4 pipeline | ROCm PyTorch + ONNX DirectML | 86.59 | 0.05655 | 0.15314 | 82.04 | 83.39 |
-
-All rows are full-set (1651-page) results measured on this machine (AI MAX+ 395
-/ Radeon 8060S); page-level aggregation per the OmniDocBench official notebook;
-MinerU rows use quick-match CDM. Per-cell evidence:
-[`docs/benchmarks/leaderboard-evidence-2026-08-01.md`](docs/benchmarks/leaderboard-evidence-2026-08-01.md).
-MinerU pipeline numbers are validated by the 130-page stratified-sample gate
-([`docs/benchmarks/mineru-sample81-gate-2026-08-01.md`](docs/benchmarks/mineru-sample81-gate-2026-08-01.md),
-verdict ACCEPT); MinerU2.5 numbers are cross-checked against the MinerU-ROCm
-windows-hip model card (1e-6).
-
----
-
-## How to add a new model
-
-You only touch `adapters/`. Five steps (full detail in
+Five steps (full detail in
 [`adapters/_template/README.md`](adapters/_template/README.md)):
 
 1. `cp -r adapters/_template adapters/<your-model>`
@@ -398,8 +336,11 @@ You only touch `adapters/`. Five steps (full detail in
    `eval-infra\03-scoring\score.ps1`; for CDM, use `score.ps1 -Config v16-cdm.yaml`
    after `verify-windows.ps1`, or use WSL `score-cdm.sh`, then run `verify.ps1`.
 
-The reference adapter [`adapters/paddleocr-vl-1.6/`](adapters/paddleocr-vl-1.6/)
-is a complete, proven example to copy from.
+Proven examples to copy from:
+[`adapters/paddleocr-vl-1.6/`](adapters/paddleocr-vl-1.6/) (ONNX layout +
+llama.cpp GGUF VLM; includes the official-engine scoring notes) and
+[`adapters/mineru/`](adapters/mineru/) (MinerU 3.4.4 pipeline, ROCm PyTorch +
+ONNX DirectML).
 
 ---
 

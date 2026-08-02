@@ -841,8 +841,8 @@ def test_docs_make_cpu_200_inference_executable_and_score_official_output_explic
 
 def test_verified_machine_results_are_collapsed_by_default():
     for path, label in (
-        (REPO_ROOT / "README.md", "Verified result on this machine"),
-        (REPO_ROOT / "README.zh-CN.md", "本机已验核结果"),
+        (REPO_ROOT / "README.md", "Verified result on a weaker machine (Radeon 860M, 200-page CPU run)"),
+        (REPO_ROOT / "README.zh-CN.md", "较弱机型已验核结果（Radeon 860M,200 页 CPU 运行）"),
     ):
         text = read(path)
         summary = f"<summary><strong>{label}</strong></summary>"

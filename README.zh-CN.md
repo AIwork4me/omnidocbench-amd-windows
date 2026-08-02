@@ -17,20 +17,51 @@
 
 ![OmniDocBench AMD Windows 概览](overview.jpg)
 
-| 指标 | 本机实测（全量，PaddleOCR-VL-ROCm） | 复现阈值 |
-|---|---:|---:|
-| 整体 Overall | **95.99** | — |
-| 文本 Edit-dist | 0.03488 | < 0.10 |
-| 阅读顺序 Edit-dist | 0.12882 | < 0.20 |
-| 表格 TEDS | **94.09** | > 85.0 |
-| 公式 CDM | **97.36** | > 85.0 |
+## 本机实测结果
 
-> 论文基线对比见 [docs/release-paddleocr-vl-1.6-amd-windows-2026-07-16.md](docs/release-paddleocr-vl-1.6-amd-windows-2026-07-16.md)（表中数字均为本机实测）。
+| 模型 | 后端（本机） | Overall | 文本 Edit-dist ↓ | 阅读顺序 Edit-dist ↓ | 表格 TEDS ↑ | 公式 CDM ↑ |
+|---|---|---:|---:|---:|---:|---:|
+| PaddleOCR-VL-1.6 | llama.cpp GGUF (ROCm/HIP) | **95.99** | 0.03488 | 0.12882 | **94.09** | **97.36** |
+| MinerU2.5-Pro-2605-1.2B | llama.cpp GGUF (HIP) | 95.46 | 0.03734 | **0.12250** | 93.11 | 97.01 |
+| MinerU 3.4.4 pipeline | ROCm PyTorch + ONNX DirectML | 86.59 | 0.05655 | 0.15314 | 82.04 | 83.39 |
 
-G4 推理加速比: **1.7x** (27 页分层抽样，9 类别、0 结构错配)。 PaddleOCR-VL-ROCm 默认 `vlm_max_workers=8` 即可获得此加速。 | > Overall = (文本准确率 + CDM + TEDS) / 3，其中文本准确率 = (1 − Edit_dist) × 100。阅读顺序不纳入 Overall（布局指标，非内容准确率）。
+所有行均为本机（AI MAX+ 395 / Radeon 8060S）1651 页全量实测结果；页面级聚合口径与
+OmniDocBench 官方 notebook 一致；MinerU 行使用快速匹配（quick-match）CDM。每格溯源见
+[`docs/benchmarks/leaderboard-evidence-2026-08-01.md`](docs/benchmarks/leaderboard-evidence-2026-08-01.md)。
+MinerU pipeline 数值经 130 页分层抽样门验证
+（[`docs/benchmarks/mineru-sample81-gate-2026-08-01.md`](docs/benchmarks/mineru-sample81-gate-2026-08-01.md)，
+verdict ACCEPT）；MinerU2.5 数值与 MinerU-ROCm windows-hip 模型卡交叉核对（容差 1e-6）。
+PaddleOCR-VL 官方引擎对比（official-local Formula CDM `96.5022`；1 个稳定 VLM-500 页面已在上游记录为
+[PaddleOCR issue #18248](https://github.com/PaddlePaddle/PaddleOCR/issues/18248)）：见证据文档。
+
+> **复现阈值：** 文本 Edit-dist < 0.10、阅读顺序 < 0.20、TEDS > 85、CDM > 85
+> （原始 `metric_result.json` 中 TEDS/CDM 对应 `> 0.85`）。
+> **G4 推理加速比 1.7x**（27 页分层抽样，9 类别、0 结构错配）——PaddleOCR-VL-ROCm 默认
+> `vlm_max_workers=8` 即可获得此加速。Overall = (文本准确率 + CDM + TEDS) / 3，
+> 其中文本准确率 = (1 − Edit_dist) × 100。阅读顺序不纳入 Overall（布局指标，非内容准确率）。
+
+## 系统需求
+
+| 组件 | 最低 | 推荐 |
+|---|---|---|
+| 操作系统 | Windows 11（WSL2） | 同左 |
+| GPU | 支持 ROCm/HIP 的 AMD Radeon | Radeon 8060S / RX 7900 XT+ |
+| GPU 显存 | 2 GB（版面 ONNX）+ VLM 模型体积（~1.7 GB GGUF + ctx/mmproj） | 8 GB+ |
+| 内存 | 16 GB | 32 GB+ |
+| 磁盘 | ~50 GB（数据集 ~3 GB + GGUF 1.7 GB + TeX Live ~5 GB + IM7 + WSL rootfs） | 100 GB SSD |
+| CPU 核数 | 4（TEDS/CDM 的 worker 数随核数扩展） | 8+ |
+| WSL | Ubuntu 22.04（rootfs 导入或商店安装） | 同左 |
+| Python | 3.10 或 3.11（**不可** 3.12/3.13——OmniDocBench 会报错） | 3.11 |
+| Python 环境 | [uv](https://docs.astral.sh/uv/) | 最新稳定版 |
+| PowerShell | Windows PowerShell 5.1（自带）或 PowerShell 7+ | 同左 |
+
+全量 1651 页运行的时间估算：步骤 1（数据集下载）国内网络约 15-20 分钟；步骤 2（CDM 环境）约 30 分钟（TeX Live 是大头）；步骤 3（适配器推理）取决于 GPU（CPU 数小时，Radeon HIP 数十分钟）；步骤 4（评分）约 5 分钟（Edit_dist+TEDS）+ 20-30 分钟（CDM，每条公式都要跑 LaTeX）。
+
+参考机型（Ryzen AI MAX+ 395 + Radeon 8060S + 128 GB 统一内存）的实测全链路耗时与资源占用数据见
+[`docs/benchmarks/strix-halo-ai-max395.md`](docs/benchmarks/strix-halo-ai-max395.md)。
 
 <details>
-<summary><strong>本机已验核结果</strong></summary>
+<summary><strong>较弱机型已验核结果（Radeon 860M,200 页 CPU 运行）</strong></summary>
 
 <br>
 
@@ -60,27 +91,7 @@ CPU。该 Windows HIP 打包缺口已提交至上游
 
 </details>
 
-## 系统需求
-
-| 组件 | 最低 | 推荐 |
-|---|---|---|
-| 操作系统 | Windows 11（WSL2） | 同左 |
-| GPU | 支持 ROCm/HIP 的 AMD Radeon | Radeon 8060S / RX 7900 XT+ |
-| GPU 显存 | 2 GB（版面 ONNX）+ VLM 模型体积（~1.7 GB GGUF + ctx/mmproj） | 8 GB+ |
-| 内存 | 16 GB | 32 GB+ |
-| 磁盘 | ~50 GB（数据集 ~3 GB + GGUF 1.7 GB + TeX Live ~5 GB + IM7 + WSL rootfs） | 100 GB SSD |
-| CPU 核数 | 4（TEDS/CDM 的 worker 数随核数扩展） | 8+ |
-| WSL | Ubuntu 22.04（rootfs 导入或商店安装） | 同左 |
-| Python | 3.10 或 3.11（**不可** 3.12/3.13——OmniDocBench 会报错） | 3.11 |
-| Python 环境 | [uv](https://docs.astral.sh/uv/) | 最新稳定版 |
-| PowerShell | Windows PowerShell 5.1（自带）或 PowerShell 7+ | 同左 |
-
-全量 1651 页运行的时间估算：步骤 1（数据集下载）国内网络约 15-20 分钟；步骤 2（CDM 环境）约 30 分钟（TeX Live 是大头）；步骤 3（适配器推理）取决于 GPU（CPU 数小时，Radeon HIP 数十分钟）；步骤 4（评分）约 5 分钟（Edit_dist+TEDS）+ 20-30 分钟（CDM，每条公式都要跑 LaTeX）。
-
-参考机型（Ryzen AI MAX+ 395 + Radeon 8060S + 128 GB 统一内存）的实测全链路耗时与资源占用数据见
-[`docs/benchmarks/strix-halo-ai-max395.md`](docs/benchmarks/strix-halo-ai-max395.md)。
-
-### 快速开始
+## 快速开始
 
 无需再次运行精度全量评测，可用标准 10 页 CPU profile 验证 AMD Windows
 是否真正搭通。它包含 WSL CDM，并将可恢复证据写到
@@ -169,6 +180,11 @@ powershell -ExecutionPolicy Bypass -File scripts\full-verify.ps1 `
 
 </details>
 
+<details>
+<summary><strong>受限硬件 200 页路径</strong></summary>
+
+<br>
+
 受限硬件可使用 `v16-cpu-200.yaml` 与 `v16-cdm-cpu-200.yaml` 的显式 200 页
 能力路径。用它替代全量步骤 3 推理，启动 CPU server，并确定性地在 200 张图
 后停止：
@@ -180,18 +196,18 @@ powershell -ExecutionPolicy Bypass -File adapters\paddleocr-vl-1.6\02-layout-mod
 powershell -ExecutionPolicy Bypass -File adapters\paddleocr-vl-1.6\02-layout-model\verify.ps1
 powershell -ExecutionPolicy Bypass -File adapters\paddleocr-vl-1.6\00-install-deps\setup.ps1
 .\.venv\Scripts\python.exe adapters\paddleocr-vl-1.6\run_adapter.py `
-  --img-dir eval-infra\01-omnidocbench\data\images `
-  --out-dir predictions\paddleocrvl_cpu_860m_200 `
-  --max-pages 200
+    --img-dir eval-infra\01-omnidocbench\data\images `
+    --out-dir predictions\paddleocrvl_cpu_860m_200 `
+    --max-pages 200
 .\.venv\Scripts\python.exe scripts\build_prediction_subset.py `
-  --full-manifest eval-infra\01-omnidocbench\data\OmniDocBench.json `
-  --pred-dir predictions\paddleocrvl_cpu_860m_200 `
-  --output eval-infra\01-omnidocbench\data\OmniDocBench_cpu_200.json `
-  --limit 200
+    --full-manifest eval-infra\01-omnidocbench\data\OmniDocBench.json `
+    --pred-dir predictions\paddleocrvl_cpu_860m_200 `
+    --output eval-infra\01-omnidocbench\data\OmniDocBench_cpu_200.json `
+    --limit 200
 .\.venv\Scripts\python.exe scripts\validate_predictions.py `
-  --manifest eval-infra\01-omnidocbench\data\OmniDocBench_cpu_200.json `
-  --pred-dir predictions\paddleocrvl_cpu_860m_200 `
-  --min-coverage 1.0
+    --manifest eval-infra\01-omnidocbench\data\OmniDocBench_cpu_200.json `
+    --pred-dir predictions\paddleocrvl_cpu_860m_200 `
+    --min-coverage 1.0
 powershell -ExecutionPolicy Bypass -File eval-infra\03-scoring\score.ps1 `
   -Config v16-cpu-200.yaml
 ```
@@ -214,35 +230,15 @@ powershell -ExecutionPolicy Bypass -File scripts\full-verify.ps1 `
 10 页 smoke 使用 `v16-cpu-smoke-10.yaml` 与
 `v16-cdm-cpu-smoke-10.yaml`；请使用上方单入口，不要手工拼接这些命令。
 
+</details>
+
 Windows 原生 CDM 已受支持：`eval-infra/01-omnidocbench/setup.ps1` 会自动应用
 `patches/omnidocbench/windows-cdm.patch`，并由
 `eval-infra/02-cdm-environment/verify-windows.ps1` 验证。这是可选路径，需要本机
 TeX Live、ImageMagick 和 Ghostscript。WSL CDM 仍保留为兼容和 reference 路径；
 选择 WSL 的用户无需进行原生 CDM 验证。
 `scripts/full-verify.ps1` 只有在显式传入 `-WindowsCdm` 时才检查原生路径。
-
 可选的原生 CDM 验证独立于 WSL 快速开始路径。
-
-如果用 PaddleOCR 官方 `PaddleOCRVL` engine 跑基准评测，请用
-`_to_markdown(pretty=False)` 导出评测型 Markdown。默认 pretty Markdown
-面向展示，可能因为 HTML 图片/标题包装导致 OmniDocBench Text Edit-distance
-被放大。
-
-这些本地分数默认采用 OmniDocBench 官方 leaderboard notebook
-（`tools/generate_result_tables.ipynb`）一致的 page-level 聚合口径。最新
-Windows AMD llama.cpp/GGUF official-local 路线 Formula CDM 为 `96.5022`；
-修正后的 ROCm CDM 为 `97.36`（修复 Windows 上 CDM 评测路径/编码 bug 之后）。相对官方 `97.49`
-的剩余差距，主要来自官方 Linux vLLM-style 路径与本项目 Windows AMD
-llama.cpp/GGUF 路径之间的推理后端/模型输出差异。official-local 路线仍有
-1 页稳定 VLM 500，已在上游记录为
-[PaddleOCR issue #18248](https://github.com/PaddlePaddle/PaddleOCR/issues/18248)。
-
-```powershell
-.\.venv\Scripts\python.exe adapters\paddleocr-vl-1.6\run_adapter.py `
-    --engine official `
-    --img-dir eval-infra\01-omnidocbench\data\images `
-    --out-dir predictions\paddleocr_official_prettyfalse_full_2026-07-09
-```
 
 想用 agent 驱动？把 **Codex、Claude Code、OpenCode，或任何能读 `AGENTS.md` 的 agent** 指向本 repo，说"按 AGENTS.md 搭建" / "Read AGENTS.md and execute the setup flow."。完整分步流程（含异常处理）见 [`AGENTS.md`](AGENTS.md)。
 
@@ -281,7 +277,11 @@ docs/
 
 **唯一需要记住的架构事实：** CDM 有两条受支持的工具链路径。Windows 原生 CDM 是应用 `windows-cdm.patch` 并通过 `verify-windows.ps1` 后的本地快速路径。WSL CDM 仍是兼容性/参考路径，使用隔离的 Linux TeX Live、ImageMagick 和 Ghostscript 工具链。详见 [`docs/architecture.md`](docs/architecture.md) 和 [`docs/pitfalls.md#posix`](docs/pitfalls.md#posix)。
 
-每个适配器唯一的契约：
+---
+
+## 适配器：添加一个新模型
+
+你只需要动 `adapters/`。每个适配器唯一的契约：
 
 ```python
 def run_adapter(img_dir: Path, out_dir: Path, server_url: str = ""):
@@ -289,69 +289,7 @@ def run_adapter(img_dir: Path, out_dir: Path, server_url: str = ""):
 ```
 
 评分层只消费这些 `.md` 文件，从不 import 适配器。
-
----
-
-## PaddleOCR-VL-1.6 参考得分
-
-我们在 OmniDocBench v1.6（全量 1651 页）上由本 repo 复现的已验证结果。
-PaddleOCR official engine 使用 `paddleocr.PaddleOCRVL`，并强制
-`_to_markdown(pretty=False)` 输出评测型 Markdown。PaddleOCR-VL-ROCm engine
-是默认的 AMD Windows 本地参考路径。命令、运行统计和根因说明见
-[`docs/release-paddleocr-vl-1.6-amd-windows-2026-07-09.md`](docs/release-paddleocr-vl-1.6-amd-windows-2026-07-09.md)。
-
-| 指标 | 本机实测（全量，PaddleOCR-VL-ROCm） | 复现阈值 |
-|---|---:|---:|
-| 整体 Overall | **95.99** | — |
-| 文本 Edit-dist | 0.03488 | < 0.10 |
-| 阅读顺序 Edit-dist | 0.12882 | < 0.20 |
-| 表格 TEDS | **94.09** | > 85.0 |
-| 公式 CDM | **97.36** | > 85.0 |
-
-G4 推理加速比: **1.7x** (27 页分层抽样，9 类别、0 结构错配)。 PaddleOCR-VL-ROCm 默认 `vlm_max_workers=8` 即可获得此加速。 | > Overall = (文本准确率 + CDM + TEDS) / 3，其中文本准确率 = (1 − Edit_dist) × 100。阅读顺序不纳入 Overall（布局指标，非内容准确率）。
-
-跑基准评测时，PaddleOCR 官方 `PaddleOCRVL` engine 必须用
-`_to_markdown(pretty=False)` 导出 Markdown。默认 pretty Markdown 面向展示，
-会引入 HTML 图片/标题包装，可能放大 OmniDocBench Text Edit-distance。
-
-这些行使用 OmniDocBench 官方 leaderboard/notebook page-level 聚合口径；
-底层 raw `metric_result` all-values 保留在对应产物中用于审计。official-local
-路线 Formula CDM 为 `96.5022`。修正后的 ROCm CDM 为 `97.36`；相对 `97.49`
-的剩余差距主要来自官方 Linux vLLM-style 基线与
-本机 Windows AMD llama.cpp/GGUF server 路径的推理后端/模型输出差异。本轮
-official-local 仍有 1 个稳定 VLM 500 页面：
-`newspaper_The Times UK_0801@magazinesclubnew_page_031.png`，
-已记录为 [PaddleOCR issue #18248](https://github.com/PaddlePaddle/PaddleOCR/issues/18248)。
-CDM 环境问题见
-[`docs/pitfalls.md#mathcolor`](docs/pitfalls.md#mathcolor) 和
-[`docs/pitfalls.md#cdm-zero`](docs/pitfalls.md#cdm-zero)。
-
-一次全新运行要达到“复现我们的结果”，需要满足的门槛：文本编辑距离 < 0.10、
-阅读顺序 < 0.20、按公开表格百分制口径 TEDS > 85、CDM > 85。若查看原始
-`metric_result.json`，TEDS/CDM 对应阈值是 `> 0.85`。
-
----
-
-## 多模型对比 Leaderboard
-
-| 模型 | 后端（本机） | Overall | 文本 Edit-dist ↓ | 阅读顺序 Edit-dist ↓ | 表格 TEDS ↑ | 公式 CDM ↑ |
-|---|---|---:|---:|---:|---:|---:|
-| PaddleOCR-VL-1.6 | llama.cpp GGUF (ROCm/HIP) | **95.99** | 0.03488 | 0.12882 | **94.09** | **97.36** |
-| MinerU2.5-Pro-2605-1.2B | llama.cpp GGUF (HIP) | 95.46 | 0.03734 | **0.12250** | 93.11 | 97.01 |
-| MinerU 3.4.4 pipeline | ROCm PyTorch + ONNX DirectML | 86.59 | 0.05655 | 0.15314 | 82.04 | 83.39 |
-
-所有行均为本机（AI MAX+ 395 / Radeon 8060S）1651 页全量实测结果；页面级聚合口径与
-OmniDocBench 官方 notebook 一致；MinerU 行使用快速匹配（quick-match）CDM。每格溯源见
-[`docs/benchmarks/leaderboard-evidence-2026-08-01.md`](docs/benchmarks/leaderboard-evidence-2026-08-01.md)。
-MinerU pipeline 数值经 130 页分层抽样门验证
-（[`docs/benchmarks/mineru-sample81-gate-2026-08-01.md`](docs/benchmarks/mineru-sample81-gate-2026-08-01.md)，
-verdict ACCEPT）；MinerU2.5 数值与 MinerU-ROCm windows-hip 模型卡交叉核对（容差 1e-6）。
-
----
-
-## 如何添加一个新模型
-
-你只需要动 `adapters/`。五个步骤（完整说明见 [`adapters/_template/README.md`](adapters/_template/README.md)）：
+五个步骤（完整说明见 [`adapters/_template/README.md`](adapters/_template/README.md)）：
 
 1. `cp -r adapters/_template adapters/<your-model>`
 2. 编辑 `run_adapter.py` —— 实现 `run_adapter(img_dir, out_dir, server_url)` 调用你的模型；为每页写 `out_dir/<image_stem>.md`。捕获每页失败，避免单页出错中止整轮运行。
@@ -359,7 +297,9 @@ verdict ACCEPT）；MinerU2.5 数值与 MinerU-ROCm windows-hip 模型卡交叉�
 4. 运行（在 repo 根目录）：`python adapters\<your-model>\run_adapter.py --img-dir eval-infra\01-omnidocbench\data\images --out-dir predictions\<your-model>`
 5. 原样重跑评分器（它只读预测路径）：`eval-infra\03-scoring\score.ps1`；跑 CDM 时，在 `verify-windows.ps1` 通过后使用 `score.ps1 -Config v16-cdm.yaml`，或使用 WSL `score-cdm.sh`，再跑 `verify.ps1`。
 
-参考适配器 [`adapters/paddleocr-vl-1.6/`](adapters/paddleocr-vl-1.6/) 是一个完整、已验证的范例，可以直接参考。
+可直接参考的已验证范例：
+[`adapters/paddleocr-vl-1.6/`](adapters/paddleocr-vl-1.6/)（ONNX 版面 + llama.cpp GGUF VLM；含官方引擎评分注意事项）和
+[`adapters/mineru/`](adapters/mineru/)（MinerU 3.4.4 pipeline,ROCm PyTorch + ONNX DirectML）。
 
 ---
 

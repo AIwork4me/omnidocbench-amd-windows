@@ -5,6 +5,10 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Changed
+- README restructured for focus: leaderboard first, single source of metrics
+  truth, PaddleOCR operational details moved to the adapter README.
+
 ### Added
 - CI: unified workflow on main — uv pytest matrix (3.10/3.11, windows-latest)
   + PSScriptAnalyzer Error-gate.
