@@ -22,15 +22,13 @@ def test_cpu_smoke_configs_bind_exact_ten_page_artifacts():
         assert data["end2end_eval"]["metrics"]["table"]["teds_workers"] == 1
 
 
-def test_orchestrator_is_windows_only_fail_closed_and_exactly_ten_pages():
+def test_orchestrator_is_fail_closed_and_keeps_smoke_artifact_bindings():
     text = SCRIPT.read_text(encoding="utf-8")
-    assert '[ValidateSet("cpu-smoke-10")]' in text
     assert '[Alias("Profile")]' in text
     assert '$RunProfile' in text
-    assert "--max-pages 10" in text
-    assert "--limit 10" in text
-    assert "-Variant cpu -Port $ServerPort" in text
-    assert 'ServerPort = "8121"' in text
+    assert "--max-pages" in text
+    assert "--limit $($profile.expected_pages)" in text
+    assert "-Variant $profile.variant" in text
     assert "-RequireCdm" in text
     assert "-PredictionManifest $manifestRel" in text
     assert "Existing $RunProfile artifacts found" in text
@@ -41,20 +39,52 @@ def test_orchestrator_is_windows_only_fail_closed_and_exactly_ten_pages():
     assert '$state.status = "interrupted"' in text
     assert "$state.resume_command" in text
     assert "Assert-LastExit" in text
-    assert "RESUME SKIP: phase already passed" in text
-    always_run = text.split("$alwaysRunPhases", 1)[1].split("$state", 1)[0]
-    assert '"CPU VLM server"' in always_run
-    assert '"WSL CDM environment"' in always_run
-    assert '"Exact full verification"' in always_run
+    assert "RESUME SKIP: stage already passed" in text
     assert "DRY RUN OK" in text
     assert "outputs\\checkouts\\PaddleOCR-VL-ROCm" in text
     assert "-CloneDir $pipelineCheckout" in text
-    assert 'Invoke-Phase "Inference input locks"' in text
-    assert "Ten-page inference requires exactly 10 Markdown predictions" in text
-    assert "Manifest generation requires exactly 10 predictions" in text
+    assert 'Invoke-Stage -Id "inference.input_locks"' in text
+    assert "Smoke inference requires exactly" in text
+    assert "Manifest generation requires exactly" in text
     assert '[string] $SeedFrom = ""' in text
-    assert 'Invoke-Phase "Seed locked inputs"' in text
+    assert 'Invoke-Stage -Id "inputs.seed"' in text
     assert "seed-locked-inputs.ps1" in text
+    assert 'Invoke-Stage -Id "verification.final"' in text
+
+
+def test_orchestrator_uses_stable_stage_ids_for_resume():
+    text = SCRIPT.read_text(encoding="utf-8")
+    for stage_id in (
+        "environment.python",
+        "environment.mirrors",
+        "environment.wsl",
+        "profile.preflight",
+        "inputs.seed",
+        "dataset.setup",
+        "dataset.upstream_locks",
+        "cdm.wsl_environment",
+        "inference.server",
+        "inference.layout",
+        "inference.pipeline_deps",
+        "inference.input_locks",
+        "inference.run",
+        "inference.prediction_check",
+        "scoring.windows",
+        "scoring.wsl_cdm",
+        "verification.final",
+    ):
+        assert f'Invoke-Stage -Id "{stage_id}"' in text, f"stage {stage_id} missing"
+    assert "$completedStageIds" in text and "$alwaysRunStageIds" in text
+    assert "schema_version = 2" in text
+    assert "state.json schema v" in text
+
+
+def test_resume_keys_off_stage_ids_not_display_names():
+    text = SCRIPT.read_text(encoding="utf-8")
+    assert "stages = @()" in text
+    assert "ForEach-Object { $_.id })" in text
+    assert "Set-StageRecord" in text
+    assert "-not $AlwaysRun.IsPresent" in text
 
 
 def test_seed_script_copies_only_locked_inputs_and_reverifies_destination():
@@ -76,7 +106,7 @@ def test_seed_script_copies_only_locked_inputs_and_reverifies_destination():
     assert 'Join-Path $DestinationRoot ".env.local"' not in text
 
 
-def test_orchestrator_dry_run_parses_and_records_ordered_phases(tmp_path: Path):
+def test_orchestrator_dry_run_parses_and_records_ordered_stages(tmp_path: Path):
     parse = subprocess.run(
         [
             "powershell",
@@ -93,27 +123,42 @@ def test_orchestrator_dry_run_parses_and_records_ordered_phases(tmp_path: Path):
     )
     assert parse.returncode == 0, parse.stdout + parse.stderr
     text = SCRIPT.read_text(encoding="utf-8")
-    phases = [
-        "Python environment",
-        "Network mirrors",
-        "WSL availability",
-        "Preflight",
-        "Seed locked inputs",
-        "OmniDocBench and dataset",
-        "Upstream locks",
-        "WSL CDM environment",
-        "CPU VLM server",
-        "Layout model",
-        "Pipeline dependency",
-        "Inference input locks",
-        "Ten-page CPU inference",
-        "Exact ten-page manifest",
-        "Windows scoring",
-        "WSL CDM scoring",
-        "Exact full verification",
+    stage_ids = [
+        "environment.python",
+        "environment.mirrors",
+        "environment.wsl",
+        "profile.preflight",
+        "inputs.seed",
+        "dataset.setup",
+        "dataset.upstream_locks",
+        "cdm.wsl_environment",
+        "inference.server",
+        "inference.layout",
+        "inference.pipeline_deps",
+        "inference.input_locks",
+        "inference.run",
+        "inference.prediction_check",
+        "scoring.windows",
+        "scoring.wsl_cdm",
+        "verification.final",
     ]
-    positions = [text.index(f'Invoke-Phase "{phase}"') for phase in phases]
+    positions = [text.index(f'Invoke-Stage -Id "{stage_id}"') for stage_id in stage_ids]
     assert positions == sorted(positions)
+
+
+def test_always_run_stages_are_the_cheap_safety_gates():
+    text = SCRIPT.read_text(encoding="utf-8")
+    always_run = text.split("$alwaysRunStageIds = @(", 1)[1].split(")", 1)[0]
+    for stage_id in (
+        "environment.wsl",
+        "profile.preflight",
+        "cdm.wsl_environment",
+        "inference.server",
+        "inference.input_locks",
+        "inference.run",
+        "verification.final",
+    ):
+        assert f'"{stage_id}"' in always_run
 
 
 def test_entrypoint_docs_make_ten_page_profile_canonical():
