@@ -86,6 +86,10 @@ on China networks; Step 2 (CDM environment) ~30 min (TeX Live is the bulk);
 Step 3 (adapter inference) depends on GPU (CPU ~hours, Radeon HIP ~tens of minutes);
 Step 4 (scoring) ~5 min (Edit_dist+TEDS) + ~20-30 min (CDM, per-formula LaTeX).
 
+Measured end-to-end timings and resource data from the reference machine
+(Ryzen AI MAX+ 395 + Radeon 8060S + 128 GB unified memory):
+[`docs/benchmarks/strix-halo-ai-max395.md`](docs/benchmarks/strix-halo-ai-max395.md).
+
 ### Quick Start
 
 For a real AMD Windows provisioning check without rerunning the accuracy
@@ -357,6 +361,28 @@ These are the success thresholds a fresh run must clear to count as
 reproducing our results: Text Edit-dist < 0.10, Reading-order < 0.20,
 TEDS > 85, and CDM > 85 on the reported percentage scale. In raw
 `metric_result.json`, TEDS/CDM thresholds correspond to `> 0.85`.
+
+---
+
+## Multi-model leaderboard
+
+Page-level aggregation, the same convention as the OmniDocBench official
+leaderboard/notebook; the MinerU row uses quick-match CDM. Per-cell evidence
+traceability:
+[`docs/benchmarks/leaderboard-evidence-2026-08-01.md`](docs/benchmarks/leaderboard-evidence-2026-08-01.md).
+
+| Model | Overall | Text Edit-dist ↓ | RO Edit-dist ↓ | Table TEDS ↑ | Formula CDM ↑ |
+|---|---:|---:|---:|---:|---:|
+| PaddleOCR-VL-ROCm (reference) | 95.99 | 0.03488 | 0.12882 | 94.09 | 97.36 |
+| PaddleOCR-VL (paper, Linux vLLM) | 96.33 | 0.033 | 0.127 | 94.76 | 97.49 |
+| PaddleOCR-VL official (local run) | 95.77 | 0.03444 | 0.12949 | 94.24 | 96.50 |
+| MinerU 3.4.4 pipeline (Windows HIP) | 86.59 | 0.05655 | 0.15314 | 82.04 | 83.39 |
+
+Every cell is traceable to a scorer artifact (see the evidence doc above). The
+official-local row is the 2026-07-11 Windows-native CDM rerun (Formula CDM
+`96.5022`). The MinerU numbers are validated by a 130-page stratified-sample
+gate — [`docs/benchmarks/mineru-sample81-gate-2026-08-01.md`](docs/benchmarks/mineru-sample81-gate-2026-08-01.md),
+verdict ACCEPT.
 
 ---
 
