@@ -53,6 +53,7 @@ ADAPTER_DIR = Path(__file__).resolve().parent
 REPO_ROOT = ADAPTER_DIR.parents[1]
 DEFAULT_ENGINE = "lightweight"
 sys.path.insert(0, str(REPO_ROOT))
+from scripts.gt_manifest import load_empty_gt_stems  # noqa: E402
 from scripts.windows_paths import through_short_repo  # noqa: E402
 
 
@@ -91,12 +92,15 @@ def expected_md_name(image_name: str) -> str:
     return Path(image_name).stem + ".md"
 
 
-def _prediction_is_reusable(md_path: Path) -> bool:
+def _prediction_is_reusable(md_path: Path, empty_gt: set[str] | None = None) -> bool:
     """True only when a previous prediction can be safely reused.
 
-    A previous Markdown may be skipped only if it is a regular file, decodes
-    as UTF-8, and is non-empty (empty-page predictions are not legal in this
-    benchmark). Anything else must be regenerated.
+    A previous Markdown may be skipped only if it is a regular file and
+    decodes as UTF-8. It must also be non-empty -- UNLESS the page's ground
+    truth is itself empty (OmniDocBench v1.6 contains such pages: figures
+    plus empty text-masks only), in which case an empty prediction is the
+    correct result and regenerating it is pointless. Anything else must be
+    regenerated.
     """
     if not md_path.is_file():
         return False
@@ -104,7 +108,9 @@ def _prediction_is_reusable(md_path: Path) -> bool:
         content = md_path.read_text(encoding="utf-8")
     except (OSError, UnicodeDecodeError):
         return False
-    return bool(content.strip())
+    if content.strip():
+        return True
+    return bool(empty_gt) and md_path.stem in empty_gt
 
 
 def _load_prior_stats(out_dir: Path) -> dict:
@@ -187,6 +193,7 @@ def process_folder(
     vlm_backend: str = "vllm-server",
     max_pages: int | None = None,
     skip_existing: bool = False,
+    gt_manifest: str | Path | None = None,
 ) -> dict:
     return run_lightweight_folder(
         img_dir=img_dir,
@@ -197,6 +204,7 @@ def process_folder(
         vlm_backend=vlm_backend,
         max_pages=max_pages,
         skip_existing=skip_existing,
+        gt_manifest=gt_manifest,
     )
 
 
@@ -210,13 +218,15 @@ def run_lightweight_folder(
     vlm_backend: str = "vllm-server",
     max_pages: int | None = None,
     skip_existing: bool = False,
+    gt_manifest: str | Path | None = None,
 ) -> dict:
     """Run the pipeline over every image in ``img_dir`` and write per-page ``.md``.
 
     With ``skip_existing`` a previous valid prediction (regular file, UTF-8,
-    non-empty) for a selected page is reused without re-prediction. Page-level
-    progress is persisted atomically after every page, so a killed run retains
-    all completed pages and can be resumed safely.
+    non-empty -- or empty for a page whose ground truth is itself empty, per
+    ``gt_manifest``) for a selected page is reused without re-prediction.
+    Page-level progress is persisted atomically after every page, so a killed
+    run retains all completed pages and can be resumed safely.
 
     Returns a summary dict with ``count``, ``ok``, ``fail``, per-image
     ``stats`` (kept for backward compatibility), plus the v2 counters
@@ -238,6 +248,14 @@ def run_lightweight_folder(
         api_model_name=api_model_name,
         vlm_backend=vlm_backend,
     )
+    empty_gt: set[str] = set()
+    if gt_manifest is not None:
+        gt_path = Path(gt_manifest)
+        if gt_path.is_file():
+            try:
+                empty_gt = load_empty_gt_stems(gt_path)
+            except (OSError, UnicodeDecodeError, ValueError, KeyError):
+                empty_gt = set()
     out_dir.mkdir(parents=True, exist_ok=True)
     errors_path = out_dir / "_errors.log"
     stats_path = out_dir / "_run_stats.json"
@@ -263,7 +281,7 @@ def run_lightweight_folder(
         start = time.time()
         image_name = img.name
         md_path = out_dir / expected_md_name(image_name)
-        if skip_existing and _prediction_is_reusable(md_path):
+        if skip_existing and _prediction_is_reusable(md_path, empty_gt):
             stats["skipped_existing"] += 1
             invocation["skipped_existing"] += 1
             ok_count += 1
@@ -606,6 +624,7 @@ def run_adapter(
     fallback_pred_dir: str | Path | None = None,
     max_pages: int | None = None,
     skip_existing: bool = False,
+    gt_manifest: str | Path | None = None,
 ) -> dict:
     """Adapter interface contract: images -> one ``<stem>.md`` per page.
 
@@ -629,6 +648,10 @@ def run_adapter(
     skip_existing : bool
         Reuse previous valid predictions instead of re-predicting (per-page
         resume). Only supported by the lightweight engine.
+    gt_manifest : str | Path | None
+        Dataset manifest used to decide which pages have an empty ground
+        truth (their empty predictions are valid and reusable). Optional;
+        without it, empty predictions are never reused.
 
     Returns
     -------
@@ -676,6 +699,7 @@ def run_adapter(
             vlm_backend=vlm_backend,
             max_pages=max_pages,
             skip_existing=skip_existing,
+            gt_manifest=gt_manifest,
         )
     if engine == "official":
         if skip_existing:
@@ -737,6 +761,12 @@ def main() -> None:
         help="Reuse previous valid (UTF-8, non-empty) predictions for selected "
         "pages instead of re-predicting; only missing/invalid pages are processed.",
     )
+    parser.add_argument(
+        "--gt-manifest",
+        default=None,
+        help="Dataset manifest used to recognize empty-GT pages whose empty "
+        "predictions are valid and reusable.",
+    )
     args = parser.parse_args()
 
     # Route through the documented contract (run_adapter) when no advanced
@@ -754,6 +784,7 @@ def main() -> None:
             fallback_pred_dir=args.fallback_pred_dir,
             max_pages=args.max_pages,
             skip_existing=args.skip_existing,
+            gt_manifest=args.gt_manifest,
         )
     else:
         summary = run_adapter(
@@ -768,6 +799,7 @@ def main() -> None:
             fallback_pred_dir=args.fallback_pred_dir,
             max_pages=args.max_pages,
             skip_existing=args.skip_existing,
+            gt_manifest=args.gt_manifest,
         )
     print(summary)
 

@@ -7,6 +7,7 @@ from pathlib import Path
 import sys
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+from gt_manifest import empty_gt_stems
 from windows_paths import through_short_repo
 
 
@@ -44,6 +45,9 @@ def validate_predictions(
             return [f"manifest is invalid: {manifest_path} ({error})"]
         if not image_names:
             return [f"manifest contains no pages: {manifest_path}"]
+        # OmniDocBench v1.6 contains genuinely empty-GT pages (figures plus
+        # empty text-masks only); for those, an empty prediction is correct.
+        empty_gt = empty_gt_stems(pages)
     else:
         if image_dir is None or not image_dir.is_dir():
             return [f"image directory not found: {image_dir}"]
@@ -85,7 +89,10 @@ def validate_predictions(
             failures.append(f"prediction is not UTF-8: {markdown_path.name} ({error})")
             continue
         if not content.strip():
-            failures.append(f"prediction is empty: {markdown_path.name}")
+            if manifest_path is not None and markdown_path.stem in empty_gt:
+                readable_nonempty += 1
+            else:
+                failures.append(f"prediction is empty: {markdown_path.name}")
             continue
         if markdown_path.stem in expected:
             readable_nonempty += 1

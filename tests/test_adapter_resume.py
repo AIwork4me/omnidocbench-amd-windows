@@ -60,7 +60,7 @@ def _image_dir(tmp_path, count=5, prefix="page"):
     return img_dir
 
 
-def _run(fake_module, img_dir, out_dir, count=None, skip_existing=False):
+def _run(fake_module, img_dir, out_dir, count=None, skip_existing=False, gt_manifest=None):
     kwargs = dict(
         img_dir=img_dir,
         out_dir=out_dir,
@@ -73,6 +73,8 @@ def _run(fake_module, img_dir, out_dir, count=None, skip_existing=False):
         kwargs["max_pages"] = count
     if skip_existing:
         kwargs["skip_existing"] = True
+    if gt_manifest is not None:
+        kwargs["gt_manifest"] = gt_manifest
     return fake_module.run_lightweight_folder(**kwargs)
 
 
@@ -194,3 +196,42 @@ def test_skip_existing_false_still_reprocesses_everything(tmp_path, fake_module)
     summary = _run(fake_module, img_dir, out_dir, count=2, skip_existing=False)
     assert summary["newly_processed"] == 2
     assert summary["skipped_existing"] == 0
+
+
+def test_empty_prediction_for_empty_gt_page_is_reused(tmp_path, fake_module):
+    img_dir = _image_dir(tmp_path, 3)
+    out_dir = tmp_path / "pred"
+    _run(fake_module, img_dir, out_dir, count=3)
+    # page-01's GT is empty in the manifest: its empty prediction is correct.
+    (out_dir / "page-01.md").write_text("", encoding="utf-8")
+    manifest = tmp_path / "manifest.json"
+    manifest.write_text(
+        json.dumps(
+            [
+                {"page_info": {"image_path": "d/page-00.png"}, "layout_dets": [{"category_type": "text_block", "text": "gt 0"}]},
+                {"page_info": {"image_path": "d/page-01.png"}, "layout_dets": [{"category_type": "figure"}]},
+                {"page_info": {"image_path": "d/page-02.png"}, "layout_dets": [{"category_type": "text_block", "text": "gt 2"}]},
+            ]
+        ),
+        encoding="utf-8",
+    )
+    trace = []
+    fake_pipeline = FakePipeline(trace=trace)
+    fake_module.__dict__["sys"].modules["paddleocr_vl_rocm"].PaddleOCRVLROCm = (
+        lambda **kw: fake_pipeline
+    )
+    summary = _run(fake_module, img_dir, out_dir, count=3, skip_existing=True, gt_manifest=manifest)
+    assert trace == [], "empty prediction for empty-GT page must not be re-predicted"
+    assert summary["skipped_existing"] == 3
+    assert summary["newly_processed"] == 0
+    assert summary["ok"] == 3
+
+
+def test_empty_prediction_regenerated_without_gt_manifest(tmp_path, fake_module):
+    img_dir = _image_dir(tmp_path, 3)
+    out_dir = tmp_path / "pred"
+    _run(fake_module, img_dir, out_dir, count=3)
+    (out_dir / "page-01.md").write_text("", encoding="utf-8")
+    summary = _run(fake_module, img_dir, out_dir, count=3, skip_existing=True)
+    assert summary["newly_processed"] == 1
+    assert summary["skipped_existing"] == 2

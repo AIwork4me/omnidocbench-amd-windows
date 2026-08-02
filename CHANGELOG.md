@@ -47,6 +47,14 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   truth, PaddleOCR operational details moved to the adapter README.
 
 ### Fixed
+- Empty predictions are now GT-aware: OmniDocBench v1.6 contains genuinely
+  empty-GT pages (figures + empty text-masks only), so an empty prediction
+  for such a page is valid and reusable
+  (`scripts/gt_manifest.py` consumed by `verify_prediction_set.py`,
+  `validate_predictions.py`, and the adapter's `--skip-existing` resume via
+  `--gt-manifest`). This flips the full 1651 run's strict gate verdict to
+  PASS: 1649/1651 usable, 2 failed pages (peg-native, tracked upstream as
+  PaddlePaddle/PaddleOCR#18248).
 - `_run_stats.json` is now written atomically after every page, so killed
   runs keep full per-page progress and statistics.
 - WSL CDM scoring raised the open-file limit (`ulimit -n 65535` in

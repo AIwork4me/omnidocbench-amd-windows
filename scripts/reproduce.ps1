@@ -414,7 +414,8 @@ Invoke-Stage -Id "inference.run" -Name "Inference" -AlwaysRun {
     $adapterArgs = @(
         "--img-dir", (Join-Path $rootDir "eval-infra\01-omnidocbench\data\images"),
         "--out-dir", $predictionDir,
-        "--server-url", "http://127.0.0.1:$serverPort/v1"
+        "--server-url", "http://127.0.0.1:$serverPort/v1",
+        "--gt-manifest", $fullManifest
     ) + $maxPagesArgs + $skipExistingArg
     & $python (Join-Path $rootDir "adapters\paddleocr-vl-1.6\run_adapter.py") @adapterArgs
     Assert-LastExit "inference"

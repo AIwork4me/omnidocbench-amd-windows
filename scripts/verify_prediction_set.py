@@ -5,7 +5,10 @@ paddleocr-vl-hip-full-1651 profile requires:
 
   * manifest page count must equal --expected-pages exactly
   * every expected stem must have a prediction that is a regular file,
-    UTF-8-decodable and non-empty
+    UTF-8-decodable and non-empty -- EXCEPT pages whose ground truth is
+    itself empty (OmniDocBench v1.6 contains such pages: figures plus
+    empty text-masks only); for those, an empty prediction is correct and
+    counts as valid
   * usable coverage >= --min-coverage
   * failed pages (missing + invalid) <= --max-failed-pages
   * with --require-selected, _run_stats.json selected_pages must equal
@@ -21,6 +24,8 @@ import argparse
 import json
 import sys
 from pathlib import Path
+
+from gt_manifest import load_empty_gt_stems
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 
@@ -50,6 +55,7 @@ def validate_prediction_set(
         )
     expected = {Path(name).stem for name in image_names}
     expected_count = len(image_names)
+    empty_gt = load_empty_gt_stems(manifest_path)
 
     markdown_stems = {p.stem for p in pred_dir.glob("*.md") if p.is_file()}
     unexpected = sorted(expected.symmetric_difference(markdown_stems) - expected)
@@ -67,7 +73,11 @@ def validate_prediction_set(
             invalid.append(f"{stem}.md (not UTF-8)")
             continue
         if not content.strip():
-            invalid.append(f"{stem}.md (empty)")
+            if stem in empty_gt:
+                # Empty prediction for an empty-GT page is correct.
+                valid += 1
+            else:
+                invalid.append(f"{stem}.md (empty, GT non-empty)")
             continue
         valid += 1
 

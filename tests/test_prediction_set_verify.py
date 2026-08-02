@@ -153,3 +153,51 @@ def test_summary_json_is_emitted(tmp_path):
     assert data["coverage"] == 1.0
     assert data["verdict"] == "pass"
     assert data["failed_pages"] == []
+
+
+def _make_dataset_with_empty_gt(tmp_path, total, empty_stems):
+    manifest = []
+    img = tmp_path / "images"
+    pred = tmp_path / "pred"
+    pred.mkdir(parents=True)
+    img.mkdir(parents=True)
+    for i in range(total):
+        name = f"page-{i:04d}.png"
+        dets = [{"category_type": "text_block", "text": f"gt text {i}"}]
+        if f"page-{i:04d}" in empty_stems:
+            dets = [{"category_type": "figure"}, {"category_type": "text_mask", "text": ""}]
+        manifest.append(
+            {"page_info": {"image_path": f"some/dir/{name}"}, "layout_dets": dets}
+        )
+        (img / name).write_bytes(b"x")
+        (pred / f"page-{i:04d}.md").write_text(f"content {i}\n", encoding="utf-8")
+    manifest_path = tmp_path / "manifest.json"
+    manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
+    return manifest_path, pred
+
+
+def test_empty_prediction_is_valid_when_gt_is_empty(tmp_path):
+    manifest, pred = _make_dataset_with_empty_gt(tmp_path, 10, {"page-0003"})
+    (pred / "page-0003.md").write_text("", encoding="utf-8")
+    result = _run(manifest, pred, "--expected-pages", "10", "--min-coverage", "1.0", "--max-failed-pages", "0")
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert "10/10" in result.stdout
+
+
+def test_empty_prediction_still_fails_when_gt_is_not_empty(tmp_path):
+    manifest, pred = _make_dataset_with_empty_gt(tmp_path, 10, set())
+    (pred / "page-0003.md").write_text("", encoding="utf-8")
+    result = _run(manifest, pred, "--expected-pages", "10", "--min-coverage", "1.0", "--max-failed-pages", "0")
+    assert result.returncode != 0
+    assert "page-0003" in result.stdout + result.stderr
+
+
+def test_full_set_with_one_empty_gt_page_and_two_missing_passes(tmp_path):
+    """The real 1651 outcome: 1 empty-GT page predicted empty + 2 missing."""
+    manifest, pred = _make_dataset_with_empty_gt(tmp_path, 1651, {"page-1650"})
+    (pred / "page-1650.md").write_text("", encoding="utf-8")
+    (pred / "page-0000.md").unlink()
+    (pred / "page-0001.md").unlink()
+    result = _run(manifest, pred, "--expected-pages", "1651", "--min-coverage", "0.998", "--max-failed-pages", "2")
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert "1649/1651" in result.stdout
