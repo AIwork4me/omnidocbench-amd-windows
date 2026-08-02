@@ -48,6 +48,11 @@ leaderboard)" table — the upstream public baseline, reproduced in
 | Table TEDS | 94.76 | 94.76 |
 | Formula CDM | 97.49 | 97.49 |
 
+Note: the published Overall 96.33 is cited verbatim from the upstream baseline
+table and does not exactly recompute from the rounded printed cells
+((96.7 + 94.76 + 97.49) / 3 = 96.32) because the underlying unrounded inputs
+differ.
+
 ## Row 3 — PaddleOCR-VL official (local run)
 
 Source: Windows-native CDM rerun of the official engine, 2026-07-11 —
@@ -104,7 +109,10 @@ Card submetrics equal the local metric_result values bit-for-bit (diff 0.0 at
 ## Verification script output
 
 `./.venv/Scripts/python.exe scripts/verify_leaderboard_numbers.py` (exit 0),
-run on this machine 2026-08-02:
+run on this machine 2026-08-02 with the default artifact paths
+(`--mineru-rocm-repo` / `--paddleocr-rocm-repo` or the matching
+`MINERU_ROCM_REPO` / `PADDLEOCR_ROCM_REPO` env vars override them; missing
+artifacts SKIP their section instead of failing):
 
 ```
 == 1. PaddleOCR-VL-ROCm (reference) <- docs/release-paddleocr-vl-1.6-amd-windows-2026-07-16.md ==
@@ -121,7 +129,6 @@ PASS  baseline table contains 0.127
 PASS  baseline table contains 94.76
 PASS  baseline table contains 97.49
 == 3. PaddleOCR-VL official (local) <- Windows-native CDM rerun metric_result (2026-07-11) ==
-PASS  official CDM metric_result JSON exists  (C:\Users\rocm\Desktop\PaddleOCR-VL-ROCm\results\omnidocbench\v16\paddleocr_official_local_llamacpp_gguf_quick_match_metric_result_cdm.json)
   raw: text=0.034444814497297645 ro=0.129487416584772 teds=94.23931666667129 cdm=96.50220103430605 overall=95.76567875041586
 PASS  official text Edit-dist 0.03444  (published=0.03444 actual=0.034444814497297645 tol=5e-06)
 PASS  official RO Edit-dist 0.12949  (published=0.12949 actual=0.129487416584772 tol=5e-06)
@@ -130,8 +137,6 @@ PASS  official CDM 96.50  (published=96.5 actual=96.50220103430605 tol=0.005)
 PASS  official CDM 96.5022 (4dp, as cited in README/AGENTS.md)  (published=96.5022 actual=96.50220103430605 tol=5e-05)
 PASS  official Overall 95.77  (published=95.77 actual=95.76567875041586 tol=0.005)
 == 4. MinerU 3.4.4 pipeline (Windows HIP) <- model card + in-repo metric_result ==
-PASS  MinerU model card exists  (C:\Users\rocm\Desktop\MinerU-ROCm\model_card.pipeline.windows-hip.json)
-PASS  MinerU in-repo metric_result exists  (C:\Users\rocm\Desktop\omnidocbench-amd-windows\eval-infra\01-omnidocbench\OmniDocBench\result\mineru_pipeline_quick_match_metric_result.json)
   metric_result raw: text=0.05654667503567776 ro=0.15313839053961972 teds=82.03833096420277 cdm=83.39081255175297 overall=86.59149200412931
 PASS  card model_version == 3.4.4
 PASS  card text == metric_result

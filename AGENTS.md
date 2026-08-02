@@ -265,6 +265,8 @@ verify that failed. Do not improvise a fix.
 | `UnicodeDecodeError` mid-scoring, or mojibake in JSON/LaTeX | `docs/pitfalls.md#pythonutf8` (`PYTHONUTF8=1`) |
 | `onnxruntime ... model file not found`, no predictions | `docs/pitfalls.md#layout` |
 | VLM server 500 / connection refused / OOM | `docs/pitfalls.md#vlm` |
+| Inference suddenly 20-100× slow, or torch crashes in `RamDb::StoreRecord` after an unclean shutdown | `docs/pitfalls.md#miopen-finddb` |
+| No GPU utilization/power counters on Windows AMD (`rocm-smi` absent) | `docs/pitfalls.md#gpu-counters-windows` |
 | Non-CDM metrics are exactly 0 | Usually predictions dir empty/missing/misnamed on the full dataset; check `config.prediction.data_path` matches your `--out-dir` (see Step 3c NOTE). Zero non-CDM metrics warn but can pass because tiny toy subsets can legitimately score 0. Negative non-CDM metrics still fail. |
 | Benchmark report missing GPU data | `docs/pitfalls.md#benchmark-gpu` |
 | `verify.ps1` exit 1 on score mismatch | `docs/pitfalls.md#benchmark-verify` |

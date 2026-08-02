@@ -1,17 +1,40 @@
 """Verify every number published in the README multi-model leaderboard.
 
 Reads the actual JSON/markdown sources and asserts each published cell is a
-correct rounding of the source value. Exit 0 = every cell verified.
+correct rounding of the source value.
 
 Sources:
 - PaddleOCR-VL-ROCm + paper columns: docs/release-paddleocr-vl-1.6-amd-windows-2026-07-16.md
 - PaddleOCR-VL official (local): Windows-native CDM rerun metric_result JSON
   (2026-07-11, see AGENTS.md "Latest local Windows-native official-engine CDM evidence")
-- MinerU 3.4.4 pipeline: model card JSON + in-repo quick_match metric_result JSON,
+- MinerU 3.4.4 pipeline: model card JSON + quick_match metric_result JSON,
   plus the B2 gate doc verdict.
+
+Path resolution (precedence: CLI arg > env var > built-in default):
+- --mineru-rocm-repo / MINERU_ROCM_REPO: MinerU-ROCm checkout containing
+  model_card.pipeline.windows-hip.json
+  (default: C:\\Users\\rocm\\Desktop\\MinerU-ROCm)
+- --paddleocr-rocm-repo / PADDLEOCR_ROCM_REPO: PaddleOCR-VL-ROCm checkout
+  containing results/omnidocbench/v16/..._cdm.json
+  (default: C:\\Users\\rocm\\Desktop\\PaddleOCR-VL-ROCm)
+
+Skip/fail semantics:
+- Repo-internal README/doc checks (sections 1, 2, 5, 6) are MANDATORY: any
+  failure exits 1.
+- External-artifact sections (3: official CDM JSON, 4: MinerU card + local
+  metric_result) are OPTIONAL: when an artifact file is absent the script
+  prints "SKIP <section>: <path> not found" and continues instead of failing.
+  The MinerU metric_result JSON lives inside this repo tree but is a
+  gitignored scorer artifact, so it is treated as optional too (absent on a
+  fresh clone).
+- Exit 0 = every mandatory check passed AND at least one optional section ran.
+- Exit 1 = any mandatory check failed, OR every optional section skipped
+  (nothing external was verified — point the flags/env vars at real checkouts).
 """
 
+import argparse
 import json
+import os
 import re
 import sys
 from pathlib import Path
@@ -23,15 +46,37 @@ MINERU_METRIC = (
     ROOT / "eval-infra" / "01-omnidocbench" / "OmniDocBench" / "result"
     / "mineru_pipeline_quick_match_metric_result.json"
 )
-MINERU_CARD = Path(
-    r"C:\Users\rocm\Desktop\MinerU-ROCm\model_card.pipeline.windows-hip.json"
+
+DEFAULT_MINERU_REPO = Path(r"C:\Users\rocm\Desktop\MinerU-ROCm")
+DEFAULT_PADDLEOCR_REPO = Path(r"C:\Users\rocm\Desktop\PaddleOCR-VL-ROCm")
+
+parser = argparse.ArgumentParser(
+    description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
 )
-OFFICIAL_CDM_JSON = Path(
-    r"C:\Users\rocm\Desktop\PaddleOCR-VL-ROCm\results\omnidocbench\v16"
-    r"\paddleocr_official_local_llamacpp_gguf_quick_match_metric_result_cdm.json"
+parser.add_argument(
+    "--mineru-rocm-repo", type=Path, default=None,
+    help="MinerU-ROCm checkout dir (env: MINERU_ROCM_REPO; default: %(default)s)",
+)
+parser.add_argument(
+    "--paddleocr-rocm-repo", type=Path, default=None,
+    help="PaddleOCR-VL-ROCm checkout dir (env: PADDLEOCR_ROCM_REPO; default: %(default)s)",
+)
+args = parser.parse_args()
+
+mineru_repo = args.mineru_rocm_repo or Path(os.environ.get("MINERU_ROCM_REPO") or DEFAULT_MINERU_REPO)
+paddleocr_repo = args.paddleocr_rocm_repo or Path(
+    os.environ.get("PADDLEOCR_ROCM_REPO") or DEFAULT_PADDLEOCR_REPO
+)
+
+MINERU_CARD = mineru_repo / "model_card.pipeline.windows-hip.json"
+OFFICIAL_CDM_JSON = (
+    paddleocr_repo / "results" / "omnidocbench" / "v16"
+    / "paddleocr_official_local_llamacpp_gguf_quick_match_metric_result_cdm.json"
 )
 
 failures = []
+skipped_optional = set()
+OPTIONAL_SECTIONS = {3, 4}
 
 
 def check(label, ok, detail=""):
@@ -39,6 +84,11 @@ def check(label, ok, detail=""):
     print(f"{status}  {label}" + (f"  ({detail})" if detail else ""))
     if not ok:
         failures.append(label)
+
+
+def skip(section, path):
+    print(f"SKIP section {section}: {path} not found")
+    skipped_optional.add(section)
 
 
 def close(published, actual, tol, label):
@@ -61,8 +111,9 @@ for token in ["96.33", "0.033", "0.127", "94.76", "97.49"]:
     check(f"baseline table contains {token}", token in baseline)
 
 print("== 3. PaddleOCR-VL official (local) <- Windows-native CDM rerun metric_result (2026-07-11) ==")
-check("official CDM metric_result JSON exists", OFFICIAL_CDM_JSON.exists(), str(OFFICIAL_CDM_JSON))
-if OFFICIAL_CDM_JSON.exists():
+if not OFFICIAL_CDM_JSON.exists():
+    skip(3, OFFICIAL_CDM_JSON)
+else:
     d = json.loads(OFFICIAL_CDM_JSON.read_text(encoding="utf-8"))
     o_text = d["text_block"]["page"]["Edit_dist"]["ALL"]
     o_ro = d["reading_order"]["all"]["Edit_dist"]["ALL_page_avg"]
@@ -78,9 +129,10 @@ if OFFICIAL_CDM_JSON.exists():
     close(95.77, o_overall, 0.005, "official Overall 95.77")
 
 print("== 4. MinerU 3.4.4 pipeline (Windows HIP) <- model card + in-repo metric_result ==")
-check("MinerU model card exists", MINERU_CARD.exists(), str(MINERU_CARD))
-check("MinerU in-repo metric_result exists", MINERU_METRIC.exists(), str(MINERU_METRIC))
-if MINERU_CARD.exists() and MINERU_METRIC.exists():
+missing4 = [p for p in (MINERU_CARD, MINERU_METRIC) if not p.exists()]
+for p in missing4:
+    skip(4, p)
+if not missing4:
     card = json.loads(MINERU_CARD.read_text(encoding="utf-8"))
     mr = json.loads(MINERU_METRIC.read_text(encoding="utf-8"))
     m_text = mr["text_block"]["all"]["Edit_dist"]["ALL_page_avg"]
@@ -125,4 +177,14 @@ print()
 if failures:
     print(f"VERIFY FAILED: {len(failures)} check(s) failed")
     sys.exit(1)
+if skipped_optional >= OPTIONAL_SECTIONS:
+    print(
+        "VERIFY FAILED: every optional evidence section skipped (no external "
+        "artifacts found). Mandatory README/doc checks passed, but nothing "
+        "external was verified. Pass --mineru-rocm-repo / --paddleocr-rocm-repo "
+        "or set MINERU_ROCM_REPO / PADDLEOCR_ROCM_REPO."
+    )
+    sys.exit(1)
 print("VERIFY OK: all leaderboard numbers match their sources")
+if skipped_optional:
+    print(f"note: {len(skipped_optional)} optional section(s) skipped (see SKIP lines above)")
