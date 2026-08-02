@@ -1,0 +1,26 @@
+# OmniDocBench v1.6 stratified-sample gate evaluation, EXISTING predictions leg.
+# Twin of v16-sample81-mineru-repro.yaml; scores the sample pages as produced by
+# the original 1651-page run (predictions/mineru_pipeline), copied into
+# predictions/mineru_sample81_existing so the save_name stays distinct.
+#
+# The ground-truth manifest is a deterministic derivative (130 pages) of
+# data/OmniDocBench.json. Regenerate both it and the sample prediction dirs with:
+#   python scripts/sample_stratified.py --img-dir eval-infra/01-omnidocbench/data/images \
+#     --per-category 9 --seed 42 --out tmp_sample81.txt --copy-to tmp_sample81_images \
+#     --gt-manifest eval-infra/01-omnidocbench/data/OmniDocBench.json --gt-out tmp_sample81_gt.json
+# (see docs/benchmarks/mineru-sample81-gate-2026-08-01.md).
+#
+# This is a TEMPLATE: score.ps1 replaces <REPO_ROOT> with the absolute
+# omnidocbench-amd-windows checkout path at runtime.
+end2end_eval:
+  metrics:
+    text_block:      { metric: [Edit_dist] }
+    display_formula: { metric: [Edit_dist] }
+    table:           { metric: [TEDS, Edit_dist], teds_workers: 16 }
+    reading_order:   { metric: [Edit_dist] }
+  dataset:
+    dataset_name: end2end_dataset
+    ground_truth: { data_path: <REPO_ROOT>/tmp_sample81_gt.json }
+    prediction:   { data_path: <REPO_ROOT>/predictions/mineru_sample81_existing }
+    match_method: quick_match
+    match_workers: 24

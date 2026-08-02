@@ -1,0 +1,36 @@
+{"kind": "meta", "torch": "2.9.1+rocm7.2.1", "hip": "7.2.53211-158bd99533", "device": "AMD Radeon(TM) 8060S Graphics", "mem_total_b": 83954728960, "mem_free_start_b": 83786760192}
+{"kind": "sample", "t_rel_s": 2.2, "allocated_mib": 4896.0, "reserved_mib": 4896.0, "device_free_mib": 73973.4, "device_total_mib": 80065.5}
+{"kind": "sample", "t_rel_s": 4.3, "allocated_mib": 4896.0, "reserved_mib": 5152.0, "device_free_mib": 73461.4, "device_total_mib": 80065.5}
+{"kind": "sample", "t_rel_s": 6.5, "allocated_mib": 4896.0, "reserved_mib": 5152.0, "device_free_mib": 73461.4, "device_total_mib": 80065.5}
+{"kind": "sample", "t_rel_s": 8.5, "allocated_mib": 4896.0, "reserved_mib": 5152.0, "device_free_mib": 73461.4, "device_total_mib": 80065.5}
+{"kind": "sample", "t_rel_s": 10.6, "allocated_mib": 4896.0, "reserved_mib": 5152.0, "device_free_mib": 73461.4, "device_total_mib": 80065.5}
+{"kind": "sample", "t_rel_s": 12.7, "allocated_mib": 4896.0, "reserved_mib": 5152.0, "device_free_mib": 73460.5, "device_total_mib": 80065.5}
+{"kind": "sample", "t_rel_s": 14.7, "allocated_mib": 4896.0, "reserved_mib": 5152.0, "device_free_mib": 73460.5, "device_total_mib": 80065.5}
+{"kind": "sample", "t_rel_s": 16.9, "allocated_mib": 4896.0, "reserved_mib": 5152.0, "device_free_mib": 73460.5, "device_total_mib": 80065.5}
+{"kind": "sample", "t_rel_s": 18.9, "allocated_mib": 4896.0, "reserved_mib": 5152.0, "device_free_mib": 73460.5, "device_total_mib": 80065.5}
+{"kind": "sample", "t_rel_s": 21.1, "allocated_mib": 4896.0, "reserved_mib": 5152.0, "device_free_mib": 73460.5, "device_total_mib": 80065.5}
+{"kind": "sample", "t_rel_s": 23.2, "allocated_mib": 4896.0, "reserved_mib": 5152.0, "device_free_mib": 73460.5, "device_total_mib": 80065.5}
+{"kind": "sample", "t_rel_s": 25.3, "allocated_mib": 4896.0, "reserved_mib": 5152.0, "device_free_mib": 73460.5, "device_total_mib": 80065.5}
+{"kind": "sample", "t_rel_s": 27.4, "allocated_mib": 4896.0, "reserved_mib": 5152.0, "device_free_mib": 73460.5, "device_total_mib": 80065.5}
+{"kind": "sample", "t_rel_s": 29.5, "allocated_mib": 4896.0, "reserved_mib": 5152.0, "device_free_mib": 73460.5, "device_total_mib": 80065.5}
+{"kind": "sample", "t_rel_s": 31.5, "allocated_mib": 4896.0, "reserved_mib": 5152.0, "device_free_mib": 73460.5, "device_total_mib": 80065.5}
+{"kind": "sample", "t_rel_s": 33.6, "allocated_mib": 4896.0, "reserved_mib": 5152.0, "device_free_mib": 73460.5, "device_total_mib": 80065.5}
+{"kind": "sample", "t_rel_s": 35.8, "allocated_mib": 4896.0, "reserved_mib": 5152.0, "device_free_mib": 73460.5, "device_total_mib": 80065.5}
+{"kind": "sample", "t_rel_s": 37.9, "allocated_mib": 4896.0, "reserved_mib": 5152.0, "device_free_mib": 73460.5, "device_total_mib": 80065.5}
+{"kind": "sample", "t_rel_s": 40.0, "allocated_mib": 4896.0, "reserved_mib": 5152.0, "device_free_mib": 73460.5, "device_total_mib": 80065.5}
+{"kind": "sample", "t_rel_s": 42.1, "allocated_mib": 4896.0, "reserved_mib": 5152.0, "device_free_mib": 73460.5, "device_total_mib": 80065.5}
+{"kind": "sample", "t_rel_s": 44.3, "allocated_mib": 4896.0, "reserved_mib": 5152.0, "device_free_mib": 73460.5, "device_total_mib": 80065.5}
+{"kind": "sample", "t_rel_s": 46.4, "allocated_mib": 4896.0, "reserved_mib": 5152.0, "device_free_mib": 73460.5, "device_total_mib": 80065.5}
+{"kind": "sample", "t_rel_s": 48.5, "allocated_mib": 4896.0, "reserved_mib": 5152.0, "device_free_mib": 73460.5, "device_total_mib": 80065.5}
+{"kind": "sample", "t_rel_s": 50.7, "allocated_mib": 4896.0, "reserved_mib": 5152.0, "device_free_mib": 73460.5, "device_total_mib": 80065.5}
+{"kind": "sample", "t_rel_s": 52.8, "allocated_mib": 4896.0, "reserved_mib": 5152.0, "device_free_mib": 73460.5, "device_total_mib": 80065.5}
+{"kind": "sample", "t_rel_s": 54.9, "allocated_mib": 4896.0, "reserved_mib": 5152.0, "device_free_mib": 73460.5, "device_total_mib": 80065.5}
+{"kind": "sample", "t_rel_s": 57.1, "allocated_mib": 4896.0, "reserved_mib": 5152.0, "device_free_mib": 73460.5, "device_total_mib": 80065.5}
+{"kind": "sample", "t_rel_s": 59.1, "allocated_mib": 4896.0, "reserved_mib": 5152.0, "device_free_mib": 73460.5, "device_total_mib": 80065.5}
+{"kind": "sample", "t_rel_s": 61.2, "allocated_mib": 4896.0, "reserved_mib": 5152.0, "device_free_mib": 73460.5, "device_total_mib": 80065.5}
+{"kind": "sample", "t_rel_s": 63.3, "allocated_mib": 4896.0, "reserved_mib": 5152.0, "device_free_mib": 73460.5, "device_total_mib": 80065.5}
+{"kind": "sample", "t_rel_s": 65.4, "allocated_mib": 4896.0, "reserved_mib": 5152.0, "device_free_mib": 73460.5, "device_total_mib": 80065.5}
+{"kind": "sample", "t_rel_s": 67.5, "allocated_mib": 4896.0, "reserved_mib": 5152.0, "device_free_mib": 73460.5, "device_total_mib": 80065.5}
+{"kind": "sample", "t_rel_s": 69.6, "allocated_mib": 4896.0, "reserved_mib": 5152.0, "device_free_mib": 73460.5, "device_total_mib": 80065.5}
+{"kind": "sample", "t_rel_s": 71.7, "allocated_mib": 4896.0, "reserved_mib": 5152.0, "device_free_mib": 73460.5, "device_total_mib": 80065.5}
+{"kind": "result", "matmul_4096_ms_per_iter": 65.07, "matmul_4096_tflops": 2.11, "max_allocated_mib": 5152.0, "wall_s": 73.2}

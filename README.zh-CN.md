@@ -78,6 +78,9 @@ CPU。该 Windows HIP 打包缺口已提交至上游
 
 全量 1651 页运行的时间估算：步骤 1（数据集下载）国内网络约 15-20 分钟；步骤 2（CDM 环境）约 30 分钟（TeX Live 是大头）；步骤 3（适配器推理）取决于 GPU（CPU 数小时，Radeon HIP 数十分钟）；步骤 4（评分）约 5 分钟（Edit_dist+TEDS）+ 20-30 分钟（CDM，每条公式都要跑 LaTeX）。
 
+参考机型（Ryzen AI MAX+ 395 + Radeon 8060S + 128 GB 统一内存）的实测全链路耗时与资源占用数据见
+[`docs/benchmarks/strix-halo-ai-max395.md`](docs/benchmarks/strix-halo-ai-max395.md)。
+
 ### 快速开始
 
 无需再次运行精度全量评测，可用标准 10 页 CPU profile 验证 AMD Windows
@@ -326,6 +329,27 @@ CDM 环境问题见
 一次全新运行要达到“复现我们的结果”，需要满足的门槛：文本编辑距离 < 0.10、
 阅读顺序 < 0.20、按公开表格百分制口径 TEDS > 85、CDM > 85。若查看原始
 `metric_result.json`，TEDS/CDM 对应阈值是 `> 0.85`。
+
+---
+
+## 多模型对比 Leaderboard
+
+口径：页面级聚合，与 OmniDocBench 官方 leaderboard/notebook 一致；MinerU 行为
+快速匹配（quick-match）CDM。每格溯源见
+[`docs/benchmarks/leaderboard-evidence-2026-08-01.md`](docs/benchmarks/leaderboard-evidence-2026-08-01.md)。
+
+| 模型 | Overall | 文本 Edit-dist ↓ | 阅读顺序 Edit-dist ↓ | 表格 TEDS ↑ | 公式 CDM ↑ |
+|---|---:|---:|---:|---:|---:|
+| PaddleOCR-VL-ROCm (reference) | 95.99 | 0.03488 | 0.12882 | 94.09 | 97.36 |
+| PaddleOCR-VL (paper, Linux vLLM) | 96.33 | 0.033 | 0.127 | 94.76 | 97.49 |
+| PaddleOCR-VL official (local run) | 95.77 | 0.03444 | 0.12949 | 94.24 | 96.50 |
+| MinerU 3.4.4 pipeline (Windows HIP) | 86.59 | 0.05655 | 0.15314 | 82.04 | 83.39 |
+
+每个数字都可溯源到评分产物（见上方证据文档）。official-local 行为
+2026-07-11 Windows 原生 CDM 重跑（Formula CDM `96.5022`）。MinerU 数值经
+130 页分层抽样门验证——
+[`docs/benchmarks/mineru-sample81-gate-2026-08-01.md`](docs/benchmarks/mineru-sample81-gate-2026-08-01.md)，
+verdict ACCEPT。
 
 ---
 

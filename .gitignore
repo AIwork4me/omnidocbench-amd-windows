@@ -36,3 +36,4 @@ cdm_debug.py
 cdm_diag.py
 tmp_cdm-*.txt
 tmp/
+tmp_*

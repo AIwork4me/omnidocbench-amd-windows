@@ -34,6 +34,8 @@ relevant entry first.
 - [Layout (ONNX) model not found](#layout)
 - [VLM server 500 errors](#vlm)
 - [Official PaddleOCRVL pretty Markdown hurts Text Edit-distance](#official-pretty-markdown)
+- [MIOpen find-db corruption after unclean shutdown](#miopen-finddb)
+- [Windows AMD GPU counters unavailable](#gpu-counters-windows)
 
 ---
 
@@ -619,6 +621,66 @@ On the published full-set official-prettyfalse run, Text Edit-distance is
 PaddleOCR-VL-ROCm engine's `0.03397`. Score it with
 `v16-official-prettyfalse-full-2026-07-09.yaml` and the paired WSL CDM config
 `v16-cdm-official-prettyfalse-full-2026-07-09.yaml`.
+
+---
+
+<a id="miopen-finddb"></a>
+## #miopen-finddb — MIOpen find-db corruption after an unclean shutdown
+
+**Symptom.** ROCm/HIP inference that was fast yesterday is suddenly 20–100×
+slower per page (e.g. 200–450 s/page instead of 9–29 s/page), with no code or
+model change. A direct torch probe may **crash inside MIOpen** with
+`MIOpen(HIP): Warning [TryLockOperation] File <"...\.miopen\db\miopen-lockfiles\...ufdb.txt.lock"> timed lock timed out`
+followed by an abort in `miopen::RamDb::StoreRecord` /
+`miopenFindConvolutionForwardAlgorithm`.
+
+**Root cause.** The machine suffered an unclean shutdown (Windows System log
+Event 41, Kernel-Power) while MIOpen was writing its per-user convolution
+find-db (`~/.miopen/db/<arch>...ufdb.txt`, tens of MB). The file is left
+corrupted: every convolution algorithm lookup pays a lock timeout, and
+`StoreRecord` aborts on write. Real incident: Phase B gate run, 2026-08-01
+20:35 shutdown, discovered 2026-08-02 — see
+[mineru-sample81-gate-2026-08-01.md](benchmarks/mineru-sample81-gate-2026-08-01.md).
+
+**Fix.** Delete the user find-db **and** its stale lock files; the find-db is a
+pure cache and MIOpen rebuilds it automatically on the next run (the first
+convolution of each shape pays a one-time "find" cost, e.g. ~14 s, then steady
+state returns). Discard any predictions produced by the degraded run — they are
+valid content-wise but their timings poison any per-page statistics.
+
+**Verify.** Re-run one inference page (or a small torch probe): first conv
+rebuilds the cache, then steady-state speed is back to normal (e.g. conv
+~16 ms/iter, matmul 4096³ ~60 ms/iter ≈ 2.3 TFLOPS on Strix Halo). Per-page
+adapter timings return to their previous range.
+
+---
+
+<a id="gpu-counters-windows"></a>
+## #gpu-counters-windows — Windows AMD GPU utilization/power counters unavailable
+
+**Symptom.** On Windows with an AMD GPU, there is no `nvidia-smi` equivalent:
+`rocm-smi` is not on PATH (not shipped for Windows), and GPU utilization /
+power performance counters read ~0% (or stay flat) even during genuinely
+GPU-bound ROCm/HIP work. Resource monitors degrade to `gpu-unavailable` and
+can only log RAM/CPU.
+
+**Root cause.** The Windows ROCm driver surface does not expose the Linux
+sysfs/perf counters that `rocm-smi` and friends read. Utilization and power
+telemetry simply isn't accessible from user space; this is a platform
+limitation, not a misconfiguration.
+
+**Fix.** Measure what *is* exposed. Use the torch API inside the workload:
+`torch.cuda.get_device_name()`, `mem_get_info()` / `memory_allocated()` for
+GPU-side memory, and a compute probe (e.g. matmul 4096³ → TFLOPS) as the
+"is the GPU healthy and working" signal. On Strix Halo's unified memory, use
+**system RAM as a proxy**: GPU allocations surface directly in RAM, so RAM
+deltas track GPU memory pressure. See
+[strix-halo-ai-max395.md](benchmarks/strix-halo-ai-max395.md) for the measured
+probe numbers and monitor degradation behavior.
+
+**Verify.** The probe script prints device name, device total/allocated MiB,
+and a sane TFLOPS number (~2.1–2.3 on Strix Halo); a sustained GPU allocation
+shows up as a matching system-RAM delta in the monitor log.
 
 ---
 
