@@ -86,6 +86,10 @@ on China networks; Step 2 (CDM environment) ~30 min (TeX Live is the bulk);
 Step 3 (adapter inference) depends on GPU (CPU ~hours, Radeon HIP ~tens of minutes);
 Step 4 (scoring) ~5 min (Edit_dist+TEDS) + ~20-30 min (CDM, per-formula LaTeX).
 
+Measured end-to-end timings and resource data from the reference machine
+(Ryzen AI MAX+ 395 + Radeon 8060S + 128 GB unified memory):
+[`docs/benchmarks/strix-halo-ai-max395.md`](docs/benchmarks/strix-halo-ai-max395.md).
+
 ### Quick Start
 
 For a real AMD Windows provisioning check without rerunning the accuracy
