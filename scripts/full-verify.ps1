@@ -66,7 +66,11 @@ param(
     [string] $PredictionDir = "",
     [string] $PredictionManifest = "",
     [string] $ScoreSaveName = "",
-    [string] $BenchmarkDir = ""
+    [string] $BenchmarkDir = "",
+    [int] $ExpectedPages = 0,
+    [double] $MinCoverage = 0.0,
+    [int] $MaxFailedPages = -1,
+    [switch] $RequireRunStatsSelected
 )
 $ErrorActionPreference = "Stop"
 
@@ -249,6 +253,37 @@ if ($SkipVlm) {
     } else {
         $predDir = Join-Path $rootDir $PredictionDir
     }
+    # Strict mode (formal reproduction profiles): delegate to
+    # verify_prediction_set.py with exact page counts, coverage and failed-page
+    # budgets. Default mode keeps the historical >=95% heuristic.
+    $strictCheck = ($ExpectedPages -gt 0) -or ($MinCoverage -gt 0.0) -or ($MaxFailedPages -ge 0) -or $RequireRunStatsSelected
+    if ($strictCheck) {
+        $manifestPath = if ([string]::IsNullOrWhiteSpace($PredictionManifest)) { "" } else { if ([System.IO.Path]::IsPathRooted($PredictionManifest)) { $PredictionManifest } else { Join-Path $rootDir $PredictionManifest } }
+        $pythonExe = Join-Path $rootDir ".venv\Scripts\python.exe"
+        if (-not (Test-Path $pythonExe)) { $pythonExe = "python" }
+        $verifyArgs = @("--pred-dir", $predDir)
+        if ($manifestPath -and (Test-Path -LiteralPath $manifestPath)) {
+            $verifyArgs += @("--manifest", $manifestPath)
+        }
+        $coverage = if ($MinCoverage -gt 0.0) { $MinCoverage } elseif ($ExpectedPages -gt 0) { 0.95 } else { 0.95 }
+        $verifyArgs += @("--min-coverage", "$coverage")
+        if ($ExpectedPages -gt 0) { $verifyArgs += @("--expected-pages", "$ExpectedPages") }
+        if ($MaxFailedPages -ge 0) { $verifyArgs += @("--max-failed-pages", "$MaxFailedPages") }
+        if ($RequireRunStatsSelected) { $verifyArgs += "--require-selected" }
+        $previousErrorActionPreference = $ErrorActionPreference
+        try {
+            $ErrorActionPreference = "Continue"
+            $out = & $pythonExe (Join-Path $rootDir "scripts\verify_prediction_set.py") @verifyArgs 2>&1
+            $verifyExit = $LASTEXITCODE
+        } finally {
+            $ErrorActionPreference = $previousErrorActionPreference
+        }
+        if ($verifyExit -eq 0) {
+            Add-Result "adapter predictions (strict)" "PASS" ((@($out) -join " | ").Trim())
+        } else {
+            Add-Result "adapter predictions (strict)" "FAIL" ((@($out) -join " | ").Trim())
+        }
+    } else {
     $count = 0
     if (Test-Path $predDir) {
         # @(): Get-ChildItem returns a scalar (not array) for one match on PS
@@ -286,6 +321,7 @@ if ($SkipVlm) {
         Add-Result "adapter predictions" "FAIL" "only $count .md (expected ~$expected, threshold $threshold) - re-run run_adapter.py"
     } else {
         Add-Result "adapter predictions" "FAIL" "none - run the adapter (adapters/paddleocr-vl-1.6/run_adapter.py)"
+    }
     }
 }
 
