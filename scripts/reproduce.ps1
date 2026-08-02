@@ -85,6 +85,11 @@ $windowsResult = $profile.WindowsResultPath
 $evidenceDir = $profile.EvidenceDir
 $pipelineCheckout = Join-Path $rootDir "outputs\checkouts\PaddleOCR-VL-ROCm"
 $stateFile = $profile.StateFile
+if ($DryRun) {
+    # Dry-run state must never clobber a real run's evidence: write to a
+    # distinct file so CI dry-run tests cannot destroy machine evidence.
+    $stateFile = Join-Path $evidenceDir "state.dryrun.json"
+}
 $saveName = $profile.SaveName
 $repoWsl = ""
 
@@ -224,8 +229,10 @@ if ($ForceInference -and -not $DryRun) {
         Write-Host "FORCE INFERENCE: removing $target" -ForegroundColor Yellow
         Remove-Item -LiteralPath $target -Recurse -Force -ErrorAction SilentlyContinue
     }
-    # Purge inference/scoring/verification stage records so they re-run.
+    # Purge inference/scoring/verification stage records so they re-run, and
+    # clear the fingerprint so a later -Resume re-checks against fresh inputs.
     $purgeIds = @("inference.run", "inference.prediction_check", "scoring.windows", "scoring.wsl_cdm", "verification.final", "evidence.pack", "inputs.fingerprint")
+    if (Test-Path -LiteralPath $fingerprintFile) { Remove-Item -LiteralPath $fingerprintFile -Force }
     $state.stages = @($state.stages | Where-Object { $purgeIds -notcontains $_.id })
     $completedStageIds = @($state.stages | Where-Object { $_.status -eq "passed" } | ForEach-Object { $_.id })
     Save-State
@@ -237,9 +244,6 @@ if (-not $Resume -and -not $DryRun) {
     if ($existingPredictions -gt 0 -or $ownedManifestExists -or (Test-Path -LiteralPath $windowsResult)) {
         throw "Existing $RunProfile artifacts found. Use -Resume to reuse them or -ForceInference to replace predictions after removing old score/manifest artifacts."
     }
-}
-if ($ForceInference -and (Test-Path -LiteralPath $predictionDir)) {
-    Remove-Item -LiteralPath $predictionDir -Recurse -Force
 }
 Save-State
 
@@ -320,12 +324,15 @@ Invoke-Stage -Id "inputs.fingerprint" -Name "Input fingerprint" -AlwaysRun {
         "--wsl-config", $profile.ConfigWslAbs,
         "--out", $fingerprintFile
     )
-    if ($Resume -and (Test-Path -LiteralPath $fingerprintFile)) {
+    if ($Resume -and -not $ForceInference) {
+        if (-not (Test-Path -LiteralPath $fingerprintFile)) {
+            throw "Resume requires a previous fingerprint at $fingerprintFile, but it is missing. Start a fresh run or use -ForceInference to reset the run inputs."
+        }
         $fpArgs += @("--check", $fingerprintFile)
     }
     & $python (Join-Path $rootDir "scripts\compute_fingerprint.py") @fpArgs
     if ($LASTEXITCODE -ne 0) { throw "Fingerprint check failed - inputs changed since the previous run" }
-} -Command "compute_fingerprint.py --out fingerprint.json$(if ($Resume) { ' --check fingerprint.json' })"
+} -Command "compute_fingerprint.py --out fingerprint.json$(if ($Resume -and -not $ForceInference) { ' --check fingerprint.json' })"
 
 function Get-RepoWslPath {
     # PowerShell -> wsl.exe argument passing eats backslashes, so convert the
@@ -458,9 +465,7 @@ Invoke-Stage -Id "scoring.wsl_cdm" -Name "WSL CDM scoring" {
     Assert-LastExit "WSL CDM scoring"
     & powershell -ExecutionPolicy Bypass -File (Join-Path $rootDir "eval-infra\03-scoring\verify.ps1") -WslOnly -RequireCdm -SaveName $saveName
     Assert-LastExit "WSL CDM score verify"
-    $wslHome = (wsl -d Ubuntu2204 -- sh -lc 'printf %s "$HOME"').Trim() -replace "`0", ""
-    if (-not $wslHome) { $wslHome = "/root" }
-    $wslResult = "\\wsl$\Ubuntu2204" + ($wslHome -replace "/", "\") + "\OmniDocBench\result\${saveName}_metric_result.json"
+    $wslResult = Get-WslResultPath -SaveName $saveName
     & powershell -ExecutionPolicy Bypass -File (Join-Path $rootDir "scripts\assert-metrics.ps1") `
         -MetricResult $wslResult `
         -Profile $profile.ProfilePath `
@@ -470,7 +475,7 @@ Invoke-Stage -Id "scoring.wsl_cdm" -Name "WSL CDM scoring" {
 } -Command "score-cdm.sh $($profile.wsl_cdm_config) $($profile.prediction_dir); verify -RequireCdm; assert-metrics.ps1"
 
 Invoke-Stage -Id "verification.final" -Name "Exact full verification" -AlwaysRun {
-    $verifyArgs = @("-PredictionDir", $predictionRel, "-PredictionManifest", $manifestRel, "-ScoreSaveName", $saveName, "-BenchmarkDir", "__no_benchmark_for_smoke__")
+    $verifyArgs = @("-PredictionDir", $predictionRel, "-PredictionManifest", $manifestRel, "-ScoreSaveName", $saveName)
     if ($profile.run_kind -eq "full") {
         $verifyArgs += @(
             "-ExpectedPages", "$($profile.expected_pages)",
@@ -489,9 +494,7 @@ Invoke-Stage -Id "evidence.pack" -Name "Evidence pack" -AlwaysRun {
         Write-HardwareJson -EvidenceDir $evidenceDir
         Write-ArtifactHashes -EvidenceDir $evidenceDir -Profile $profile -PipelineCheckout $pipelineCheckout -EnvFile (Join-Path $rootDir "adapters\paddleocr-vl-1.6\.env.local") | Out-Null
         Write-PredictionSummary -EvidenceDir $evidenceDir -PredictionDir $predictionDir -ExpectedPages $([int]$profile.expected_pages) | Out-Null
-        $wslHome = (wsl -d Ubuntu2204 -- sh -lc 'printf %s "$HOME"').Trim() -replace "`0", ""
-        if (-not $wslHome) { $wslHome = "/root" }
-        $wslResult = "\\wsl$\Ubuntu2204" + ($wslHome -replace "/", "\") + "\OmniDocBench\result\${saveName}_metric_result.json"
+        $wslResult = Get-WslResultPath -SaveName $saveName
         Write-MetricsSummary -EvidenceDir $evidenceDir -WindowsResult $windowsResult -WslResult $wslResult -SaveName $saveName | Out-Null
         $fingerprint = @{}
         if (Test-Path -LiteralPath $fingerprintFile) {

@@ -608,6 +608,14 @@ missing ROCm/CUDA runtime, or a stale `.env.local` pointing at a dead PID.
 and writes the URL + PID to `.env.local`. Check `logs/` for the server's
 stderr. For OOM, drop to a smaller quantization or reduce `--n-gpu-layers`.
 
+**One GPU, one HIP server.** Running two HIP `llama-server` instances
+concurrently on the same AMD GPU (e.g. an earlier profile's server left
+running while the next profile starts its own on a different port) can make
+the second one die silently during model load with no error line in the log
+— `setup.ps1` then reports "llama-server not ready after 5 minutes". Stop
+the leftover server first (`Stop-Process -Id <pid from logs/llama-server.pid>`)
+before starting the next profile's server.
+
 **Verify.** `curl <server-url>/health` (or the model's equivalent) returns 200
 before running the adapter. The adapter's `verify.ps1` does this.
 

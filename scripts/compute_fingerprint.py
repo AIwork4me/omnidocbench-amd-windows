@@ -8,7 +8,8 @@ Keys
 ----
 profile_sha256, upstream_lock_sha256, dataset_manifest_sha256,
 windows_scoring_config_sha256, wsl_cdm_config_sha256, pipeline_checkout_commit,
-repo_commit, repo_dirty (git status --porcelain non-empty)
+repo_commit, repo_dirty, repo_porcelain_sha256 (hash of `git status
+--porcelain`, so uncommitted edits are detected too)
 
 Heavy artifact bytes (GGUF, mmproj, layout ONNX) are pinned transitively by
 upstream_lock_sha256: verify-upstream-lock.ps1 re-verifies those files against
@@ -17,13 +18,14 @@ necessary nor cheaper than the lock check.
 
 CLI
 ---
---out <path>        write fingerprint.json
---check <path>      compare against a previously written fingerprint; exit 1
-                    and list every differing key
+--out <path>        write fingerprint.json (atomically, after --check)
+--check <path>      compare against a previously written fingerprint BEFORE
+                    any --out write; exit 1 and list every differing key
 --root <path>       repository root (default: parent of this script)
 --profile <path>    profile JSON (default: profiles/cpu-smoke-10.profile.json)
 --manifest <path>   dataset manifest (default: profile's prediction_manifest)
 --pipeline <path>   pipeline checkout dir (default: outputs/checkouts/PaddleOCR-VL-ROCm)
+--windows-config <path> / --wsl-config <path>: scoring config templates
 """
 from __future__ import annotations
 
@@ -31,6 +33,7 @@ import argparse
 import hashlib
 import json
 import subprocess
+import sys
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
@@ -66,6 +69,19 @@ def git_dirty(root: Path) -> bool:
     return result.returncode == 0 and bool(result.stdout.strip())
 
 
+def git_porcelain_hash(root: Path) -> str | None:
+    """Hash of `git status --porcelain` so uncommitted edits are detected even
+    when the tree was already dirty at the previous run."""
+    result = subprocess.run(
+        ["git", "-C", str(root), "status", "--porcelain"],
+        capture_output=True,
+        text=True,
+    )
+    if result.returncode != 0:
+        return None
+    return hashlib.sha256(result.stdout.encode("utf-8")).hexdigest()
+
+
 def build_fingerprint(
     root: Path,
     profile_path: Path,
@@ -82,6 +98,7 @@ def build_fingerprint(
         "pipeline_checkout_commit": None,
         "repo_commit": git_commit(root),
         "repo_dirty": git_dirty(root),
+        "repo_porcelain_sha256": git_porcelain_hash(root),
     }
     if (pipeline_dir / ".git").is_dir():
         fingerprint["pipeline_checkout_commit"] = git_commit(pipeline_dir)
@@ -121,25 +138,34 @@ def main() -> int:
         or root / "eval-infra" / "01-omnidocbench" / "configs" / "v16-cdm-cpu-smoke-10.yaml",
     ]
     current = build_fingerprint(root, profile_path, manifest_path, configs, pipeline_dir)
-    if args.out:
-        args.out.write_text(
-            json.dumps(current, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
-        )
-        print(f"Fingerprint written: {args.out}")
     if args.check:
+        # Read the PREVIOUS fingerprint BEFORE any --out write: when the same
+        # path is used for both, writing first would compare the file to itself
+        # and the gate would never fire.
         if not args.check.is_file():
-            print(f"FAIL: previous fingerprint not found: {args.check}", file=__import__("sys").stderr)
+            print(f"FAIL: previous fingerprint not found: {args.check}", file=sys.stderr)
             return 1
-        previous = json.loads(args.check.read_text(encoding="utf-8"))
+        try:
+            previous = json.loads(args.check.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError) as error:
+            print(f"FAIL: previous fingerprint is unreadable: {error}", file=sys.stderr)
+            return 1
         differing = compare_fingerprints(previous, current)
         if differing:
             print(
                 f"FAIL: fingerprint mismatch on: {', '.join(differing)}. "
                 "Start a fresh run or use -ForceInference.",
-                file=__import__("sys").stderr,
+                file=sys.stderr,
             )
             return 1
         print("Fingerprint check OK: inputs unchanged")
+    if args.out:
+        temp = args.out.with_name(args.out.name + ".tmp")
+        temp.write_text(
+            json.dumps(current, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
+        )
+        temp.replace(args.out)
+        print(f"Fingerprint written: {args.out}")
     return 0
 
 

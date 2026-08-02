@@ -152,6 +152,61 @@ def test_scoring_configs_exist_and_bind_to_profile():
         assert "CDM" in cdm_metrics, f"{name}: WSL config must enable CDM"
 
 
+def test_dotdot_path_components_are_rejected(tmp_path):
+    import subprocess
+
+    script = REPO_ROOT / "scripts" / "repro-profiles.ps1"
+    bad = tmp_path / "evil.profile.json"
+    bad.write_text(
+        json.dumps(
+            {
+                "schema_version": 1,
+                "name": "evil",
+                "description": "x",
+                "run_kind": "smoke",
+                "model": "m",
+                "adapter": "a",
+                "engine": "lightweight",
+                "variant": "cpu",
+                "expected_pages": 10,
+                "max_pages": 10,
+                "prediction_dir": "../../outside",
+                "prediction_manifest": "eval-infra/01-omnidocbench/data/OmniDocBench_cpu_smoke_10.json",
+                "owned_manifest": True,
+                "windows_scoring_config": "v16-cpu-smoke-10.yaml",
+                "wsl_cdm_config": "v16-cdm-cpu-smoke-10.yaml",
+                "score_save_name": "outside_quick_match",
+                "server_port": "9999",
+                "minimum_prediction_coverage": 1.0,
+                "maximum_failed_pages": 0,
+                "require_gpu_backend_proof": False,
+                "require_wsl_cdm": True,
+                "metric_thresholds": {
+                    "text_edit_dist_max": 0.6,
+                    "reading_order_edit_dist_max": 0.6,
+                    "teds_min": 0.0,
+                    "cdm_min": 0.0,
+                },
+                "expected_runtime_class": "minutes",
+            }
+        ),
+        encoding="utf-8",
+    )
+    loader = REPO_ROOT / "scripts" / "repro-profiles.ps1"
+    result = subprocess.run(
+        [
+            "powershell", "-NoProfile", "-ExecutionPolicy", "Bypass", "-Command",
+            f". '{loader}'; Resolve-ReproProfile -Path '{bad}'",
+        ],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    output = result.stdout + result.stderr
+    assert result.returncode != 0
+    assert ".." in output
+
+
 def run_reproduce(*args: str) -> subprocess.CompletedProcess:
     return subprocess.run(
         ["powershell", "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", str(REPRODUCE), *args],
@@ -192,3 +247,17 @@ def test_dry_run_succeeds_for_all_profiles_without_side_effects():
         assert profile["windows_scoring_config"] in output
         assert profile["wsl_cdm_config"] in output
         assert "DRY RUN OK" in output
+
+
+def test_dry_run_never_writes_real_state_json(tmp_path):
+    evidence_root = REPO_ROOT / "outputs" / "reproduction"
+    for name in EXPECTED_PROFILES:
+        state = evidence_root / name / "state.json"
+        dry_state = evidence_root / name / "state.dryrun.json"
+        if dry_state.exists():
+            dry_state.unlink()
+        before = state.stat().st_mtime_ns if state.exists() else None
+        run_reproduce("-Profile", name, "-DryRun")
+        after = state.stat().st_mtime_ns if state.exists() else None
+        assert before == after, f"{name}: -DryRun modified the real state.json"
+        assert dry_state.exists(), f"{name}: -DryRun did not write state.dryrun.json"

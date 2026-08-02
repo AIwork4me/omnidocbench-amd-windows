@@ -202,6 +202,23 @@ function Write-Report {
     return $reportPath
 }
 
+function Get-WslResultPath {
+    param([string] $SaveName, [string] $RepoRoot)
+    # Resolve the active Ubuntu2204 user's $HOME and build the UNC path to the
+    # WSL-scored metric result. Used by scoring and evidence stages so the WSL
+    # result location is derived in exactly one place.
+    $wslHome = ""
+    $previousErrorActionPreference = $ErrorActionPreference
+    try {
+        $ErrorActionPreference = "Continue"
+        $wslHome = ((@(wsl -d Ubuntu2204 -- sh -lc 'printf %s "$HOME"' 2>$null) -join "") -replace "`0", "").Trim()
+    } finally {
+        $ErrorActionPreference = $previousErrorActionPreference
+    }
+    if (-not $wslHome) { $wslHome = "/root" }
+    return "\\wsl$\Ubuntu2204" + ($wslHome -replace "/", "\") + "\OmniDocBench\result\${SaveName}_metric_result.json"
+}
+
 function Write-PredictionSummary {
     param([string] $EvidenceDir, [string] $PredictionDir, [int] $ExpectedPages)
     $summary = [ordered]@{

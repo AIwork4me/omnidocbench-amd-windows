@@ -107,6 +107,9 @@ function Assert-ReproProfileShape {
     if ($Profile.variant -eq "hip" -and -not $Profile.require_gpu_backend_proof) {
         $Errors.Add("${name}: HIP profile must set require_gpu_backend_proof = true")
     }
+    if ($Profile.require_gpu_backend_proof -and $Profile.variant -ne "hip") {
+        $Errors.Add("${name}: require_gpu_backend_proof = true requires variant hip (the backend proof only proves HIP)")
+    }
     if (-not (Test-ReproIsNumber $Profile.minimum_prediction_coverage) -or
         $Profile.minimum_prediction_coverage -le 0.0 -or $Profile.minimum_prediction_coverage -gt 1.0) {
         $Errors.Add("${name}: minimum_prediction_coverage must be in (0, 1]")
@@ -119,6 +122,7 @@ function Assert-ReproProfileShape {
         if ($value -eq "") { $Errors.Add("${name}: $field must not be empty") }
         elseif (Test-ReproIsAbsolutePath $value) { $Errors.Add("${name}: $field must be repo-relative (no absolute paths in committed profiles): $value") }
         elseif ($value -match "[\\]") { $Errors.Add("${name}: $field must use forward slashes") }
+        elseif ($value -match "(^|/)(\.\.)(/|$)") { $Errors.Add("${name}: $field must not contain '..' path components (scoped deletion guarantee): $value") }
     }
     if ($null -ne $Profile.PSObject.Properties["metric_thresholds"] -and $null -ne $Profile.metric_thresholds) {
         foreach ($key in @("text_edit_dist_max", "reading_order_edit_dist_max", "teds_min", "cdm_min")) {

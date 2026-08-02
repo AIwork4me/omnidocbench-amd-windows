@@ -49,6 +49,24 @@ def fingerprint_env(tmp_path):
     )
     lock = root / "upstream-lock.json"
     lock.write_text(json.dumps({"schema_version": 1, "verified_at": "x"}), encoding="utf-8")
+    (root / ".gitignore").write_text("fp.json\n", encoding="utf-8")
+    subprocess.run(["git", "-C", str(root), "init", "-q"], check=True, capture_output=True)
+    subprocess.run(
+        [
+            "git", "-C", str(root), "-c", "user.name=test", "-c", "user.email=test@example.com",
+            "add", "-A",
+        ],
+        check=True,
+        capture_output=True,
+    )
+    subprocess.run(
+        [
+            "git", "-C", str(root), "-c", "user.name=test", "-c", "user.email=test@example.com",
+            "commit", "-q", "-m", "seed",
+        ],
+        check=True,
+        capture_output=True,
+    )
     return root
 
 
@@ -140,14 +158,10 @@ def test_dirty_repo_flag_is_recorded(fingerprint_env, monkeypatch):
 
 
 def test_missing_pipeline_is_recorded_as_absent(fingerprint_env):
-    import shutil
-
-    def onerror(_func, _path, _info):
-        pass
-
-    shutil.rmtree(
-        fingerprint_env / "outputs" / "checkouts" / "PaddleOCR-VL-ROCm" / ".git",
-        onerror=onerror,
+    subprocess.run(
+        ["cmd", "/c", "rmdir", "/s", "/q", str(fingerprint_env / "outputs" / "checkouts" / "PaddleOCR-VL-ROCm" / ".git")],
+        capture_output=True,
+        check=False,
     )
     result = _run(fingerprint_env, "--out", str(fingerprint_env / "fp.json"))
     assert result.returncode == 0, result.stderr
@@ -158,3 +172,25 @@ def test_missing_pipeline_is_recorded_as_absent(fingerprint_env):
 def test_check_without_previous_file_fails(fingerprint_env):
     result = _run(fingerprint_env, "--check", str(fingerprint_env / "nope.json"))
     assert result.returncode != 0
+
+
+def test_same_path_out_and_check_detects_mismatch(fingerprint_env):
+    """Regression: --out and --check with the SAME path must compare against
+    the previous file, not the just-written one (the gate used to compare the
+    fingerprint to itself and always pass)."""
+    _run(fingerprint_env, "--out", str(fingerprint_env / "fp.json"))
+    profile = fingerprint_env / "scripts" / "profiles" / "cpu-smoke-10.profile.json"
+    data = json.loads(profile.read_text(encoding="utf-8"))
+    data["description"] = "changed before resume"
+    profile.write_text(json.dumps(data), encoding="utf-8")
+    result = _run(fingerprint_env, "--out", str(fingerprint_env / "fp.json"), "--check", str(fingerprint_env / "fp.json"))
+    assert result.returncode != 0
+    assert "profile_sha256" in result.stdout + result.stderr
+
+
+def test_porcelain_hash_detects_uncommitted_edits(fingerprint_env):
+    _run(fingerprint_env, "--out", str(fingerprint_env / "fp.json"))
+    (fingerprint_env / "scratch-uncommitted.txt").write_text("edit\n", encoding="utf-8")
+    result = _run(fingerprint_env, "--check", str(fingerprint_env / "fp.json"))
+    assert result.returncode != 0
+    assert "repo_porcelain_sha256" in result.stdout + result.stderr
