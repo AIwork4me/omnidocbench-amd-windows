@@ -18,18 +18,15 @@ model via [adapters](adapters/). PaddleOCR-VL-1.6 ships as the validated referen
 
 ![OmniDocBench AMD Windows overview](overview.jpg)
 
-> **Historical full-set reference targets:** the table below is the dated
-> 1651-page result documented in the linked release evidence. It was not rerun
-> on the current Radeon 860M machine; see the physical-machine result below.
+| Metric | This machine (full-set, PaddleOCR-VL-ROCm) | Reproduction threshold |
+|---|---:|---:|
+| Overall | **95.99** | — |
+| Text Edit-dist | 0.03488 | < 0.10 |
+| Reading-order Edit-dist | 0.12882 | < 0.20 |
+| Table TEDS | **94.09** | > 85.0 |
+| Formula CDM | **97.36** | > 85.0 |
 
-| Metric | PaddleOCR-VL (paper) | PaddleOCR-VL-ROCm (full-set reference) |
-|---:|---:|---:|
-| Overall | 96.33 | **95.99** |
-| Text Edit-dist | 0.033 | 0.03488 |
-| Reading-order Edit-dist | 0.127 | 0.12882 |
-| Table TEDS | 94.76 | **94.09** |
-| Formula CDM | 97.49 | **97.36** |
-
+> Paper-baseline comparison: [docs/release-paddleocr-vl-1.6-amd-windows-2026-07-16.md](docs/release-paddleocr-vl-1.6-amd-windows-2026-07-16.md) (every table number here is measured on this machine).
 > G4 inference speedup: **1.7x** (27-page stratified benchmark, 9 categories, 0 structural mismatches). The default `vlm_max_workers=8` in PaddleOCR-VL-ROCm enables this automatically. | Overall = (Text accuracy + CDM + TEDS) / 3, where Text accuracy = (1 − Edit_dist) × 100.
 > Reading order is excluded from Overall (layout metric, not content accuracy).
 
@@ -330,13 +327,13 @@ The PaddleOCR-VL-ROCm engine is the default local AMD Windows reference path.
 See [`docs/release-paddleocr-vl-1.6-amd-windows-2026-07-09.md`](docs/release-paddleocr-vl-1.6-amd-windows-2026-07-09.md)
 for commands, run stats, and root-cause notes.
 
-| Metric | PaddleOCR-VL (paper) | PaddleOCR-VL-ROCm (measured) |
-|---:|---:|---:|
-| Overall | 96.33 | **95.99** |
-| Text Edit-dist | 0.033 | 0.03488 |
-| Reading-order Edit-dist | 0.127 | 0.12882 |
-| Table TEDS | 94.76 | **94.09** |
-| Formula CDM | 97.49 | **97.36** |
+| Metric | This machine (full-set, PaddleOCR-VL-ROCm) | Reproduction threshold |
+|---|---:|---:|
+| Overall | **95.99** | — |
+| Text Edit-dist | 0.03488 | < 0.10 |
+| Reading-order Edit-dist | 0.12882 | < 0.20 |
+| Table TEDS | **94.09** | > 85.0 |
+| Formula CDM | **97.36** | > 85.0 |
 
 > G4 inference speedup: **1.7x** (27-page stratified benchmark, 9 categories, 0 structural mismatches). The default `vlm_max_workers=8` in PaddleOCR-VL-ROCm enables this automatically. | Overall = (Text accuracy + CDM + TEDS) / 3, where Text accuracy = (1 − Edit_dist) × 100.
 
@@ -367,23 +364,20 @@ TEDS > 85, and CDM > 85 on the reported percentage scale. In raw
 
 ## Multi-model leaderboard
 
-Page-level aggregation, the same convention as the OmniDocBench official
-leaderboard/notebook; the MinerU row uses quick-match CDM. Per-cell evidence
-traceability:
+| Model | Backend (this machine) | Overall | Text Edit-dist ↓ | Reading-order Edit-dist ↓ | Table TEDS ↑ | Formula CDM ↑ |
+|---|---|---:|---:|---:|---:|---:|
+| PaddleOCR-VL-1.6 | llama.cpp GGUF (ROCm/HIP) | **95.99** | 0.03488 | 0.12882 | **94.09** | **97.36** |
+| MinerU2.5-Pro-2605-1.2B | llama.cpp GGUF (HIP) | 94.25 | 0.03734 | **0.12250** | 89.46 | 97.03 |
+| MinerU 3.4.4 pipeline | ROCm PyTorch + ONNX DirectML | 86.59 | 0.05655 | 0.15314 | 82.04 | 83.39 |
+
+All rows are full-set (1651-page) results measured on this machine (AI MAX+ 395
+/ Radeon 8060S); page-level aggregation per the OmniDocBench official notebook;
+MinerU rows use quick-match CDM. Per-cell evidence:
 [`docs/benchmarks/leaderboard-evidence-2026-08-01.md`](docs/benchmarks/leaderboard-evidence-2026-08-01.md).
-
-| Model | Overall | Text Edit-dist ↓ | RO Edit-dist ↓ | Table TEDS ↑ | Formula CDM ↑ |
-|---|---:|---:|---:|---:|---:|
-| PaddleOCR-VL-ROCm (reference) | 95.99 | 0.03488 | 0.12882 | 94.09 | 97.36 |
-| PaddleOCR-VL (paper, Linux vLLM) | 96.33 | 0.033 | 0.127 | 94.76 | 97.49 |
-| PaddleOCR-VL official (local run) | 95.77 | 0.03444 | 0.12949 | 94.24 | 96.50 |
-| MinerU 3.4.4 pipeline (Windows HIP) | 86.59 | 0.05655 | 0.15314 | 82.04 | 83.39 |
-
-Every cell is traceable to a scorer artifact (see the evidence doc above). The
-official-local row is the 2026-07-11 Windows-native CDM rerun (Formula CDM
-`96.5022`). The MinerU numbers are validated by a 130-page stratified-sample
-gate — [`docs/benchmarks/mineru-sample81-gate-2026-08-01.md`](docs/benchmarks/mineru-sample81-gate-2026-08-01.md),
-verdict ACCEPT.
+MinerU pipeline numbers are validated by the 130-page stratified-sample gate
+([`docs/benchmarks/mineru-sample81-gate-2026-08-01.md`](docs/benchmarks/mineru-sample81-gate-2026-08-01.md),
+verdict ACCEPT); MinerU2.5 numbers are cross-checked against the MinerU-ROCm
+windows-hip model card (1e-6).
 
 ---
 

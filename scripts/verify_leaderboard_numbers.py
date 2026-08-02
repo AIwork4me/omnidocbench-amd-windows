@@ -9,10 +9,14 @@ Sources:
   (2026-07-11, see AGENTS.md "Latest local Windows-native official-engine CDM evidence")
 - MinerU 3.4.4 pipeline: model card JSON + quick_match metric_result JSON,
   plus the B2 gate doc verdict.
+- MinerU2.5-Pro llama.cpp (Windows full-set): in-repo quick_match metric_result
+  JSON cross-checked at 1e-6 against the MinerU-ROCm windows-hip card
+  metric_result JSON, plus the 1651-file predictions dir.
 
 Path resolution (precedence: CLI arg > env var > built-in default):
 - --mineru-rocm-repo / MINERU_ROCM_REPO: MinerU-ROCm checkout containing
-  model_card.pipeline.windows-hip.json
+  model_card.pipeline.windows-hip.json and
+  results/omnidocbench/v16/windows-hip/mineru2.5_v16_quick_match_cdm_metric_result.json
   (default: C:\\Users\\rocm\\Desktop\\MinerU-ROCm)
 - --paddleocr-rocm-repo / PADDLEOCR_ROCM_REPO: PaddleOCR-VL-ROCm checkout
   containing results/omnidocbench/v16/..._cdm.json
@@ -22,11 +26,13 @@ Skip/fail semantics:
 - Repo-internal README/doc checks (sections 1, 2, 5, 6) are MANDATORY: any
   failure exits 1.
 - External-artifact sections (3: official CDM JSON, 4: MinerU card + local
-  metric_result) are OPTIONAL: when an artifact file is absent the script
-  prints "SKIP <section>: <path> not found" and continues instead of failing.
-  The MinerU metric_result JSON lives inside this repo tree but is a
-  gitignored scorer artifact, so it is treated as optional too (absent on a
-  fresh clone).
+  metric_result, 7: MinerU2.5 card cross-check + predictions) are OPTIONAL:
+  when an artifact file is absent the script prints
+  "SKIP <section>: <path> not found" and continues instead of failing.
+  The MinerU/MinerU2.5 metric_result JSONs and the predictions tree live
+  inside this repo tree but are gitignored scorer artifacts, so they are
+  treated as optional too (absent on a fresh clone). When the artifacts are
+  present every assertion is fail-closed.
 - Exit 0 = every mandatory check passed AND at least one optional section ran.
 - Exit 1 = any mandatory check failed, OR every optional section skipped
   (nothing external was verified — point the flags/env vars at real checkouts).
@@ -46,6 +52,11 @@ MINERU_METRIC = (
     ROOT / "eval-infra" / "01-omnidocbench" / "OmniDocBench" / "result"
     / "mineru_pipeline_quick_match_metric_result.json"
 )
+MINERU25_METRIC = (
+    ROOT / "eval-infra" / "01-omnidocbench" / "OmniDocBench" / "result"
+    / "mineru2_5_llamacpp_windows_full1651_score_quick_match_metric_result.json"
+)
+MINERU25_PRED_DIR = ROOT / "predictions" / "mineru2_5_llamacpp_windows_full1651_score"
 
 DEFAULT_MINERU_REPO = Path(r"C:\Users\rocm\Desktop\MinerU-ROCm")
 DEFAULT_PADDLEOCR_REPO = Path(r"C:\Users\rocm\Desktop\PaddleOCR-VL-ROCm")
@@ -69,6 +80,10 @@ paddleocr_repo = args.paddleocr_rocm_repo or Path(
 )
 
 MINERU_CARD = mineru_repo / "model_card.pipeline.windows-hip.json"
+MINERU25_CARD = (
+    mineru_repo / "results" / "omnidocbench" / "v16" / "windows-hip"
+    / "mineru2.5_v16_quick_match_cdm_metric_result.json"
+)
 OFFICIAL_CDM_JSON = (
     paddleocr_repo / "results" / "omnidocbench" / "v16"
     / "paddleocr_official_local_llamacpp_gguf_quick_match_metric_result_cdm.json"
@@ -76,7 +91,7 @@ OFFICIAL_CDM_JSON = (
 
 failures = []
 skipped_optional = set()
-OPTIONAL_SECTIONS = {3, 4}
+OPTIONAL_SECTIONS = {3, 4, 7}
 
 
 def check(label, ok, detail=""):
@@ -170,8 +185,41 @@ for name in ("README.md", "README.zh-CN.md"):
     rows = ROW_RE.findall(text)
     tables[name] = [NUM_RE.findall(r) for r in rows]
     print(f"  {name} leaderboard rows: {tables[name]}")
-check("both READMEs have 4 leaderboard data rows", all(len(v) == 4 for v in tables.values()))
+check("both READMEs have 3 leaderboard data rows", all(len(v) == 3 for v in tables.values()))
 check("EN/ZH leaderboard numbers identical", tables["README.md"] == tables["README.zh-CN.md"])
+
+print("== 7. MinerU2.5-Pro llama.cpp (Windows full-set) <- in-repo metric_result vs MinerU-ROCm windows-hip card + 1651 predictions ==")
+missing7 = [p for p in (MINERU25_METRIC, MINERU25_CARD, MINERU25_PRED_DIR) if not p.exists()]
+for p in missing7:
+    skip(7, p)
+if not missing7:
+    local25 = json.loads(MINERU25_METRIC.read_text(encoding="utf-8"))
+    card25 = json.loads(MINERU25_CARD.read_text(encoding="utf-8"))
+
+    def mineru25_series(d):
+        return (
+            d["text_block"]["all"]["Edit_dist"]["ALL_page_avg"],
+            d["reading_order"]["all"]["Edit_dist"]["ALL_page_avg"],
+            d["table"]["all"]["TEDS"]["all"] * 100,
+            d["display_formula"]["all"]["CDM"]["all"] * 100,
+        )
+
+    l_text, l_ro, l_teds, l_cdm = mineru25_series(local25)
+    c_text, c_ro, c_teds, c_cdm = mineru25_series(card25)
+    l_overall = overall_of(l_text, l_teds, l_cdm)
+    print(f"  in-repo raw: text={l_text} ro={l_ro} teds={l_teds} cdm={l_cdm} overall={l_overall}")
+    close(l_text, c_text, 1e-6, "MinerU2.5 text Edit-dist: in-repo == card")
+    close(l_ro, c_ro, 1e-6, "MinerU2.5 RO Edit-dist: in-repo == card")
+    close(l_teds, c_teds, 1e-6, "MinerU2.5 TEDS: in-repo == card")
+    close(l_cdm, c_cdm, 1e-6, "MinerU2.5 CDM: in-repo == card")
+    close(0.03734, l_text, 5e-6, "MinerU2.5 text Edit-dist 0.03734")
+    close(0.12250, l_ro, 5e-6, "MinerU2.5 RO Edit-dist 0.12250")
+    close(89.46, l_teds, 0.005, "MinerU2.5 TEDS 89.46")
+    close(97.03, l_cdm, 0.005, "MinerU2.5 CDM 97.03")
+    close(94.25, l_overall, 0.005, "MinerU2.5 Overall 94.25")
+    md_count = len(list(MINERU25_PRED_DIR.glob("*.md")))
+    check("MinerU2.5 predictions dir contains 1651 .md files", md_count == 1651,
+          f"count={md_count}")
 
 print()
 if failures:

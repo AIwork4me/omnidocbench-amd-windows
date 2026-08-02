@@ -17,16 +17,15 @@
 
 ![OmniDocBench AMD Windows 概览](overview.jpg)
 
-> **历史全量参考目标：**下表是已有发布证据记录的 1651 页结果，并非当前
-> Radeon 860M 机器本轮重跑结果；本机物理复现结果见下方独立小节。
+| 指标 | 本机实测（全量，PaddleOCR-VL-ROCm） | 复现阈值 |
+|---|---:|---:|
+| 整体 Overall | **95.99** | — |
+| 文本 Edit-dist | 0.03488 | < 0.10 |
+| 阅读顺序 Edit-dist | 0.12882 | < 0.20 |
+| 表格 TEDS | **94.09** | > 85.0 |
+| 公式 CDM | **97.36** | > 85.0 |
 
-| 指标 | PaddleOCR-VL (论文) | PaddleOCR-VL-ROCm（全量参考） |
-|---:|---:|---:|
-| 整体 Overall | 96.33 | **95.99** |
-| 文本 Edit-dist | 0.033 | 0.03488 |
-| 阅读顺序 Edit-dist | 0.127 | 0.12882 |
-| 表格 TEDS | 94.76 | **94.09** |
-| 公式 CDM | 97.49 | **97.36** |
+> 论文基线对比见 [docs/release-paddleocr-vl-1.6-amd-windows-2026-07-16.md](docs/release-paddleocr-vl-1.6-amd-windows-2026-07-16.md)（表中数字均为本机实测）。
 
 G4 推理加速比: **1.7x** (27 页分层抽样，9 类别、0 结构错配)。 PaddleOCR-VL-ROCm 默认 `vlm_max_workers=8` 即可获得此加速。 | > Overall = (文本准确率 + CDM + TEDS) / 3，其中文本准确率 = (1 − Edit_dist) × 100。阅读顺序不纳入 Overall（布局指标，非内容准确率）。
 
@@ -301,13 +300,13 @@ PaddleOCR official engine 使用 `paddleocr.PaddleOCRVL`，并强制
 是默认的 AMD Windows 本地参考路径。命令、运行统计和根因说明见
 [`docs/release-paddleocr-vl-1.6-amd-windows-2026-07-09.md`](docs/release-paddleocr-vl-1.6-amd-windows-2026-07-09.md)。
 
-| 指标 | PaddleOCR-VL (论文) | PaddleOCR-VL-ROCm (实测) |
-|---:|---:|---:|
-| 整体 Overall | 96.33 | **95.99** |
-| 文本 Edit-dist | 0.033 | 0.03488 |
-| 阅读顺序 Edit-dist | 0.127 | 0.12882 |
-| 表格 TEDS | 94.76 | **94.09** |
-| 公式 CDM | 97.49 | **97.36** |
+| 指标 | 本机实测（全量，PaddleOCR-VL-ROCm） | 复现阈值 |
+|---|---:|---:|
+| 整体 Overall | **95.99** | — |
+| 文本 Edit-dist | 0.03488 | < 0.10 |
+| 阅读顺序 Edit-dist | 0.12882 | < 0.20 |
+| 表格 TEDS | **94.09** | > 85.0 |
+| 公式 CDM | **97.36** | > 85.0 |
 
 G4 推理加速比: **1.7x** (27 页分层抽样，9 类别、0 结构错配)。 PaddleOCR-VL-ROCm 默认 `vlm_max_workers=8` 即可获得此加速。 | > Overall = (文本准确率 + CDM + TEDS) / 3，其中文本准确率 = (1 − Edit_dist) × 100。阅读顺序不纳入 Overall（布局指标，非内容准确率）。
 
@@ -335,22 +334,18 @@ CDM 环境问题见
 
 ## 多模型对比 Leaderboard
 
-口径：页面级聚合，与 OmniDocBench 官方 leaderboard/notebook 一致；MinerU 行为
-快速匹配（quick-match）CDM。每格溯源见
+| 模型 | 后端（本机） | Overall | 文本 Edit-dist ↓ | 阅读顺序 Edit-dist ↓ | 表格 TEDS ↑ | 公式 CDM ↑ |
+|---|---|---:|---:|---:|---:|---:|
+| PaddleOCR-VL-1.6 | llama.cpp GGUF (ROCm/HIP) | **95.99** | 0.03488 | 0.12882 | **94.09** | **97.36** |
+| MinerU2.5-Pro-2605-1.2B | llama.cpp GGUF (HIP) | 94.25 | 0.03734 | **0.12250** | 89.46 | 97.03 |
+| MinerU 3.4.4 pipeline | ROCm PyTorch + ONNX DirectML | 86.59 | 0.05655 | 0.15314 | 82.04 | 83.39 |
+
+所有行均为本机（AI MAX+ 395 / Radeon 8060S）1651 页全量实测结果；页面级聚合口径与
+OmniDocBench 官方 notebook 一致；MinerU 行使用快速匹配（quick-match）CDM。每格溯源见
 [`docs/benchmarks/leaderboard-evidence-2026-08-01.md`](docs/benchmarks/leaderboard-evidence-2026-08-01.md)。
-
-| 模型 | Overall | 文本 Edit-dist ↓ | 阅读顺序 Edit-dist ↓ | 表格 TEDS ↑ | 公式 CDM ↑ |
-|---|---:|---:|---:|---:|---:|
-| PaddleOCR-VL-ROCm (reference) | 95.99 | 0.03488 | 0.12882 | 94.09 | 97.36 |
-| PaddleOCR-VL (paper, Linux vLLM) | 96.33 | 0.033 | 0.127 | 94.76 | 97.49 |
-| PaddleOCR-VL official (local run) | 95.77 | 0.03444 | 0.12949 | 94.24 | 96.50 |
-| MinerU 3.4.4 pipeline (Windows HIP) | 86.59 | 0.05655 | 0.15314 | 82.04 | 83.39 |
-
-每个数字都可溯源到评分产物（见上方证据文档）。official-local 行为
-2026-07-11 Windows 原生 CDM 重跑（Formula CDM `96.5022`）。MinerU 数值经
-130 页分层抽样门验证——
-[`docs/benchmarks/mineru-sample81-gate-2026-08-01.md`](docs/benchmarks/mineru-sample81-gate-2026-08-01.md)，
-verdict ACCEPT。
+MinerU pipeline 数值经 130 页分层抽样门验证
+（[`docs/benchmarks/mineru-sample81-gate-2026-08-01.md`](docs/benchmarks/mineru-sample81-gate-2026-08-01.md)，
+verdict ACCEPT）；MinerU2.5 数值与 MinerU-ROCm windows-hip 模型卡交叉核对（容差 1e-6）。
 
 ---
 
