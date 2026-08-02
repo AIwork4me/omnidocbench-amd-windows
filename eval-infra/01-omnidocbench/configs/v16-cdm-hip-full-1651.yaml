@@ -1,0 +1,16 @@
+# OmniDocBench v1.6 full-set (1651 pages) eval config WITH CDM for the
+# paddleocr-vl-hip-full-1651 reproduction profile (WSL reference CDM path).
+# Same manifest and prediction directory as v16-hip-full-1651.yaml so the WSL
+# CDM pass scores exactly the same pages as the Windows pass.
+end2end_eval:
+  metrics:
+    text_block:      { metric: [Edit_dist] }
+    display_formula: { metric: [Edit_dist, CDM], cdm_workers: 8 }
+    table:           { metric: [TEDS, Edit_dist], teds_workers: 16 }
+    reading_order:   { metric: [Edit_dist] }
+  dataset:
+    dataset_name: end2end_dataset
+    ground_truth: { data_path: <REPO_ROOT>/eval-infra/01-omnidocbench/data/OmniDocBench.json }
+    prediction:   { data_path: <REPO_ROOT>/predictions/paddleocrvl_hip_full_1651 }
+    match_method: quick_match
+    match_workers: 24

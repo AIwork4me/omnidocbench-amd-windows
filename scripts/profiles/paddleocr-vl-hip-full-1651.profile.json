@@ -1,0 +1,30 @@
+{
+  "schema_version": 1,
+  "name": "paddleocr-vl-hip-full-1651",
+  "description": "Formal full benchmark: PaddleOCR-VL-1.6 lightweight pipeline on the locked OmniDocBench v1.6 full set (1651 pages) with the HIP llama.cpp backend, all four standard metrics, mandatory WSL CDM, strict acceptance and a complete evidence pack.",
+  "run_kind": "full",
+  "model": "PaddleOCR-VL-1.6-GGUF",
+  "adapter": "paddleocr-vl-1.6",
+  "engine": "lightweight",
+  "variant": "hip",
+  "expected_pages": 1651,
+  "max_pages": null,
+  "prediction_dir": "predictions/paddleocrvl_hip_full_1651",
+  "prediction_manifest": "eval-infra/01-omnidocbench/data/OmniDocBench.json",
+  "owned_manifest": false,
+  "windows_scoring_config": "v16-hip-full-1651.yaml",
+  "wsl_cdm_config": "v16-cdm-hip-full-1651.yaml",
+  "score_save_name": "paddleocrvl_hip_full_1651_quick_match",
+  "server_port": "8123",
+  "minimum_prediction_coverage": 0.998,
+  "maximum_failed_pages": 2,
+  "require_gpu_backend_proof": true,
+  "require_wsl_cdm": true,
+  "metric_thresholds": {
+    "text_edit_dist_max": 0.1,
+    "reading_order_edit_dist_max": 0.2,
+    "teds_min": 0.85,
+    "cdm_min": 0.85
+  },
+  "expected_runtime_class": "hours"
+}

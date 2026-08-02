@@ -1,0 +1,30 @@
+{
+  "schema_version": 1,
+  "name": "cpu-smoke-10",
+  "description": "Low-cost CPU capability smoke: 10 fixed pages, Windows Edit-distance/TEDS plus WSL CDM. Provisioning evidence, not an accuracy benchmark.",
+  "run_kind": "smoke",
+  "model": "PaddleOCR-VL-1.6-GGUF",
+  "adapter": "paddleocr-vl-1.6",
+  "engine": "lightweight",
+  "variant": "cpu",
+  "expected_pages": 10,
+  "max_pages": 10,
+  "prediction_dir": "predictions/paddleocrvl_cpu_smoke_10",
+  "prediction_manifest": "eval-infra/01-omnidocbench/data/OmniDocBench_cpu_smoke_10.json",
+  "owned_manifest": true,
+  "windows_scoring_config": "v16-cpu-smoke-10.yaml",
+  "wsl_cdm_config": "v16-cdm-cpu-smoke-10.yaml",
+  "score_save_name": "paddleocrvl_cpu_smoke_10_quick_match",
+  "server_port": "8121",
+  "minimum_prediction_coverage": 1.0,
+  "maximum_failed_pages": 0,
+  "require_gpu_backend_proof": false,
+  "require_wsl_cdm": true,
+  "metric_thresholds": {
+    "text_edit_dist_max": 0.6,
+    "reading_order_edit_dist_max": 0.6,
+    "teds_min": 0.0,
+    "cdm_min": 0.0
+  },
+  "expected_runtime_class": "minutes"
+}

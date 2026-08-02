@@ -1,0 +1,14 @@
+# AMD Windows HIP capability smoke (10 pages, including Formula CDM).
+# Uses the exact same manifest/predictions as v16-hip-smoke-10.yaml.
+end2end_eval:
+  metrics:
+    text_block:      { metric: [Edit_dist] }
+    display_formula: { metric: [Edit_dist, CDM], cdm_workers: 4 }
+    table:           { metric: [TEDS, Edit_dist], teds_workers: 1 }
+    reading_order:   { metric: [Edit_dist] }
+  dataset:
+    dataset_name: end2end_dataset
+    ground_truth: { data_path: <REPO_ROOT>/eval-infra/01-omnidocbench/data/OmniDocBench_hip_smoke_10.json }
+    prediction:   { data_path: <REPO_ROOT>/predictions/paddleocrvl_hip_smoke_10 }
+    match_method: quick_match
+    match_workers: 1
