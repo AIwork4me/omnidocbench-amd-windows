@@ -2,15 +2,23 @@
 # paddleocr-vl-hip-full-1651 reproduction profile (WSL reference CDM path).
 # Same manifest and prediction directory as v16-hip-full-1651.yaml so the WSL
 # CDM pass scores exactly the same pages as the Windows pass.
+#
+# match_workers/teds_workers are 1 (not the Windows 24/16): on WSL/Linux,
+# multiprocessing uses fork, and a worker that forks again for
+# latex_to_text_with_timeout while filelock threads hold descriptors crashes
+# with "can only join a started process" (os.fork unsafe while filelock is
+# changing descriptor ownership). match_workers=1 is the WSL-proven value from
+# the v16-cdm-cpu-200 reference run. Worker counts never change scores, only
+# speed.
 end2end_eval:
   metrics:
     text_block:      { metric: [Edit_dist] }
     display_formula: { metric: [Edit_dist, CDM], cdm_workers: 8 }
-    table:           { metric: [TEDS, Edit_dist], teds_workers: 16 }
+    table:           { metric: [TEDS, Edit_dist], teds_workers: 1 }
     reading_order:   { metric: [Edit_dist] }
   dataset:
     dataset_name: end2end_dataset
     ground_truth: { data_path: <REPO_ROOT>/eval-infra/01-omnidocbench/data/OmniDocBench.json }
     prediction:   { data_path: <REPO_ROOT>/predictions/paddleocrvl_hip_full_1651 }
     match_method: quick_match
-    match_workers: 24
+    match_workers: 1

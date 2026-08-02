@@ -30,6 +30,7 @@ relevant entry first.
 - [CDM code uses POSIX shell commands](#posix)
 - [Ubuntu texlive lacks CJK.sty / gkaiu](#texlive-cjk)
 - [Two TeX Live trees disagree](#two-texlive-trees)
+- [WSL CDM fork-in-fork crash](#wsl-fork-fork)
 - [PYTHONUTF8 / Windows codepage corruption](#pythonutf8)
 - [Layout (ONNX) model not found](#layout)
 - [VLM server 500 errors](#vlm)
@@ -592,12 +593,41 @@ scoring.
 
 ---
 
+<a id="wsl-fork-fork"></a>
+## #wsl-fork-fork — WSL CDM scoring crashes: "can only join a started process"
+
+**Symptom.** `score-cdm.sh` on the full 1651-page set crashes mid-run (often
+around 82% of "Matching pages") with
+`AssertionError: can only join a started process` from
+`multiprocessing/process.py` in `_latex_to_text_with_timeout`, preceded by
+`WARNING: os.fork is unsafe while filelock is changing descriptor ownership`.
+
+**Root cause.** On WSL/Linux, `multiprocessing` uses the fork start method. The
+formula matching phase runs `match_workers` workers; a worker that itself forks
+a `latex_to_text_with_timeout` subprocess while another thread holds a
+`filelock` descriptor produces a broken child, and the subsequent
+`process.join()` asserts on a never-started process. It is a race: the same
+run can pass or fail (observed ~50% failure at 1651 pages with
+`match_workers: 24`). Windows-native scoring uses spawn and never hits this.
+
+**Fix.** Use `match_workers: 1` (and `teds_workers: 1`) in the WSL CDM scoring
+config — the value proven by the v16-cdm-cpu-200 WSL reference run. Worker
+counts never change scores, only speed; single-worker matching is slower but
+deterministic and crash-free. Keep high worker counts only in the
+Windows-native scoring configs.
+
+**Verify.** `score-cdm.sh` completes the full 1651-page run without the
+AssertionError; the WSL result's shared metrics equal the Windows result's
+(delta 0.0) apart from documented quick-match timeout fallbacks.
+
+**If you skip it.** Flaky ~50% crashes 16+ minutes into every full WSL CDM
+scoring run; retries eventually succeed but waste time and look like
+environment corruption.
+
+---
+
 <a id="vlm"></a>
 ## #vlm — VLM server startup failures / 500 errors
-
-**Symptom.** An adapter's `run_adapter.py` gets HTTP 500 (or connection
-refused) from the VLM server. Or the server fails to start with a CUDA / ROCm
-/ OOM error.
 
 **Root cause.** Most commonly: the server wasn't started, started on a
 different port than the adapter points at, or crashed mid-run (OOM). For
