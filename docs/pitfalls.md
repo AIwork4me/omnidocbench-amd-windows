@@ -503,6 +503,44 @@ invoked `pdflatex`. Step 8 of setup copies the OmniDocBench code into
 
 ---
 
+<a id="wsl-tlpdb-lock"></a>
+## #wsl-tlpdb-lock — TeX Live package database differs from upstream-lock.json
+
+**Symptom.** `setup.sh` step 2 prints
+`✗ FAILED: TeX Live package database size differs from upstream-lock.json`
+(and `verify.sh` prints `FAIL: TeX Live lock size/SHA mismatch`), even though
+`pdflatex` exists and CDM pipelines compile fine by hand.
+
+**Root cause.** `upstream-lock.json` pins the WSL TL2026
+`/usr/local/texlive/2026/tlpkg/texlive.tlpdb` by size + SHA-256. The tlpdb is
+snapshot-specific: it changes with every `tlmgr` install/remove/update and
+with the install-tl profile. A re-install with a different profile (e.g. a
+`scheme-infraonly` run on top of a full tree) replaces the tlpdb with a much
+smaller database while leaving the installed package files intact — the tree
+looks broken to the lock but still compiles. Live CTAN mirrors cannot
+reproduce a historical tlpdb (no reachable snapshot archives).
+
+**Fix.** Decide whether the tree is functionally correct first, then re-lock
+with evidence (see `docs/upstream-lock.md` "2026-08-02 update"):
+1. Restore the tlpdb to the installed-package state from tlmgr's backup
+   (`texlive.tlpdb.main.<hash>` in the same directory) if one exists.
+2. Re-sync `/root/odb-venv` to `requirements.lock.txt`
+   (`pip install --require-hashes -r ... -i <working index>`).
+3. Run the CDM end-to-end verify manually (CJK compile → PDF → color PNG →
+   CDM F1 > 0.5) — the `verify.sh` standard without the tlpdb gate.
+4. Update `wsl_cdm` in `upstream-lock.json` (tlpdb bytes/SHA, tlmgr revision)
+   and record the evidence in `docs/upstream-lock.md`; never replace a hash
+   just because a mirror served different bytes.
+
+**Verify.** `eval-infra/02-cdm-environment/verify.sh` prints `VERIFY OK`;
+`reproduce.ps1` passes `cdm.wsl_environment` and WSL CDM scoring yields a
+positive CDM score.
+
+**If you skip it.** The WSL CDM stage fails closed forever on that machine;
+the failure is by design (fail-closed on mismatched content), not a bug.
+
+---
+
 <a id="pythonutf8"></a>
 ## #pythonutf8 — Windows codepage corrupts JSON / LaTeX I/O
 
