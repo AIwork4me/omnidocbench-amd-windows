@@ -59,7 +59,7 @@ def test_compare_predictions_detects_byte_diffs(tmp_path):
     # c.md missing in fresh
     diffs = module.compare_predictions(stored, fresh, ["a", "b", "c"])
     issues = [d["issue"] for d in diffs]
-    assert issues == ["bytes differ", "fresh prediction missing"]
+    assert issues == ["content differs", "fresh prediction missing"]
 
 
 def test_compare_predictions_handles_empty_files(tmp_path):
@@ -71,6 +71,31 @@ def test_compare_predictions_handles_empty_files(tmp_path):
     (stored / "empty.md").write_text("", encoding="utf-8")
     (fresh / "empty.md").write_text("", encoding="utf-8")
     assert module.compare_predictions(stored, fresh, ["empty"]) == []
+
+
+def test_glyph_level_variance_is_equivalent(tmp_path):
+    """Model outputs are not byte-reproducible across runs; bullet/quote
+    glyph variants are content-equivalent and must pass."""
+    module = load_module()
+    stored = tmp_path / "stored"
+    fresh = tmp_path / "fresh"
+    stored.mkdir()
+    fresh.mkdir()
+    (stored / "p.md").write_text("- Have taught CS courses\n", encoding="utf-8")
+    (fresh / "p.md").write_text("– Have taught CS courses\n", encoding="utf-8")
+    assert module.compare_predictions(stored, fresh, ["p"]) == []
+
+
+def test_substantial_content_change_is_not_equivalent(tmp_path):
+    module = load_module()
+    stored = tmp_path / "stored"
+    fresh = tmp_path / "fresh"
+    stored.mkdir()
+    fresh.mkdir()
+    (stored / "p.md").write_text("The quick brown fox jumps over the lazy dog.\n", encoding="utf-8")
+    (fresh / "p.md").write_text("Totally different paragraph about something else entirely.\n", encoding="utf-8")
+    diffs = module.compare_predictions(stored, fresh, ["p"])
+    assert diffs and diffs[0]["issue"] == "content differs"
 
 
 def test_build_sample_image_dir_copies_expected_images(tmp_path):
