@@ -99,7 +99,7 @@ if (Test-Path $envFile) {
     }
 } else {
     Write-Host "WARN: mirrors.env not found at $envFile; using defaults." -ForegroundColor Yellow
-    Write-Host "      Run scripts/detect-mirrors.ps1 first for a China-firewall-aware setup." -ForegroundColor Yellow
+    Write-Host "      Run scripts/detect-mirrors.ps1 first for a mirror-aware setup." -ForegroundColor Yellow
 }
 $githubBase = if ($cfg["GITHUB_BASE"]) { $cfg["GITHUB_BASE"] } else { "https://github.com" }
 $hfOrMs    = if ($cfg["HF_OR_MS"])    { $cfg["HF_OR_MS"] }    else { "modelscope" }

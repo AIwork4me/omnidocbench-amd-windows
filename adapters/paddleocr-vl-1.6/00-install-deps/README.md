@@ -56,6 +56,6 @@ provisioning steps:
 ## Notes
 
 - `setup.ps1` reads `mirrors.env` (from `scripts/detect-mirrors.ps1`) for
-  `GITHUB_BASE` and `PYPI_INDEX`, so it works behind the China firewall.
+  `GITHUB_BASE` and `PYPI_INDEX`, so it works on restrictive networks.
 - Editable (`-e`) install means edits to the PaddleOCR-VL-ROCm checkout are
   picked up immediately — useful when iterating on the pipeline.

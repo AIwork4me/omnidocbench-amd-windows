@@ -44,9 +44,9 @@ CDM 的工作原理是这样的：它把公式 LaTeX 里的每个 token 染成�
 
 | 坑 | 症状 | 根因 |
 |---|---|---|
-| **GitHub 不可达** | `git clone` 超时 | 国内网络封锁，需用 gitclone/ghproxy 镜像 |
+| **GitHub 不可达** | `git clone` 超时 | 网络受限环境，需用镜像加速 |
 | **HuggingFace 不可达** | 模型/数据集下载失败 | 需改用 ModelScope（魔搭社区） |
-| **WSL 商店被墙** | `wsl --install` 失败 | `raw.githubusercontent.com` 不通，需手动导入 rootfs |
+| **WSL 商店不可达** | `wsl --install` 失败 | `raw.githubusercontent.com` 不通，需手动导入 rootfs |
 | **历史坑：原版 OmniDocBench CDM shell 命令** | 原始命令在 Windows 上会失败 | 原版实现依赖 POSIX shell；当前 repo 通过 `windows-cdm.patch` + `verify-windows.ps1` 支持原生 Windows CDM，但必须先确认本机原生 TeX Live/ImageMagick/Ghostscript 验证通过；WSL 仍是兼容性/参考路径 |
 | **ImageMagick 6 灰度** | CDM F1=0（另一个原因） | IM6 把彩色公式 PNG 渲染成灰度，颜色信息丢失 |
 | **`\mathcolor` 黑色** | CDM F1=0（最隐蔽的原因） | TL2026 的 `\mathcolor` 渲染黑色但无报错 |

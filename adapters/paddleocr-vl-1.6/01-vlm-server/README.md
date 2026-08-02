@@ -74,4 +74,4 @@ parameter sweep in the source project):
   llama.cpp `hip` asset. On non-AMD hardware use `-Variant cpu` (slower but
   functional).
 - `setup.ps1` reads `mirrors.env` (from `scripts/detect-mirrors.ps1`) for
-  `GITHUB_BASE` and `HF_OR_MS`, so it works behind the China firewall.
+  `GITHUB_BASE` and `HF_OR_MS`, so it works on restrictive networks.

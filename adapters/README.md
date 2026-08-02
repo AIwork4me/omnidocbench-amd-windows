@@ -75,7 +75,7 @@ The `_template/README.md` has the same recipe with more detail; the
   `run_adapter.py` reads them for defaults. `.env.local` is gitignored.
 - **`mirrors.env`-aware**: setup scripts read `$repoRoot\mirrors.env` (from
   `scripts/detect-mirrors.ps1`) for `GITHUB_BASE` / `HF_OR_MS` so downloads
-  work behind the China firewall. Fall back to public defaults with a warning.
+  work on restrictive networks. Fall back to public defaults with a warning.
 - **Windows PowerShell 5.1 compatible**: no pwsh-only syntax (no ternary
   operators, no `??`, no 3-arg `Join-Path`). The repo targets Windows 11 with
   the in-box PS 5.1.

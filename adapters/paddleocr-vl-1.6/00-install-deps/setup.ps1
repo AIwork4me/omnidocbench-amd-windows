@@ -49,7 +49,7 @@ if (-not (Test-Path -LiteralPath $lockFile)) { throw "Upstream lock missing: $lo
 $upstreamLock = Get-Content -Raw -Encoding UTF8 -LiteralPath $lockFile | ConvertFrom-Json
 $pipelineCommit = [string]$upstreamLock.git.paddleocr_vl_rocm.commit
 
-# --- mirrors.env (GITHUB_BASE; respects China-firewall proxies) ---
+# --- mirrors.env (GITHUB_BASE; respects mirror proxies) ---
 $mirrorsFile = Join-Path $repoRoot "mirrors.env"
 $mirrors = @{}
 if (Test-Path $mirrorsFile) {

@@ -267,8 +267,8 @@ agent that reads `AGENTS.md`** at this repo and say "按 AGENTS.md 搭建" /
 
 ## Why this repo exists
 
-Bringing OmniDocBench v1.6 up on AMD Windows hits 20+ landmines: China-firewall
-network blocks, WSL Store blocked, `\mathcolor` rendering black, ImageMagick 6
+Bringing OmniDocBench v1.6 up on AMD Windows hits 20+ landmines: restrictive
+networks and mirror hunting, WSL Store unavailable, `\mathcolor` rendering black, ImageMagick 6
 flattening color formulas to grayscale, two TeX Live trees disagreeing, Windows
 codepage corrupting CJK JSON, and more. This repo distills every fix into
 **idempotent scripts** plus a **symptom-indexed knowledge base** and an

@@ -17,7 +17,7 @@ Conventions used by the rest of this repo (match them so ``full-verify.ps1``
 can chain your verify step):
   - Idempotent: re-running after success is a no-op (or resumes a partial run).
   - Reads ``$repoRoot\mirrors.env`` for GITHUB_BASE / HF_OR_MS so downloads are
-    China-firewall-aware.
+    mirror-aware.
   - Writes machine-local paths to a gitignored env file (``.env.local``), never
     to committed code.
   - ``$ErrorActionPreference = "Stop"``; throws on failure.

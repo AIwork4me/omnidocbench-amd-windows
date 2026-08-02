@@ -44,7 +44,7 @@ relevant entry first.
 
 **Symptom.** Downloads hang, time out, or fail with `Connection refused` /
 `Could not resolve host` for `github.com`, `huggingface.co`, `mirror.ctan.org`,
-or the Microsoft Store. Common behind the China firewall but also on
+or the Microsoft Store. Common on restrictive or
 corporate networks.
 
 **Root cause.** Direct egress to those hosts is blocked or throttled. There is

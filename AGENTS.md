@@ -23,7 +23,7 @@ matter of writing one adapter (see `adapters/_template/`). The infra is
 model-agnostic; only `adapters/` is per-model.
 
 The repo exists because the naive path hits 20+ landmines on AMD Windows
-(China-firewall network, WSL Store blocked, `\mathcolor` rendering black,
+(restrictive networks, WSL Store unavailable, `\mathcolor` rendering black,
 ImageMagick 6 flattening color to grayscale, two TeX Live trees disagreeing,
 …). `eval-infra/02-cdm-environment/` distills the fixes into idempotent
 scripts; `docs/pitfalls.md` records the debugging.

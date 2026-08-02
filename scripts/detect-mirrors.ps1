@@ -1,6 +1,6 @@
 <#
 .SYNOPSIS
-Detects available mirrors for OmniDocBench setup (China-firewall-aware).
+Detects available mirrors for OmniDocBench setup (mirror-aware).
 Outputs mirrors.env with source URLs for all downstream scripts.
 #>
 $ErrorActionPreference = "Stop"

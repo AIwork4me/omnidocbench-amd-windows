@@ -55,7 +55,7 @@ PaddleOCR-VL 官方引擎对比（official-local Formula CDM `96.5022`；1 个�
 | Python 环境 | [uv](https://docs.astral.sh/uv/) | 最新稳定版 |
 | PowerShell | Windows PowerShell 5.1（自带）或 PowerShell 7+ | 同左 |
 
-全量 1651 页运行的时间估算：步骤 1（数据集下载）国内网络约 15-20 分钟；步骤 2（CDM 环境）约 30 分钟（TeX Live 是大头）；步骤 3（适配器推理）取决于 GPU（CPU 数小时，Radeon HIP 数十分钟）；步骤 4（评分）约 5 分钟（Edit_dist+TEDS）+ 20-30 分钟（CDM，每条公式都要跑 LaTeX）。
+全量 1651 页运行的时间估算：步骤 1（数据集下载）较慢网络下约 15-20 分钟；步骤 2（CDM 环境）约 30 分钟（TeX Live 是大头）；步骤 3（适配器推理）取决于 GPU（CPU 数小时，Radeon HIP 数十分钟）；步骤 4（评分）约 5 分钟（Edit_dist+TEDS）+ 20-30 分钟（CDM，每条公式都要跑 LaTeX）。
 
 参考机型（Ryzen AI MAX+ 395 + Radeon 8060S + 128 GB 统一内存）的实测全链路耗时与资源占用数据见
 [`docs/benchmarks/strix-halo-ai-max395.md`](docs/benchmarks/strix-halo-ai-max395.md)。
@@ -246,7 +246,7 @@ TeX Live、ImageMagick 和 Ghostscript。WSL CDM 仍保留为兼容和 reference
 
 ## 这个 repo 为什么存在
 
-在 AMD Windows 上跑通 OmniDocBench v1.6 会踩 20+ 个坑：国内网络封锁、WSL 商店被墙、`\mathcolor` 渲染成黑色、ImageMagick 6 把彩色公式渲染成灰度、两个 TeX Live 树互相打架、Windows 代码页把 CJK 的 JSON 弄乱，等等。本 repo 把每个修复都固化成**幂等脚本** + **按症状索引的知识库** + **AI-agent 编排文件**，让下一个人（或 agent）能直接复刻，不用重新调试。
+在 AMD Windows 上跑通 OmniDocBench v1.6 会踩 20+ 个坑：网络受限需寻找可用镜像、WSL 商店不可达、`\mathcolor` 渲染成黑色、ImageMagick 6 把彩色公式渲染成灰度、两个 TeX Live 树互相打架、Windows 代码页把 CJK 的 JSON 弄乱，等等。本 repo 把每个修复都固化成**幂等脚本** + **按症状索引的知识库** + **AI-agent 编排文件**，让下一个人（或 agent）能直接复刻，不用重新调试。
 
 ---
 
@@ -267,7 +267,7 @@ adapters/          ← 模型相关，每个模型一个目录
 
 scripts/           ← 跨模块工具
   detect-mirrors.ps1  探测可达镜像 → 写入 mirrors.env
-  wsl-ensure.ps1      保证有一个 WSL Ubuntu 22.04 实例（处理商店被墙的情况）
+  wsl-ensure.ps1      保证有一个 WSL Ubuntu 22.04 实例（处理商店不可达的情况）
   full-verify.ps1     按依赖顺序串起所有 verify 脚本
 
 docs/
