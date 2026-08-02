@@ -367,7 +367,7 @@ TEDS > 85, and CDM > 85 on the reported percentage scale. In raw
 | Model | Backend (this machine) | Overall | Text Edit-dist ↓ | Reading-order Edit-dist ↓ | Table TEDS ↑ | Formula CDM ↑ |
 |---|---|---:|---:|---:|---:|---:|
 | PaddleOCR-VL-1.6 | llama.cpp GGUF (ROCm/HIP) | **95.99** | 0.03488 | 0.12882 | **94.09** | **97.36** |
-| MinerU2.5-Pro-2605-1.2B | llama.cpp GGUF (HIP) | 94.25 | 0.03734 | **0.12250** | 89.46 | 97.03 |
+| MinerU2.5-Pro-2605-1.2B | llama.cpp GGUF (HIP) | 95.46 | 0.03734 | **0.12250** | 93.11 | 97.01 |
 | MinerU 3.4.4 pipeline | ROCm PyTorch + ONNX DirectML | 86.59 | 0.05655 | 0.15314 | 82.04 | 83.39 |
 
 All rows are full-set (1651-page) results measured on this machine (AI MAX+ 395

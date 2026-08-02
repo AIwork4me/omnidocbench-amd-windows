@@ -337,7 +337,7 @@ CDM 环境问题见
 | 模型 | 后端（本机） | Overall | 文本 Edit-dist ↓ | 阅读顺序 Edit-dist ↓ | 表格 TEDS ↑ | 公式 CDM ↑ |
 |---|---|---:|---:|---:|---:|---:|
 | PaddleOCR-VL-1.6 | llama.cpp GGUF (ROCm/HIP) | **95.99** | 0.03488 | 0.12882 | **94.09** | **97.36** |
-| MinerU2.5-Pro-2605-1.2B | llama.cpp GGUF (HIP) | 94.25 | 0.03734 | **0.12250** | 89.46 | 97.03 |
+| MinerU2.5-Pro-2605-1.2B | llama.cpp GGUF (HIP) | 95.46 | 0.03734 | **0.12250** | 93.11 | 97.01 |
 | MinerU 3.4.4 pipeline | ROCm PyTorch + ONNX DirectML | 86.59 | 0.05655 | 0.15314 | 82.04 | 83.39 |
 
 所有行均为本机（AI MAX+ 395 / Radeon 8060S）1651 页全量实测结果；页面级聚合口径与

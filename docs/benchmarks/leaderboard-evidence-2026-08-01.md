@@ -13,21 +13,20 @@ official-local row were removed from the README tables and retired to the
 row was added after the acceptance cross-check recorded in "Row 2".
 
 Aggregation convention: OmniDocBench official leaderboard/notebook page-level
-aggregation (`tools/generate_result_tables.ipynb` overall cell) —
-text/reading-order use `all.Edit_dist.ALL_page_avg`, TEDS/CDM use
-`page.*.ALL × 100`; Overall = ((1 − text Edit-dist) × 100 + TEDS + CDM) / 3.
-The MinerU rows use quick-match CDM. Exception, per the 2026-08-02 user
-directive: the MinerU2.5 row takes TEDS/CDM from `all.TEDS.all × 100` /
-`all.CDM.all × 100` (the raw all-values pinned by the 1e-6 cross-check against
-the MinerU-ROCm windows-hip card); the notebook page-level readout of the same
-JSON is recorded in the Row 2 section for transparency.
+aggregation (`tools/generate_result_tables.ipynb` overall cell), the repo
+convention per `AGENTS.md` — text/reading-order use
+`all.Edit_dist.ALL_page_avg`, TEDS/CDM use `page.*.ALL × 100`; Overall =
+((1 − text Edit-dist) × 100 + TEDS + CDM) / 3. The MinerU rows use
+quick-match CDM. Where a JSON's pooled `all.*.all` readout differs from the
+published page-level value, the pooled figure is recorded in the row's
+transparency note.
 
 ## Published table
 
 | Model | Backend (this machine) | Overall | Text Edit-dist ↓ | Reading-order Edit-dist ↓ | Table TEDS ↑ | Formula CDM ↑ |
 |---|---|---:|---:|---:|---:|---:|
 | PaddleOCR-VL-1.6 | llama.cpp GGUF (ROCm/HIP) | **95.99** | 0.03488 | 0.12882 | **94.09** | **97.36** |
-| MinerU2.5-Pro-2605-1.2B | llama.cpp GGUF (HIP) | 94.25 | 0.03734 | **0.12250** | 89.46 | 97.03 |
+| MinerU2.5-Pro-2605-1.2B | llama.cpp GGUF (HIP) | 95.46 | 0.03734 | **0.12250** | 93.11 | 97.01 |
 | MinerU 3.4.4 pipeline | ROCm PyTorch + ONNX DirectML | 86.59 | 0.05655 | 0.15314 | 82.04 | 83.39 |
 
 ## Row 1 — PaddleOCR-VL-1.6 (llama.cpp GGUF, ROCm/HIP)
@@ -67,17 +66,18 @@ Sources:
 
 | cell | published | raw value | JSON key |
 |---|---:|---:|---|
-| Overall | 94.25 | 94.25257924819401 | computed: ((1 − text) × 100 + TEDS + CDM) / 3 |
+| Overall | 95.46 | 95.45962930130925 | computed: ((1 − text) × 100 + TEDS + CDM) / 3 |
 | Text Edit-dist | 0.03734 | 0.037344865867471884 | `text_block.all.Edit_dist.ALL_page_avg` |
 | RO Edit-dist | 0.12250 | 0.12250478392812687 | `reading_order.all.Edit_dist.ALL_page_avg` |
-| Table TEDS | 89.46 | 89.46314269867609 | `table.all.TEDS.all × 100` |
-| Formula CDM | 97.03 | 97.02908163265312 | `display_formula.all.CDM.all × 100` |
+| Table TEDS | 93.11 | 93.1054371724098 | `table.page.TEDS.ALL × 100` |
+| Formula CDM | 97.01 | 97.00793731826515 | `display_formula.page.CDM.ALL × 100` |
 
-Transparency note: the official-notebook page-level readout of the same JSON
-(`table.page.TEDS.ALL × 100`, `display_formula.page.CDM.ALL × 100`) is TEDS
-93.1054 / CDM 97.0079, which recomputes to Overall 95.46 — the headline the
-MinerU-ROCm windows-hip card itself publishes. The README leaderboard prints
-the `all.*.all` series above per the 2026-08-02 user directive.
+Transparency note: the pooled readout of the same JSON (`table.all.TEDS.all
+× 100` = 89.4631, `display_formula.all.CDM.all × 100` = 97.0290) recomputes to
+Overall 94.25; the published series above is the repo's page-level convention
+per `AGENTS.md` and matches the MinerU-ROCm windows-hip bundle's own headline
+(Overall 95.46, identical to the Linux vLLM baseline 95.46). An earlier
+revision of this doc published the pooled series; corrected 2026-08-02.
 
 ## Row 3 — MinerU 3.4.4 pipeline (ROCm PyTorch + ONNX DirectML)
 
@@ -104,6 +104,10 @@ Sources:
 
 Card submetrics equal the local metric_result values bit-for-bit (diff 0.0 at
 1e-9); card `overall` is the 2 dp rounding of the computed value.
+
+Transparency note: the pooled readout `table.all.TEDS.all × 100` = 79.6381
+(→ 79.64); the published 82.04 above is the repo's page-level convention
+(`table.page.TEDS.ALL × 100`) per `AGENTS.md`.
 
 ## Retired rows
 
@@ -206,21 +210,25 @@ PASS  gate verdict is ACCEPT
 PASS  gate sample was 130 pages
 PASS  gate cites the 86.59 series
 == 6. README leaderboard rows are numerically identical EN vs ZH ==
-  README.md leaderboard rows: [['1.6', '95.99', '0.03488', '0.12882', '94.09', '97.36'], ['2.5', '1.2', '94.25', '0.03734', '0.12250', '89.46', '97.03'], ['3.4', '86.59', '0.05655', '0.15314', '82.04', '83.39']]
-  README.zh-CN.md leaderboard rows: [['1.6', '95.99', '0.03488', '0.12882', '94.09', '97.36'], ['2.5', '1.2', '94.25', '0.03734', '0.12250', '89.46', '97.03'], ['3.4', '86.59', '0.05655', '0.15314', '82.04', '83.39']]
+  README.md leaderboard rows: [['1.6', '95.99', '0.03488', '0.12882', '94.09', '97.36'], ['2.5', '1.2', '95.46', '0.03734', '0.12250', '93.11', '97.01'], ['3.4', '86.59', '0.05655', '0.15314', '82.04', '83.39']]
+  README.zh-CN.md leaderboard rows: [['1.6', '95.99', '0.03488', '0.12882', '94.09', '97.36'], ['2.5', '1.2', '95.46', '0.03734', '0.12250', '93.11', '97.01'], ['3.4', '86.59', '0.05655', '0.15314', '82.04', '83.39']]
 PASS  both READMEs have 3 leaderboard data rows
 PASS  EN/ZH leaderboard numbers identical
 == 7. MinerU2.5-Pro llama.cpp (Windows full-set) <- in-repo metric_result vs MinerU-ROCm windows-hip card + 1651 predictions ==
-  in-repo raw: text=0.037344865867471884 ro=0.12250478392812687 teds=89.4631426986761 cdm=97.02908163265313 overall=94.25257924819401
+  in-repo raw (page-level): text=0.037344865867471884 ro=0.12250478392812687 teds=93.1054371724098 cdm=97.00793731826515 overall=95.45962930130925
+  in-repo raw (pooled, transparency only): teds=89.4631426986761 cdm=97.02908163265313
 PASS  MinerU2.5 text Edit-dist: in-repo == card  (published=0.037344865867471884 actual=0.037344865867471884 tol=1e-06)
 PASS  MinerU2.5 RO Edit-dist: in-repo == card  (published=0.12250478392812687 actual=0.12250478392812687 tol=1e-06)
-PASS  MinerU2.5 TEDS: in-repo == card  (published=89.4631426986761 actual=89.4631426986761 tol=1e-06)
-PASS  MinerU2.5 CDM: in-repo == card  (published=97.02908163265313 actual=97.02908163265313 tol=1e-06)
+PASS  MinerU2.5 TEDS page-level: in-repo == card  (published=93.1054371724098 actual=93.1054371724098 tol=1e-06)
+PASS  MinerU2.5 CDM page-level: in-repo == card  (published=97.00793731826515 actual=97.00793731826515 tol=1e-06)
+PASS  MinerU2.5 TEDS pooled: in-repo == card  (published=89.4631426986761 actual=89.4631426986761 tol=1e-06)
+PASS  MinerU2.5 CDM pooled: in-repo == card  (published=97.02908163265313 actual=97.02908163265313 tol=1e-06)
 PASS  MinerU2.5 text Edit-dist 0.03734  (published=0.03734 actual=0.037344865867471884 tol=5e-06)
 PASS  MinerU2.5 RO Edit-dist 0.12250  (published=0.1225 actual=0.12250478392812687 tol=5e-06)
-PASS  MinerU2.5 TEDS 89.46  (published=89.46 actual=89.4631426986761 tol=0.005)
-PASS  MinerU2.5 CDM 97.03  (published=97.03 actual=97.02908163265313 tol=0.005)
-PASS  MinerU2.5 Overall 94.25  (published=94.25 actual=94.25257924819401 tol=0.005)
+PASS  MinerU2.5 TEDS 93.11 (page-level)  (published=93.11 actual=93.1054371724098 tol=0.005)
+PASS  MinerU2.5 CDM 97.01 (page-level)  (published=97.01 actual=97.00793731826515 tol=0.005)
+PASS  MinerU2.5 Overall 95.46  (published=95.46 actual=95.45962930130925 tol=0.005)
+PASS  bundle README contains the 95.46 headline
 PASS  MinerU2.5 predictions dir contains 1651 .md files  (count=1651)
 
 VERIFY OK: all leaderboard numbers match their sources

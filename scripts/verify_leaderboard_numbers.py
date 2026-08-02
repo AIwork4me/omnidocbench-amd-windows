@@ -11,7 +11,8 @@ Sources:
   plus the B2 gate doc verdict.
 - MinerU2.5-Pro llama.cpp (Windows full-set): in-repo quick_match metric_result
   JSON cross-checked at 1e-6 against the MinerU-ROCm windows-hip card
-  metric_result JSON, plus the 1651-file predictions dir.
+  metric_result JSON (page-level published series + pooled series), the
+  bundle README 95.46 headline, plus the 1651-file predictions dir.
 
 Path resolution (precedence: CLI arg > env var > built-in default):
 - --mineru-rocm-repo / MINERU_ROCM_REPO: MinerU-ROCm checkout containing
@@ -83,6 +84,9 @@ MINERU_CARD = mineru_repo / "model_card.pipeline.windows-hip.json"
 MINERU25_CARD = (
     mineru_repo / "results" / "omnidocbench" / "v16" / "windows-hip"
     / "mineru2.5_v16_quick_match_cdm_metric_result.json"
+)
+MINERU25_BUNDLE_README = (
+    mineru_repo / "results" / "omnidocbench" / "v16" / "windows-hip" / "README.md"
 )
 OFFICIAL_CDM_JSON = (
     paddleocr_repo / "results" / "omnidocbench" / "v16"
@@ -189,7 +193,7 @@ check("both READMEs have 3 leaderboard data rows", all(len(v) == 3 for v in tabl
 check("EN/ZH leaderboard numbers identical", tables["README.md"] == tables["README.zh-CN.md"])
 
 print("== 7. MinerU2.5-Pro llama.cpp (Windows full-set) <- in-repo metric_result vs MinerU-ROCm windows-hip card + 1651 predictions ==")
-missing7 = [p for p in (MINERU25_METRIC, MINERU25_CARD, MINERU25_PRED_DIR) if not p.exists()]
+missing7 = [p for p in (MINERU25_METRIC, MINERU25_CARD, MINERU25_PRED_DIR, MINERU25_BUNDLE_README) if not p.exists()]
 for p in missing7:
     skip(7, p)
 if not missing7:
@@ -197,26 +201,36 @@ if not missing7:
     card25 = json.loads(MINERU25_CARD.read_text(encoding="utf-8"))
 
     def mineru25_series(d):
+        # Published (page-level, repo convention per AGENTS.md): text/RO use
+        # all.Edit_dist.ALL_page_avg; TEDS/CDM use page.*.ALL x 100.
+        # Pooled (all.*.all) series kept for the cross-check only.
         return (
             d["text_block"]["all"]["Edit_dist"]["ALL_page_avg"],
             d["reading_order"]["all"]["Edit_dist"]["ALL_page_avg"],
+            d["table"]["page"]["TEDS"]["ALL"] * 100,
+            d["display_formula"]["page"]["CDM"]["ALL"] * 100,
             d["table"]["all"]["TEDS"]["all"] * 100,
             d["display_formula"]["all"]["CDM"]["all"] * 100,
         )
 
-    l_text, l_ro, l_teds, l_cdm = mineru25_series(local25)
-    c_text, c_ro, c_teds, c_cdm = mineru25_series(card25)
+    l_text, l_ro, l_teds, l_cdm, l_teds_pool, l_cdm_pool = mineru25_series(local25)
+    c_text, c_ro, c_teds, c_cdm, c_teds_pool, c_cdm_pool = mineru25_series(card25)
     l_overall = overall_of(l_text, l_teds, l_cdm)
-    print(f"  in-repo raw: text={l_text} ro={l_ro} teds={l_teds} cdm={l_cdm} overall={l_overall}")
+    print(f"  in-repo raw (page-level): text={l_text} ro={l_ro} teds={l_teds} cdm={l_cdm} overall={l_overall}")
+    print(f"  in-repo raw (pooled, transparency only): teds={l_teds_pool} cdm={l_cdm_pool}")
     close(l_text, c_text, 1e-6, "MinerU2.5 text Edit-dist: in-repo == card")
     close(l_ro, c_ro, 1e-6, "MinerU2.5 RO Edit-dist: in-repo == card")
-    close(l_teds, c_teds, 1e-6, "MinerU2.5 TEDS: in-repo == card")
-    close(l_cdm, c_cdm, 1e-6, "MinerU2.5 CDM: in-repo == card")
+    close(l_teds, c_teds, 1e-6, "MinerU2.5 TEDS page-level: in-repo == card")
+    close(l_cdm, c_cdm, 1e-6, "MinerU2.5 CDM page-level: in-repo == card")
+    close(l_teds_pool, c_teds_pool, 1e-6, "MinerU2.5 TEDS pooled: in-repo == card")
+    close(l_cdm_pool, c_cdm_pool, 1e-6, "MinerU2.5 CDM pooled: in-repo == card")
     close(0.03734, l_text, 5e-6, "MinerU2.5 text Edit-dist 0.03734")
     close(0.12250, l_ro, 5e-6, "MinerU2.5 RO Edit-dist 0.12250")
-    close(89.46, l_teds, 0.005, "MinerU2.5 TEDS 89.46")
-    close(97.03, l_cdm, 0.005, "MinerU2.5 CDM 97.03")
-    close(94.25, l_overall, 0.005, "MinerU2.5 Overall 94.25")
+    close(93.11, l_teds, 0.005, "MinerU2.5 TEDS 93.11 (page-level)")
+    close(97.01, l_cdm, 0.005, "MinerU2.5 CDM 97.01 (page-level)")
+    close(95.46, l_overall, 0.005, "MinerU2.5 Overall 95.46")
+    bundle = MINERU25_BUNDLE_README.read_text(encoding="utf-8")
+    check("bundle README contains the 95.46 headline", "95.46" in bundle)
     md_count = len(list(MINERU25_PRED_DIR.glob("*.md")))
     check("MinerU2.5 predictions dir contains 1651 .md files", md_count == 1651,
           f"count={md_count}")
