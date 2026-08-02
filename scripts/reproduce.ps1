@@ -50,6 +50,7 @@ param(
 $ErrorActionPreference = "Stop"
 $rootDir = Split-Path -Parent $PSScriptRoot
 . (Join-Path $rootDir "scripts\repro-profiles.ps1")
+. (Join-Path $rootDir "scripts\repro-evidence.ps1")
 
 if ($ListProfiles) {
     try {
@@ -103,6 +104,7 @@ $completedStageIds = @()
 $alwaysRunStageIds = @(
     "environment.wsl",
     "profile.preflight",
+    "inputs.fingerprint",
     "cdm.wsl_environment",
     "inference.server",
     "inference.backend_proof",
@@ -203,9 +205,35 @@ function Invoke-Stage {
     Save-State
 }
 
+if ($ForceInference -and -not $DryRun) {
+    # Scoped cleanup: ONLY this profile's owned artifacts. The shared locked
+    # dataset manifest (full profile) is never touched.
+    $targets = @()
+    if (Test-Path -LiteralPath $predictionDir) { $targets += $predictionDir }
+    if ($profile.owned_manifest -and (Test-Path -LiteralPath $manifest)) { $targets += $manifest }
+    $winResultDir = Join-Path $rootDir "eval-infra\01-omnidocbench\OmniDocBench\result"
+    if (Test-Path -LiteralPath $winResultDir) {
+        $targets += @(Get-ChildItem -LiteralPath $winResultDir -File -Filter "$($saveName)_*" -ErrorAction SilentlyContinue | ForEach-Object { $_.FullName })
+    }
+    $wslHomeUnc = "\\wsl$\Ubuntu2204\root\OmniDocBench\result"
+    if (Test-Path -LiteralPath $wslHomeUnc) {
+        $targets += @(Get-ChildItem -LiteralPath $wslHomeUnc -File -Filter "$($saveName)_*" -ErrorAction SilentlyContinue | ForEach-Object { $_.FullName })
+    }
+    foreach ($target in $targets) {
+        Write-Host "FORCE INFERENCE: removing $target" -ForegroundColor Yellow
+        Remove-Item -LiteralPath $target -Recurse -Force -ErrorAction SilentlyContinue
+    }
+    # Purge inference/scoring/verification stage records so they re-run.
+    $purgeIds = @("inference.run", "inference.prediction_check", "scoring.windows", "scoring.wsl_cdm", "verification.final", "evidence.pack", "inputs.fingerprint")
+    $state.stages = @($state.stages | Where-Object { $purgeIds -notcontains $_.id })
+    $completedStageIds = @($state.stages | Where-Object { $_.status -eq "passed" } | ForEach-Object { $_.id })
+    Save-State
+}
+
 if (-not $Resume -and -not $DryRun) {
     $existingPredictions = @(Get-ChildItem -LiteralPath $predictionDir -Filter *.md -File -ErrorAction SilentlyContinue).Count
-    if ($existingPredictions -gt 0 -or (Test-Path -LiteralPath $manifest) -or (Test-Path -LiteralPath $windowsResult)) {
+    $ownedManifestExists = $profile.owned_manifest -and (Test-Path -LiteralPath $manifest)
+    if ($existingPredictions -gt 0 -or $ownedManifestExists -or (Test-Path -LiteralPath $windowsResult)) {
         throw "Existing $RunProfile artifacts found. Use -Resume to reuse them or -ForceInference to replace predictions after removing old score/manifest artifacts."
     }
 }
@@ -268,6 +296,24 @@ Invoke-Stage -Id "dataset.upstream_locks" -Name "Upstream locks" {
     Assert-LastExit "dataset tree lock"
 } -Command "verify-upstream-lock.ps1; verify_dataset_tree.py"
 
+$fingerprintFile = Join-Path $evidenceDir "fingerprint.json"
+Invoke-Stage -Id "inputs.fingerprint" -Name "Input fingerprint" -AlwaysRun {
+    $fpArgs = @(
+        "--root", $rootDir,
+        "--profile", $profile.ProfilePath,
+        "--manifest", $fullManifest,
+        "--pipeline", $pipelineCheckout,
+        "--windows-config", $profile.ConfigWindowsAbs,
+        "--wsl-config", $profile.ConfigWslAbs,
+        "--out", $fingerprintFile
+    )
+    if ($Resume -and (Test-Path -LiteralPath $fingerprintFile)) {
+        $fpArgs += @("--check", $fingerprintFile)
+    }
+    & $python (Join-Path $rootDir "scripts\compute_fingerprint.py") @fpArgs
+    if ($LASTEXITCODE -ne 0) { throw "Fingerprint check failed - inputs changed since the previous run" }
+} -Command "compute_fingerprint.py --out fingerprint.json$(if ($Resume) { ' --check fingerprint.json' })"
+
 Invoke-Stage -Id "cdm.wsl_environment" -Name "WSL CDM environment" -AlwaysRun {
     $script:repoWsl = (wsl -d Ubuntu2204 -- wslpath -a $rootDir).Trim()
     if (-not $SkipCdmSetup) {
@@ -284,6 +330,22 @@ Invoke-Stage -Id "inference.server" -Name "VLM server" -AlwaysRun {
     & powershell -ExecutionPolicy Bypass -File (Join-Path $rootDir "adapters\paddleocr-vl-1.6\01-vlm-server\verify.ps1")
     Assert-LastExit "VLM verify"
 } -Command "01-vlm-server\setup.ps1 -Variant $($profile.variant) -Port $serverPort; verify.ps1"
+
+Invoke-Stage -Id "inference.backend_proof" -Name "Backend proof" -AlwaysRun {
+    if ($profile.require_gpu_backend_proof -and $profile.variant -eq "hip") {
+        $adapterRoot = Join-Path $rootDir "adapters\paddleocr-vl-1.6"
+        & powershell -ExecutionPolicy Bypass -File (Join-Path $adapterRoot "01-vlm-server\assert-backend-proof.ps1") `
+            -EnvFile (Join-Path $adapterRoot ".env.local") `
+            -LogFile (Join-Path $adapterRoot "logs\llama-server.log") `
+            -PidFile (Join-Path $adapterRoot "logs\llama-server.pid") `
+            -ExpectedVariant hip `
+            -LockFile (Join-Path $rootDir "upstream-lock.json") `
+            -OutFile (Join-Path $evidenceDir "backend-proof.json")
+        Assert-LastExit "HIP backend proof"
+    } else {
+        Write-Host "Backend proof not required for this profile (variant=$($profile.variant))." -ForegroundColor Yellow
+    }
+} -Command "assert-backend-proof.ps1 -ExpectedVariant $($profile.variant) -> backend-proof.json"
 
 Invoke-Stage -Id "inference.layout" -Name "Layout model" {
     & powershell -ExecutionPolicy Bypass -File (Join-Path $rootDir "adapters\paddleocr-vl-1.6\02-layout-model\setup.ps1")
@@ -307,19 +369,21 @@ Invoke-Stage -Id "inference.input_locks" -Name "Inference input locks" -AlwaysRu
 } -Command "verify-upstream-lock.ps1 -Component Vlm,Layout,Pipeline"
 
 $maxPagesArgs = if ($null -ne $profile.max_pages) { @("--max-pages", "$($profile.max_pages)") } else { @() }
+$skipExistingArg = @()
+if ($Resume) { $skipExistingArg = @("--skip-existing") }
 Invoke-Stage -Id "inference.run" -Name "Inference" -AlwaysRun {
     $adapterArgs = @(
         "--img-dir", (Join-Path $rootDir "eval-infra\01-omnidocbench\data\images"),
         "--out-dir", $predictionDir,
         "--server-url", "http://127.0.0.1:$serverPort/v1"
-    ) + $maxPagesArgs
+    ) + $maxPagesArgs + $skipExistingArg
     & $python (Join-Path $rootDir "adapters\paddleocr-vl-1.6\run_adapter.py") @adapterArgs
     Assert-LastExit "inference"
     $predictionCount = @(Get-ChildItem -LiteralPath $predictionDir -Filter *.md -File -ErrorAction SilentlyContinue).Count
     if ($profile.run_kind -eq "smoke" -and $predictionCount -ne $profile.expected_pages) {
         throw "Smoke inference requires exactly $($profile.expected_pages) Markdown predictions; found $predictionCount"
     }
-} -Command ("run_adapter.py --server-url http://127.0.0.1:$serverPort/v1 " + $(if ($maxPagesArgs.Count -gt 0) { "--max-pages $($profile.max_pages)" } else { "(no page limit)" }))
+} -Command ("run_adapter.py --server-url http://127.0.0.1:$serverPort/v1 " + $(if ($maxPagesArgs.Count -gt 0) { "--max-pages $($profile.max_pages)" } else { "(no page limit)" }) + $(if ($Resume) { " --skip-existing" } else { "" }))
 
 Invoke-Stage -Id "inference.prediction_check" -Name "Prediction manifest and validation" {
     if ($profile.owned_manifest) {
@@ -328,16 +392,33 @@ Invoke-Stage -Id "inference.prediction_check" -Name "Prediction manifest and val
         & $python (Join-Path $rootDir "scripts\build_prediction_subset.py") --full-manifest $fullManifest --pred-dir $predictionDir --output $manifest --limit $($profile.expected_pages)
         Assert-LastExit "manifest build"
     }
-    & $python (Join-Path $rootDir "scripts\validate_predictions.py") --manifest $manifest --pred-dir $predictionDir --min-coverage $($profile.minimum_prediction_coverage)
-    Assert-LastExit "prediction validation"
-} -Command "build_prediction_subset.py (smoke only); validate_predictions.py --min-coverage $($profile.minimum_prediction_coverage)"
+    if ($profile.run_kind -eq "full") {
+        & $python (Join-Path $rootDir "scripts\verify_prediction_set.py") `
+            --manifest $manifest `
+            --pred-dir $predictionDir `
+            --expected-pages $($profile.expected_pages) `
+            --min-coverage $($profile.minimum_prediction_coverage) `
+            --max-failed-pages $($profile.maximum_failed_pages) `
+            --require-selected `
+            --summary-out (Join-Path $evidenceDir "prediction-summary.json")
+        Assert-LastExit "strict prediction-set validation"
+    } else {
+        & $python (Join-Path $rootDir "scripts\validate_predictions.py") --manifest $manifest --pred-dir $predictionDir --min-coverage $($profile.minimum_prediction_coverage)
+        Assert-LastExit "prediction validation"
+    }
+} -Command "build_prediction_subset.py (smoke only); verify_prediction_set.py --expected-pages $($profile.expected_pages) (full); validate_predictions.py (smoke)"
 
 Invoke-Stage -Id "scoring.windows" -Name "Windows scoring" {
     & powershell -ExecutionPolicy Bypass -File (Join-Path $rootDir "eval-infra\03-scoring\score.ps1") -Config $profile.windows_scoring_config
     Assert-LastExit "Windows scoring"
     & powershell -ExecutionPolicy Bypass -File (Join-Path $rootDir "eval-infra\03-scoring\verify.ps1") -WindowsOnly -SaveName $saveName
     Assert-LastExit "Windows score verify"
-} -Command "score.ps1 -Config $($profile.windows_scoring_config); verify.ps1 -WindowsOnly -SaveName $saveName"
+    & powershell -ExecutionPolicy Bypass -File (Join-Path $rootDir "scripts\assert-metrics.ps1") `
+        -MetricResult $windowsResult `
+        -Profile $profile.ProfilePath `
+        -NotOlderThan $state.started_at
+    Assert-LastExit "Windows metric sanity gates"
+} -Command "score.ps1 -Config $($profile.windows_scoring_config); verify.ps1 -WindowsOnly; assert-metrics.ps1"
 
 Invoke-Stage -Id "scoring.wsl_cdm" -Name "WSL CDM scoring" {
     if ([string]::IsNullOrWhiteSpace($repoWsl)) { $script:repoWsl = (wsl -d Ubuntu2204 -- wslpath -a $rootDir).Trim() }
@@ -345,12 +426,46 @@ Invoke-Stage -Id "scoring.wsl_cdm" -Name "WSL CDM scoring" {
     Assert-LastExit "WSL CDM scoring"
     & powershell -ExecutionPolicy Bypass -File (Join-Path $rootDir "eval-infra\03-scoring\verify.ps1") -WslOnly -RequireCdm -SaveName $saveName
     Assert-LastExit "WSL CDM score verify"
-} -Command "score-cdm.sh $($profile.wsl_cdm_config) $($profile.prediction_dir); verify -RequireCdm"
+    $wslHome = (wsl -d Ubuntu2204 -- sh -lc 'printf %s "$HOME"').Trim() -replace "`0", ""
+    if (-not $wslHome) { $wslHome = "/root" }
+    $wslResult = "\\wsl$\Ubuntu2204" + ($wslHome -replace "/", "\") + "\OmniDocBench\result\${saveName}_metric_result.json"
+    & powershell -ExecutionPolicy Bypass -File (Join-Path $rootDir "scripts\assert-metrics.ps1") `
+        -MetricResult $wslResult `
+        -Profile $profile.ProfilePath `
+        -NotOlderThan $state.started_at
+    Assert-LastExit "WSL CDM metric sanity gates"
+} -Command "score-cdm.sh $($profile.wsl_cdm_config) $($profile.prediction_dir); verify -RequireCdm; assert-metrics.ps1"
 
 Invoke-Stage -Id "verification.final" -Name "Exact full verification" -AlwaysRun {
-    & powershell -ExecutionPolicy Bypass -File (Join-Path $rootDir "scripts\full-verify.ps1") -PredictionDir $predictionRel -PredictionManifest $manifestRel -ScoreSaveName $saveName -BenchmarkDir "__no_benchmark_for_smoke__"
+    $verifyArgs = @("-PredictionDir", $predictionRel, "-PredictionManifest", $manifestRel, "-ScoreSaveName", $saveName, "-BenchmarkDir", "__no_benchmark_for_smoke__")
+    if ($profile.run_kind -eq "full") {
+        $verifyArgs += @(
+            "-ExpectedPages", "$($profile.expected_pages)",
+            "-MinCoverage", "$($profile.minimum_prediction_coverage)",
+            "-MaxFailedPages", "$($profile.maximum_failed_pages)",
+            "-RequireRunStatsSelected"
+        )
+    }
+    & powershell -ExecutionPolicy Bypass -File (Join-Path $rootDir "scripts\full-verify.ps1") @verifyArgs
     Assert-LastExit "exact full verification"
-} -Command "full-verify.ps1 -PredictionDir $predictionRel -PredictionManifest $manifestRel -ScoreSaveName $saveName"
+} -Command "full-verify.ps1 -PredictionDir $predictionRel -PredictionManifest $manifestRel -ScoreSaveName $saveName $(if ($profile.run_kind -eq 'full') { '(strict profile gates)' } else { '' })"
+
+Invoke-Stage -Id "evidence.pack" -Name "Evidence pack" -AlwaysRun {
+    if (-not $DryRun) {
+        Write-ProfileResolved -EvidenceDir $evidenceDir -Profile $profile | Out-Null
+        Write-HardwareJson -EvidenceDir $evidenceDir
+        Write-ArtifactHashes -EvidenceDir $evidenceDir -Profile $profile -PipelineCheckout $pipelineCheckout -EnvFile (Join-Path $rootDir "adapters\paddleocr-vl-1.6\.env.local") | Out-Null
+        $wslHome = (wsl -d Ubuntu2204 -- sh -lc 'printf %s "$HOME"').Trim() -replace "`0", ""
+        if (-not $wslHome) { $wslHome = "/root" }
+        $wslResult = "\\wsl$\Ubuntu2204" + ($wslHome -replace "/", "\") + "\OmniDocBench\result\${saveName}_metric_result.json"
+        Write-MetricsSummary -EvidenceDir $evidenceDir -WindowsResult $windowsResult -WslResult $wslResult -SaveName $saveName | Out-Null
+        $fingerprint = @{}
+        if (Test-Path -LiteralPath $fingerprintFile) {
+            $fingerprint = Get-Content -Raw -Encoding UTF8 -LiteralPath $fingerprintFile | ConvertFrom-Json
+        }
+        Write-Report -EvidenceDir $evidenceDir -State $state -Profile $profile -Fingerprint $fingerprint -ResumeCommand "powershell -ExecutionPolicy Bypass -File scripts\reproduce.ps1 -Profile $RunProfile -Resume" | Out-Null
+    }
+} -Command "evidence pack -> outputs\reproduction\$RunProfile"
 
 if (-not $DryRun) {
     $state.status = "passed"

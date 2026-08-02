@@ -152,13 +152,52 @@ def test_always_run_stages_are_the_cheap_safety_gates():
     for stage_id in (
         "environment.wsl",
         "profile.preflight",
+        "inputs.fingerprint",
         "cdm.wsl_environment",
         "inference.server",
+        "inference.backend_proof",
         "inference.input_locks",
         "inference.run",
         "verification.final",
+        "evidence.pack",
     ):
         assert f'"{stage_id}"' in always_run
+
+
+def test_resume_uses_skip_existing_and_fingerprint_gate():
+    text = SCRIPT.read_text(encoding="utf-8")
+    assert "--skip-existing" in text
+    assert '$skipExistingArg = @("--skip-existing")' in text
+    assert "compute_fingerprint.py" in text
+    assert 'Invoke-Stage -Id "inputs.fingerprint"' in text
+    assert "--check" in text  # resume re-checks the stored fingerprint
+
+
+def test_full_profile_strict_gates_are_wired():
+    text = SCRIPT.read_text(encoding="utf-8")
+    assert "verify_prediction_set.py" in text
+    assert "--require-selected" in text
+    assert "--expected-pages" in text
+    assert "--max-failed-pages" in text
+    assert "RequireRunStatsSelected" in text
+    assert "assert-metrics.ps1" in text
+    assert "-NotOlderThan" in text
+
+
+def test_force_inference_purge_is_scoped():
+    text = SCRIPT.read_text(encoding="utf-8")
+    block = text.split("if ($ForceInference -and -not $DryRun) {", 1)[1].split("if (-not $Resume -and -not $DryRun) {", 1)[0]
+    assert "$profile.owned_manifest -and (Test-Path -LiteralPath $manifest)" in block
+    assert 'Filter "$($saveName)_*"' in block
+    assert "$predictionDir" in block
+    assert "purgeIds" in block
+
+
+def test_evidence_pack_stage_writes_all_files():
+    text = SCRIPT.read_text(encoding="utf-8")
+    block = text.split('Invoke-Stage -Id "evidence.pack"', 1)[1].split("if (-not $DryRun) {", 1)[1].split("-Command", 1)[0]
+    for name in ("Write-ProfileResolved", "Write-HardwareJson", "Write-ArtifactHashes", "Write-MetricsSummary", "Write-Report"):
+        assert name in block, f"{name} missing from evidence.pack"
 
 
 def test_entrypoint_docs_make_ten_page_profile_canonical():
