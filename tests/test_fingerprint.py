@@ -142,7 +142,13 @@ def test_dirty_repo_flag_is_recorded(fingerprint_env, monkeypatch):
 def test_missing_pipeline_is_recorded_as_absent(fingerprint_env):
     import shutil
 
-    shutil.rmtree(fingerprint_env / "outputs" / "checkouts" / "PaddleOCR-VL-ROCm" / ".git")
+    def onerror(_func, _path, _info):
+        pass
+
+    shutil.rmtree(
+        fingerprint_env / "outputs" / "checkouts" / "PaddleOCR-VL-ROCm" / ".git",
+        onerror=onerror,
+    )
     result = _run(fingerprint_env, "--out", str(fingerprint_env / "fp.json"))
     assert result.returncode == 0, result.stderr
     fp = json.loads((fingerprint_env / "fp.json").read_text(encoding="utf-8"))
