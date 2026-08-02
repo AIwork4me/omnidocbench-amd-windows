@@ -26,7 +26,7 @@ def _metric_result(tmp_path, *, text=0.034, ro=0.129, teds=0.942393, cdm=0.96502
     }
 
 
-def _run(tmp_path, *, payload, profile=PROFILE, not_older_than=None):
+def _run(tmp_path, *, payload, profile=PROFILE, not_older_than=None, require_cdm=False):
     result_path = tmp_path / "metric_result.json"
     result_path.write_text(json.dumps(payload), encoding="utf-8")
     args = [
@@ -34,6 +34,8 @@ def _run(tmp_path, *, payload, profile=PROFILE, not_older_than=None):
         "-MetricResult", str(result_path),
         "-Profile", str(profile),
     ]
+    if require_cdm:
+        args += ["-RequireCdm"]
     if not_older_than:
         args += ["-NotOlderThan", not_older_than]
     return subprocess.run(args, capture_output=True, text=True, check=False)
@@ -68,9 +70,16 @@ def test_negative_edit_dist_fails(tmp_path):
 def test_missing_cdm_fails_full_profile(tmp_path):
     payload = _metric_result(tmp_path)
     del payload["display_formula"]["all"]["CDM"]
-    result = _run(tmp_path, payload=payload)
+    result = _run(tmp_path, payload=payload, require_cdm=True)
     assert result.returncode != 0
     assert "CDM" in result.stdout
+
+
+def test_missing_cdm_passes_when_not_required(tmp_path):
+    payload = _metric_result(tmp_path)
+    del payload["display_formula"]["all"]["CDM"]
+    result = _run(tmp_path, payload=payload)
+    assert result.returncode == 0, result.stdout + result.stderr
 
 
 def test_zero_cdm_fails(tmp_path):

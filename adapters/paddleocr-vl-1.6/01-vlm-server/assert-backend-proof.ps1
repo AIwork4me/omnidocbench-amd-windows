@@ -105,7 +105,14 @@ function Get-TextAnyEncoding {
     if (-not (Test-Path -LiteralPath $Path -PathType Leaf)) { return "" }
     $bytes = $null
     try {
-        $stream = [System.IO.File]::OpenRead($Path)
+        # The running llama-server holds the log open for append; open with
+        # FileShare.ReadWrite so the proof can read while the server writes.
+        $stream = [System.IO.File]::Open(
+            $Path,
+            [System.IO.FileMode]::Open,
+            [System.IO.FileAccess]::Read,
+            [System.IO.FileShare]::ReadWrite
+        )
         try {
             $buffer = New-Object byte[] $MaxBytes
             $read = $stream.Read($buffer, 0, $MaxBytes)

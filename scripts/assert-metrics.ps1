@@ -22,6 +22,10 @@ general model-quality bar.
 Path to the *_metric_result.json to check.
 .PARAMETER Profile
 Path to the profile JSON whose metric_thresholds apply.
+.PARAMETER RequireCdm
+Require display_formula.CDM to be present, finite, positive and within the
+profile threshold. Pass this for the CDM-enabled result (WSL CDM scoring);
+the Edit_dist-only Windows result legitimately has no CDM node.
 .PARAMETER NotOlderThan
 ISO-8601 timestamp; the result file must be modified after it.
 #>
@@ -29,6 +33,7 @@ ISO-8601 timestamp; the result file must be modified after it.
 param(
     [string] $MetricResult,
     [string] $Profile,
+    [switch] $RequireCdm,
     [string] $NotOlderThan = ""
 )
 $ErrorActionPreference = "Stop"
@@ -121,7 +126,7 @@ foreach ($row in $rows) {
     Write-Check $row.Label $true "$num"
 }
 
-$requireCdm = ([bool]$profile.require_wsl_cdm) -or ([double]$thresholds.cdm_min -gt 0.0)
+$requireCdm = $RequireCdm.IsPresent
 if ($null -eq $cdmProperty) {
     if ($requireCdm) {
         Write-Check "display_formula.CDM" $false "missing but required by profile"

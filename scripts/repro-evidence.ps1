@@ -202,6 +202,47 @@ function Write-Report {
     return $reportPath
 }
 
+function Write-PredictionSummary {
+    param([string] $EvidenceDir, [string] $PredictionDir, [int] $ExpectedPages)
+    $summary = [ordered]@{
+        expected = $ExpectedPages
+        markdown_files = 0
+        valid = 0
+        missing = @()
+        invalid = @()
+        unexpected = @()
+        failed_pages = @()
+        coverage = 0.0
+        stats = $null
+    }
+    if (Test-Path -LiteralPath $PredictionDir -PathType Container) {
+        $markdown = @(Get-ChildItem -LiteralPath $PredictionDir -Filter *.md -File -ErrorAction SilentlyContinue)
+        $summary.markdown_files = $markdown.Count
+        $valid = 0
+        $invalidNames = New-Object System.Collections.Generic.List[string]
+        foreach ($md in $markdown) {
+            try {
+                $content = [System.IO.File]::ReadAllText($md.FullName, [System.Text.Encoding]::UTF8)
+                if ([string]::IsNullOrWhiteSpace($content)) { $invalidNames.Add("$($md.Name) (empty)") }
+                else { $valid++ }
+            } catch {
+                $invalidNames.Add("$($md.Name) (not UTF-8)")
+            }
+        }
+        $summary.valid = $valid
+        $summary.invalid = @($invalidNames)
+        $summary.coverage = if ($ExpectedPages -gt 0) { [math]::Round($valid / $ExpectedPages, 6) } else { 0.0 }
+    }
+    $statsPath = Join-Path $PredictionDir "_run_stats.json"
+    if (Test-Path -LiteralPath $statsPath -PathType Leaf) {
+        try {
+            $summary.stats = Get-Content -Raw -Encoding UTF8 -LiteralPath $statsPath | ConvertFrom-Json
+        } catch { }
+    }
+    Save-JsonAtomic -Path (Join-Path $EvidenceDir "prediction-summary.json") -Value $summary
+    return $summary
+}
+
 function Write-ArtifactHashes {
     param([string] $EvidenceDir, $Profile, [string] $PipelineCheckout, [string] $EnvFile)
     $hashes = [ordered]@{}

@@ -127,7 +127,8 @@ if ($Resume -and (Test-Path -LiteralPath $stateFile)) {
 function Save-State {
     New-Item -ItemType Directory -Force -Path $evidenceDir | Out-Null
     $temp = "$stateFile.tmp"
-    $state | ConvertTo-Json -Depth 10 | Set-Content -LiteralPath $temp -Encoding UTF8
+    $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
+    [System.IO.File]::WriteAllText($temp, ($state | ConvertTo-Json -Depth 10), $utf8NoBom)
     Move-Item -LiteralPath $temp -Destination $stateFile -Force
 }
 
@@ -244,6 +245,18 @@ Save-State
 
 Invoke-Stage -Id "environment.python" -Name "Python environment" {
     if (-not (Get-Command uv -ErrorAction SilentlyContinue)) { throw "uv not found; install astral-sh.uv with winget" }
+    # mirrors.env (written by detect-mirrors.ps1) is the repo's network
+    # contract; its PYPI_INDEX wins over any global UV_INDEX_URL so locked
+    # syncs do not silently use a broken or different index.
+    $mirrorsFile = Join-Path $rootDir "mirrors.env"
+    if (Test-Path -LiteralPath $mirrorsFile -PathType Leaf) {
+        foreach ($line in Get-Content -LiteralPath $mirrorsFile) {
+            if ($line -match "^PYPI_INDEX=(.*)$") {
+                $env:UV_INDEX_URL = $matches[1].Trim()
+                break
+            }
+        }
+    }
     $previousLinkMode = $env:UV_LINK_MODE
     try {
         # OneDrive/Cloud Files rejects hardlinks from uv's local cache with
@@ -256,7 +269,7 @@ Invoke-Stage -Id "environment.python" -Name "Python environment" {
     } finally {
         $env:UV_LINK_MODE = $previousLinkMode
     }
-} -Command "uv python install 3.11; uv sync --locked --all-groups"
+} -Command "uv python install 3.11; uv sync --locked --all-groups (PYPI_INDEX from mirrors.env)"
 
 Invoke-Stage -Id "environment.mirrors" -Name "Network mirrors" {
     & powershell -ExecutionPolicy Bypass -File (Join-Path $rootDir "scripts\detect-mirrors.ps1")
@@ -314,8 +327,27 @@ Invoke-Stage -Id "inputs.fingerprint" -Name "Input fingerprint" -AlwaysRun {
     if ($LASTEXITCODE -ne 0) { throw "Fingerprint check failed - inputs changed since the previous run" }
 } -Command "compute_fingerprint.py --out fingerprint.json$(if ($Resume) { ' --check fingerprint.json' })"
 
+function Get-RepoWslPath {
+    # PowerShell -> wsl.exe argument passing eats backslashes, so convert the
+    # Windows path to forward slashes first; fall back to a manual /mnt/<drive>
+    # translation (the full-verify.ps1 approach) if wslpath still fails.
+    $posix = $rootDir -replace "\\", "/"
+    $result = ""
+    $previousErrorActionPreference = $ErrorActionPreference
+    try {
+        $ErrorActionPreference = "Continue"
+        $result = ((@(wsl -d Ubuntu2204 -- wslpath -a $posix 2>$null) -join "") -replace "`0", "").Trim()
+    } finally {
+        $ErrorActionPreference = $previousErrorActionPreference
+    }
+    if (-not $result) {
+        $result = "/mnt/" + $posix.Substring(0, 1).ToLowerInvariant() + "/" + $posix.Substring(2)
+    }
+    return $result
+}
+
 Invoke-Stage -Id "cdm.wsl_environment" -Name "WSL CDM environment" -AlwaysRun {
-    $script:repoWsl = (wsl -d Ubuntu2204 -- wslpath -a $rootDir).Trim()
+    $script:repoWsl = Get-RepoWslPath
     if (-not $SkipCdmSetup) {
         & wsl -d Ubuntu2204 bash "$repoWsl/eval-infra/02-cdm-environment/setup.sh"
         Assert-LastExit "WSL CDM setup"
@@ -421,7 +453,7 @@ Invoke-Stage -Id "scoring.windows" -Name "Windows scoring" {
 } -Command "score.ps1 -Config $($profile.windows_scoring_config); verify.ps1 -WindowsOnly; assert-metrics.ps1"
 
 Invoke-Stage -Id "scoring.wsl_cdm" -Name "WSL CDM scoring" {
-    if ([string]::IsNullOrWhiteSpace($repoWsl)) { $script:repoWsl = (wsl -d Ubuntu2204 -- wslpath -a $rootDir).Trim() }
+    if ([string]::IsNullOrWhiteSpace($repoWsl)) { $script:repoWsl = Get-RepoWslPath }
     & wsl -d Ubuntu2204 bash "$repoWsl/eval-infra/03-scoring/score-cdm.sh" $profile.wsl_cdm_config $profile.prediction_dir
     Assert-LastExit "WSL CDM scoring"
     & powershell -ExecutionPolicy Bypass -File (Join-Path $rootDir "eval-infra\03-scoring\verify.ps1") -WslOnly -RequireCdm -SaveName $saveName
@@ -432,6 +464,7 @@ Invoke-Stage -Id "scoring.wsl_cdm" -Name "WSL CDM scoring" {
     & powershell -ExecutionPolicy Bypass -File (Join-Path $rootDir "scripts\assert-metrics.ps1") `
         -MetricResult $wslResult `
         -Profile $profile.ProfilePath `
+        -RequireCdm `
         -NotOlderThan $state.started_at
     Assert-LastExit "WSL CDM metric sanity gates"
 } -Command "score-cdm.sh $($profile.wsl_cdm_config) $($profile.prediction_dir); verify -RequireCdm; assert-metrics.ps1"
@@ -455,6 +488,7 @@ Invoke-Stage -Id "evidence.pack" -Name "Evidence pack" -AlwaysRun {
         Write-ProfileResolved -EvidenceDir $evidenceDir -Profile $profile | Out-Null
         Write-HardwareJson -EvidenceDir $evidenceDir
         Write-ArtifactHashes -EvidenceDir $evidenceDir -Profile $profile -PipelineCheckout $pipelineCheckout -EnvFile (Join-Path $rootDir "adapters\paddleocr-vl-1.6\.env.local") | Out-Null
+        Write-PredictionSummary -EvidenceDir $evidenceDir -PredictionDir $predictionDir -ExpectedPages $([int]$profile.expected_pages) | Out-Null
         $wslHome = (wsl -d Ubuntu2204 -- sh -lc 'printf %s "$HOME"').Trim() -replace "`0", ""
         if (-not $wslHome) { $wslHome = "/root" }
         $wslResult = "\\wsl$\Ubuntu2204" + ($wslHome -replace "/", "\") + "\OmniDocBench\result\${saveName}_metric_result.json"
