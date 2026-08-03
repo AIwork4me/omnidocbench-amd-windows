@@ -32,6 +32,13 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   prediction summary, metrics summary, report).
 - Guard tests: profile catalog invariants, adapter resume, fingerprint,
   backend proof fixtures, strict prediction-set boundaries, metric gates.
+- Sample prediction equivalence check (`scripts/sample_prediction_equivalence.py`):
+  deterministic stride sampling, re-infers a sample with the current code and
+  compares content-equivalence (difflib similarity, default 0.95) against the
+  stored predictions — the evidence basis for completing a run by resume after
+  code changes without re-inferring the full set. Also documents that
+  PaddleOCR-VL-1.6 GGUF outputs are NOT byte-reproducible across independent
+  runs (glyph-level and table-structure variance).
 
 ### Changed
 - `scripts/reproduce.ps1` resume keys off stable stage IDs; old v1
@@ -43,6 +50,13 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   `-Variant hip` instead of allowing a silent CPU fallback.
 - `01-vlm-server/setup.ps1` repairs a missing `.variant` marker from the
   installed binary instead of re-downloading.
+- `01-vlm-server/setup.ps1` serves a deterministic model id via `--alias`
+  (llama-server b9637 reports the full `-m` path verbatim otherwise).
+- The WSL CDM full-set config (`v16-cdm-hip-full-1651.yaml`) uses
+  `match_workers: 1 / teds_workers: 1` — WSL/Linux fork-in-fork crashes with
+  `match_workers: 24` (see `docs/pitfalls.md` #wsl-fork-fork).
+- `evidence.pack` marks the run passed before rendering `report.md` so the
+  report shows the final verdict, not the in-flight "running" status.
 - README restructured for focus: leaderboard first, single source of metrics
   truth, PaddleOCR operational details moved to the adapter README.
 
@@ -61,6 +75,16 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   `score-cdm.sh`) — the 1651-page run hit WSL's default 1024-file limit
   (Errno 24) mid-match.
 - README.zh-CN.md: official-local Formula CDM corrected to 96.5022 (EN parity).
+
+### Verified (2026-08-03, AMD Ryzen AI MAX+ 395 / Radeon 8060S)
+- `paddleocr-vl-hip-full-1651` official PASS: 1651 pages selected, 1649/1651
+  usable (0.9988), 2 budgeted peg-native failures (upstream #18248). Windows
+  text 0.035386 / RO 0.129539 / TEDS 0.929766; WSL CDM 0.966490; shared
+  metrics agree Windows-vs-WSL within 0.0002. Evidence:
+  `docs/reproduction-full1651-hip-2026-08-03.md`.
+- `hip-smoke-10` official PASS (19/19 stages, backend proof complete);
+  resume verified (25 s, 0 pages reprocessed).
+  Evidence: `docs/reproduction-hip-smoke-2026-08-02.md`.
 
 ## [1.0.0] - 2026-07-16
 

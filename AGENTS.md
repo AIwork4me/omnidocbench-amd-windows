@@ -315,8 +315,9 @@ The system is fully operational when all criteria for the **selected CDM path** 
 4. `adapters/paddleocr-vl-1.6/01-vlm-server/verify.ps1` exits 0 (`curl /v1/models` 200); HIP profiles additionally pass `assert-backend-proof.ps1 -ExpectedVariant hip` (binary + log + offload evidence, no CPU fallback).
 5. `predictions/paddleocrvl_rocm/` contains one `.md` per dataset page (~1651);
    the `paddleocr-vl-hip-full-1651` profile's `predictions/paddleocrvl_hip_full_1651/`
-   holds exactly 1651 pages with ≥99.8% usable coverage and ≤2 failed pages,
-   with `_run_stats.json` selected_pages = 1651.
+   covers at least 99.8% of the 1651 pages with usable predictions (UTF-8,
+   non-empty, or empty for the dataset's genuinely empty-GT pages) and at most
+   `maximum_failed_pages` failures, with `_run_stats.json` selected_pages = 1651.
 6. `eval-infra/03-scoring/verify.ps1` exits 0: mandatory non-CDM metrics are
    present and non-negative; zero non-CDM metrics warn but can pass; CDM must
    be positive when present or required. A selected CDM scoring path requires
@@ -341,6 +342,16 @@ In raw `metric_result.json`, TEDS/CDM use 0-1 values, so the same threshold is
 
 A run whose metrics clear these thresholds reproduces our results. See
 [`README.md`](README.md) for the full table vs. the official baseline.
+
+Latest profile-driven full-set evidence (2026-08-03, Ryzen AI MAX+ 395 /
+Radeon 8060S): `paddleocr-vl-hip-full-1651` passed officially with Windows
+text `0.035386` / RO `0.129539` / TEDS `0.929766` and WSL CDM `0.966490`;
+1649/1651 usable (2 budgeted peg-native failures, upstream
+PaddlePaddle/PaddleOCR#18248; the dataset's 2 genuinely empty-GT pages accept
+empty predictions per `scripts/gt_manifest.py`). Full record:
+[`docs/reproduction-full1651-hip-2026-08-03.md`](docs/reproduction-full1651-hip-2026-08-03.md).
+HIP smoke evidence:
+[`docs/reproduction-hip-smoke-2026-08-02.md`](docs/reproduction-hip-smoke-2026-08-02.md).
 
 Latest local Windows-native official-engine CDM evidence:
 `C:\Users\rocm\Desktop\PaddleOCR-VL-ROCm\logs\official_cdm_rerun_20260711_092548.log`

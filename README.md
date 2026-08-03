@@ -163,6 +163,15 @@ Radeon 860M/gfx1152 class is **not** a supported locked HIP path (use
 never leaderboard scores; full results must clear the strict evidence gates
 documented in [`docs/architecture.md`](docs/architecture.md#reproduction-profiles).
 
+Machine-verified on a Ryzen AI MAX+ 395 / Radeon 8060S (2026-08-03): the full
+profile passed officially — 1651 pages selected, 1649/1651 usable (0.9988),
+2 budgeted peg-native failures (tracked upstream as
+[PaddlePaddle/PaddleOCR#18248](https://github.com/PaddlePaddle/PaddleOCR/issues/18248)),
+empty predictions accepted for the dataset's genuinely empty-GT pages; scores
+text 0.035386 / reading-order 0.129539 / TEDS 0.929766 (Windows) and CDM
+0.966490 (WSL). Full record:
+[`docs/reproduction-full1651-hip-2026-08-03.md`](docs/reproduction-full1651-hip-2026-08-03.md).
+
 Use `-Resume` only after an interrupted run: it re-checks the input
 fingerprint (profile, lock, manifest, configs, pipeline commit, repo state)
 and resumes inference per page with `--skip-existing`, so completed pages are

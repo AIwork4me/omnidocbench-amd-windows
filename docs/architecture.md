@@ -184,9 +184,22 @@ manifest, scoring configs, pipeline checkout commit, and repo commit/dirty
 state. `-Resume` refuses to proceed on any difference; `-ForceInference`
 deletes only the profile's own predictions, owned manifest, and
 save-name-scoped result files. The adapter (`--skip-existing`) reuses only
-UTF-8, non-empty prediction files for selected pages and persists
-`schema_version: 2` `_run_stats.json` atomically after every page, so a
-killed full-set run resumes per page instead of from scratch.
+UTF-8, non-empty prediction files for selected pages — plus empty files for
+pages whose ground truth is itself empty (OmniDocBench v1.6 contains such
+pages: figures plus empty text-masks only; see `scripts/gt_manifest.py`,
+consumed by both validators and the adapter via `--gt-manifest`) — and
+persists `schema_version: 2` `_run_stats.json` atomically after every page,
+so a killed full-set run resumes per page instead of from scratch.
+
+After a code change between runs, `-Resume` is refused by design (repo commit
+is part of the fingerprint). Completing a run without re-inferring the full
+set is authorized only with sampling evidence:
+`scripts/sample_prediction_equivalence.py` re-infers a deterministic sample
+and requires content-equivalence (difflib similarity >= 0.95) against the
+stored predictions — PaddleOCR-VL-1.6 GGUF outputs are not byte-reproducible
+across independent runs (glyph-level and table-structure variance), so
+equivalence is content-based. Machine-verified full-set evidence:
+[`docs/reproduction-full1651-hip-2026-08-03.md`](reproduction-full1651-hip-2026-08-03.md).
 
 Evidence: every run writes `outputs/reproduction/<profile>/` with
 `state.json`, `profile.resolved.json`, `fingerprint.json`, `hardware.json`,
