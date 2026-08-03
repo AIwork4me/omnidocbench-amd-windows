@@ -154,7 +154,18 @@ if ($SkipWsl) {
     $distros = (wsl --list --quiet 2>$null) | ForEach-Object { ($_ -replace "`0","").Trim() } | Where-Object { $_ }
     $distroText = ($distros -join "`n")
     if ($distroText -match "Ubuntu2204") {
-        $probe = wsl -d Ubuntu2204 -- echo "WSL_OK" 2>$null
+        # wsl.exe prints a startup warning to stderr on some machines (e.g.
+        # "localhost proxy not mirrored to WSL"); with $ErrorActionPreference
+        # = Stop that warning becomes a terminating error, so probe with
+        # Continue semantics like the orchestrator does.
+        $probe = ""
+        $previousErrorActionPreference = $ErrorActionPreference
+        try {
+            $ErrorActionPreference = "Continue"
+            $probe = ((@(wsl -d Ubuntu2204 -- echo "WSL_OK" 2>$null) -join "") -replace "`0", "").Trim()
+        } finally {
+            $ErrorActionPreference = $previousErrorActionPreference
+        }
         if ($probe -match "WSL_OK") {
             Add-Result "WSL Ubuntu2204" "PASS" "reachable"
         } else {

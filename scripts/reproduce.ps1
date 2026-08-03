@@ -493,9 +493,11 @@ Invoke-Stage -Id "environment.python" -Name "Python environment" {
         # OneDrive/Cloud Files rejects hardlinks from uv's local cache with
         # Windows error 396. Copy mode is deterministic and works everywhere.
         $env:UV_LINK_MODE = "copy"
-        Invoke-ReproUv python install 3.11
+        # NB: PowerShell 5.1 binds only the FIRST positional value to a
+        # [string[]] parameter, so every array argument must use -Arguments.
+        Invoke-ReproUv -Arguments @("python", "install", "3.11")
         Assert-LastExit "uv python install"
-        Invoke-ReproUv sync --locked --all-groups
+        Invoke-ReproUv -Arguments @("sync", "--locked", "--all-groups")
         Assert-LastExit "uv sync"
     } finally {
         $env:UV_LINK_MODE = $previousLinkMode
@@ -585,7 +587,11 @@ function Get-RepoWslPath {
     $previousErrorActionPreference = $ErrorActionPreference
     try {
         $ErrorActionPreference = "Continue"
-        $result = ((@(Invoke-ReproWsl -Arguments @("-d", "Ubuntu2204", "--", "wslpath", "-a", $posix) 2>$null) -join "") -replace "`0", "").Trim()
+        # Invoke-ReproWsl emits the exit code as its last output value, so
+        # filter the captured lines to the actual /mnt/ path (the appended
+        # "0" would otherwise corrupt the path, e.g. "...windows0/").
+        $lines = @(Invoke-ReproWsl -Arguments @("-d", "Ubuntu2204", "--", "wslpath", "-a", $posix) 2>$null) | Where-Object { $_ -is [string] -and $_ -match "^/mnt/" }
+        if ($lines.Count -gt 0) { $result = (($lines -join "") -replace "`0", "").Trim() }
     } finally {
         $ErrorActionPreference = $previousErrorActionPreference
     }
@@ -912,7 +918,6 @@ Invoke-Stage -Id "evidence.pack" -Name "Evidence pack" -AlwaysRun {
     if (-not $DryRun) {
         Write-ProfileResolved -EvidenceDir $evidenceDir -Profile $profile -ServerPort $serverPort | Out-Null
         Write-HardwareJson -EvidenceDir $evidenceDir
-        Write-ArtifactHashes -EvidenceDir $evidenceDir -Profile $profile -PipelineCheckout $pipelineCheckout -EnvFile $adapterEnvFile -ServerPort $serverPort -PredictionTreeFile $predictionTreeFile -PredictionSummaryFile $predictionSummaryFile -BackendProofFile $backendProofFile -WindowsResult $windowsResult -WindowsProvenanceFile $windowsProvenanceFile -WslResult (Get-WslResultPath -SaveName $saveName) -WslProvenanceFile (Get-WslResultPath -SaveName $saveName -FileSuffix "_metric_result.provenance.json") -StateFile $stateFile -ReportFile $reportFile -ProfileResolvedFile $profileResolvedFile | Out-Null
         # prediction-summary.json is written ONLY by verify_prediction_set.py;
         # the evidence pack verifies and copies it, never recomputes it.
         if (-not (Test-Path -LiteralPath $predictionSummaryFile -PathType Leaf)) {
@@ -942,6 +947,10 @@ Invoke-Stage -Id "evidence.pack" -Name "Evidence pack" -AlwaysRun {
         }
         Write-Report -EvidenceDir $evidenceDir -State $state -Profile $profile -Fingerprint $fingerprint -ResumeCommand "powershell -ExecutionPolicy Bypass -File scripts\reproduce.ps1 -Profile $RunProfile -Resume" -ServerPort $serverPort -PredictionTreeHash (Get-JsonField -Path $predictionTreeFile -Field "prediction_tree_sha256") | Out-Null
         Save-State
+        # Artifact hashes must be computed LAST, over the FINAL artifacts:
+        # report.md and the final state.json only exist after the above, so
+        # hashing earlier would record null/stale values for them.
+        Write-ArtifactHashes -EvidenceDir $evidenceDir -Profile $profile -PipelineCheckout $pipelineCheckout -EnvFile $adapterEnvFile -ServerPort $serverPort -PredictionTreeFile $predictionTreeFile -PredictionSummaryFile $predictionSummaryFile -BackendProofFile $backendProofFile -WindowsResult $windowsResult -WindowsProvenanceFile $windowsProvenanceFile -WslResult (Get-WslResultPath -SaveName $saveName) -WslProvenanceFile (Get-WslResultPath -SaveName $saveName -FileSuffix "_metric_result.provenance.json") -StateFile $stateFile -ReportFile $reportFile -ProfileResolvedFile $profileResolvedFile | Out-Null
         # Evidence fingerprint must bind the FINAL state file, so it is
         # computed after the run is marked passed.
         $spec = [ordered]@{
