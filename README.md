@@ -106,25 +106,85 @@ local reproduction details are in
 
 ## Quick Start
 
-For a real AMD Windows provisioning check without rerunning the accuracy
-benchmark, clone and run the canonical ten-page CPU profile. It includes WSL
-CDM and writes resumable evidence under `outputs/reproduction/cpu-smoke-10/`:
+Clone and run one of the three reproduction profiles. Each profile is a
+declarative definition (name, backend, pages, prediction dir, manifests,
+scoring configs, save name, port, coverage and failed-page budgets, metric
+thresholds) under `scripts/profiles/`; `reproduce.ps1` is a generic
+profile-driven orchestrator, so no path or stage is duplicated per profile.
 
 ```bash
 git clone https://github.com/AIwork4me/omnidocbench-amd-windows
 cd omnidocbench-amd-windows
 ```
 
+### 快速环境验证 — quick environment verification (CPU)
+
 ```powershell
 powershell -ExecutionPolicy Bypass -File scripts\reproduce.ps1 `
   -Profile cpu-smoke-10
 ```
 
-Use `-Resume` only after an interrupted run. The first run refuses existing
-profile predictions/results, processes exactly ten images, verifies all locked
-upstream inputs, and scores Windows metrics plus WSL CDM. This is a capability
-smoke test, not a leaderboard result. See
-[`docs/upstream-lock.md`](docs/upstream-lock.md) for the executable input lock.
+Ten fixed CPU pages, Windows Edit-distance/TEDS plus WSL CDM, 100% prediction
+coverage, resumable evidence under `outputs/reproduction/cpu-smoke-10/`. This
+is a capability smoke test, not a leaderboard result.
+
+### 快速 AMD GPU 验证 — quick AMD GPU verification
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts\reproduce.ps1 `
+  -Profile hip-smoke-10
+```
+
+Ten fixed pages on the HIP llama.cpp backend with an automatic **backend
+proof**: variant markers, HIP binary evidence, locked tag, GPU offload and
+HIP/ROCm log evidence. No CPU fallback: if the proof or preflight fails, the
+profile fails. Windows metrics plus WSL CDM, 100% prediction coverage. Run
+this before starting a multi-hour full benchmark.
+
+### AMD GPU 全量 1651 页评测 — full 1651-page AMD GPU benchmark
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts\reproduce.ps1 `
+  -Profile paddleocr-vl-hip-full-1651
+```
+
+The formal full benchmark: PaddleOCR-VL-1.6 lightweight pipeline, locked
+OmniDocBench v1.6 dataset (exactly 1651 pages), HIP backend with backend
+proof, all four standard metrics (text Edit-distance, reading-order
+Edit-distance, table TEDS, formula CDM), mandatory WSL CDM, strict acceptance
+(≥99.8% coverage, ≤2 failed pages, manifest/stats/result binding) and a
+complete evidence pack under
+`outputs/reproduction/paddleocr-vl-hip-full-1651/`.
+
+**Plan for hours.** WSL CDM remains the default reference path. HIP support
+depends on whether the locked binary covers your GPU architecture — the
+Radeon 860M/gfx1152 class is **not** a supported locked HIP path (use
+`-Variant cpu` there; see the Radeon 860M note above). Smoke results are
+never leaderboard scores; full results must clear the strict evidence gates
+documented in [`docs/architecture.md`](docs/architecture.md#reproduction-profiles).
+
+Machine-verified on a Ryzen AI MAX+ 395 / Radeon 8060S (2026-08-03): the full
+profile passed officially — 1651 pages selected, 1649/1651 usable (0.9988),
+2 budgeted peg-native failures (tracked upstream as
+[PaddlePaddle/PaddleOCR#18248](https://github.com/PaddlePaddle/PaddleOCR/issues/18248)),
+empty predictions accepted for the dataset's genuinely empty-GT pages; scores
+text 0.035386 / reading-order 0.129539 / TEDS 0.929766 (Windows) and CDM
+0.966490 (WSL). Full record:
+[`docs/reproduction-full1651-hip-2026-08-03.md`](docs/reproduction-full1651-hip-2026-08-03.md).
+
+Use `-Resume` only after an interrupted run: it re-checks the input
+fingerprint (profile, lock, manifest, configs, pipeline commit, repo state)
+and resumes inference per page with `--skip-existing`, so completed pages are
+never re-processed. The first run refuses existing profile artifacts; a fresh
+run that must replace old predictions uses `-ForceInference`, which deletes
+only this profile's predictions, owned manifest and save-name-scoped results.
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts\reproduce.ps1 -ListProfiles
+powershell -ExecutionPolicy Bypass -File scripts\reproduce.ps1 -Profile cpu-smoke-10 -DryRun
+```
+
+See [`docs/upstream-lock.md`](docs/upstream-lock.md) for the executable input lock.
 
 If the locked dataset/GGUF/layout files already exist in another checkout,
 avoid repeating bulk downloads while keeping inference and scoring fresh:

@@ -60,22 +60,40 @@ Work top to bottom. Run each `verify.*` immediately after its `setup.*`; only
 proceed when it exits 0. All paths are relative to the repo root. Launch
 PowerShell scripts with `powershell -ExecutionPolicy Bypass -File ...`.
 
-For a clean-room AMD Windows capability acceptance run (not accuracy
-benchmarking), prefer the canonical single entry point:
+The canonical single entry point is the profile-driven orchestrator. Three
+formal profiles exist (see `scripts/profiles/*.profile.json` and
+`-ListProfiles`):
 
 ```powershell
+# Capability smoke on CPU (10 pages, Windows metrics + WSL CDM)
 powershell -ExecutionPolicy Bypass -File scripts\reproduce.ps1 `
    -Profile cpu-smoke-10
+
+# Fast AMD GPU acceptance (10 pages, HIP backend proof, no CPU fallback)
+powershell -ExecutionPolicy Bypass -File scripts\reproduce.ps1 `
+   -Profile hip-smoke-10
+
+# Formal full benchmark (HIP, locked 1651 pages, strict gates, WSL CDM)
+powershell -ExecutionPolicy Bypass -File scripts\reproduce.ps1 `
+   -Profile paddleocr-vl-hip-full-1651
 ```
 
-It executes the same setup/verify ownership chain below, verifies
-`upstream-lock.json`, produces exactly ten fresh CPU predictions, scores Windows
-metrics and WSL CDM, and writes resumable state. Use `-Resume` only after an
-interrupted run.
+Each profile declares backend, pages, prediction dir, manifest, scoring
+configs, `save_name`, port, coverage/failed-page budgets and raw-scale metric
+thresholds; `reproduce.ps1` runs the same stage chain for every profile,
+keyed by stable stage IDs (`environment.python`, `dataset.setup`,
+`inference.server`, `inference.backend_proof`, `inference.run`,
+`scoring.windows`, `scoring.wsl_cdm`, `verification.final`,
+`evidence.pack`, ...). Resume re-checks the input fingerprint
+(`scripts/compute_fingerprint.py`) and continues inference per page with
+`--skip-existing`; a fingerprint mismatch refuses resume until a fresh run or
+`-ForceInference` (scoped to the profile's own artifacts).
 
-When bulk dataset/GGUF/layout bytes already exist in another checkout, add
-`-SeedFrom <path> -SkipCdmSetup`. The orchestrator verifies source and
-destination locks and still creates fresh predictions and scores.
+`-Resume` reuses only passed stages whose inputs are unchanged; `-DryRun`
+prints the resolved profile and stage commands; `-ListProfiles` lists the
+catalog. When bulk dataset/GGUF/layout bytes already exist in another
+checkout, add `-SeedFrom <path> -SkipCdmSetup`. The orchestrator verifies
+source and destination locks and still creates fresh predictions and scores.
 
 ### Step 0 — environment + network + WSL  (Windows)
 
@@ -141,8 +159,10 @@ the 9 steps self-skips when already done.
 ```powershell
 # 3a. VLM server: selected llama.cpp build + ~1.7 GB GGUF, starts llama-server.
 powershell -ExecutionPolicy Bypass -File adapters\paddleocr-vl-1.6\01-vlm-server\setup.ps1 -Variant $variant
-powershell -ExecutionPolicy Bypass -File adapters\paddleocr-vl-1.6\01-vlm-server\verify.ps1
-#   hip only → ⚠️ 2 (confirm GPU in use)
+powershell -ExecutionPolicy Bypass -File adapters\paddleocr-vl-1.6\01-vlm-server\verify.ps1 -ExpectedVariant $variant
+#   hip only → ⚠️ 2 (confirm GPU in use); the -ExpectedVariant flag also runs
+#   the full backend proof (assert-backend-proof.ps1): variant markers, HIP
+#   binary evidence, locked tag, GPU offload and HIP/ROCm log evidence.
 #   verify exit 1 / 500 errors → pitfalls.md#vlm
 
 # 3b. Layout model: PP-DocLayoutV3 ONNX (~16 MB).
@@ -292,12 +312,21 @@ The system is fully operational when all criteria for the **selected CDM path** 
    `eval-infra\02-cdm-environment\verify-windows.ps1` prints `VERIFY OK` and
    positive identical-formula F1; WSL path
    `eval-infra/02-cdm-environment/verify.sh` prints `VERIFY OK`.
-4. `adapters/paddleocr-vl-1.6/01-vlm-server/verify.ps1` exits 0 (`curl /v1/models` 200).
-5. `predictions/paddleocrvl_rocm/` contains one `.md` per dataset page (~1651).
+4. `adapters/paddleocr-vl-1.6/01-vlm-server/verify.ps1` exits 0 (`curl /v1/models` 200); HIP profiles additionally pass `assert-backend-proof.ps1 -ExpectedVariant hip` (binary + log + offload evidence, no CPU fallback).
+5. `predictions/paddleocrvl_rocm/` contains one `.md` per dataset page (~1651);
+   the `paddleocr-vl-hip-full-1651` profile's `predictions/paddleocrvl_hip_full_1651/`
+   covers at least 99.8% of the 1651 pages with usable predictions (UTF-8,
+   non-empty, or empty for the dataset's genuinely empty-GT pages) and at most
+   `maximum_failed_pages` failures, with `_run_stats.json` selected_pages = 1651.
 6. `eval-infra/03-scoring/verify.ps1` exits 0: mandatory non-CDM metrics are
    present and non-negative; zero non-CDM metrics warn but can pass; CDM must
    be positive when present or required. A selected CDM scoring path requires
    a present, finite CDM score.
+7. Full reproduction runs additionally pass `scripts/verify_prediction_set.py`
+   (manifest page count, coverage, failed-page budget, selected pages),
+   `scripts/assert-metrics.ps1` (presence, finiteness, raw scale, profile
+   thresholds, freshness), and leave a complete evidence pack under
+   `outputs/reproduction/<profile>/`.
 
 Reference targets (our validated PaddleOCR-VL-1.6 results on OmniDocBench v1.6):
 
@@ -313,6 +342,16 @@ In raw `metric_result.json`, TEDS/CDM use 0-1 values, so the same threshold is
 
 A run whose metrics clear these thresholds reproduces our results. See
 [`README.md`](README.md) for the full table vs. the official baseline.
+
+Latest profile-driven full-set evidence (2026-08-03, Ryzen AI MAX+ 395 /
+Radeon 8060S): `paddleocr-vl-hip-full-1651` passed officially with Windows
+text `0.035386` / RO `0.129539` / TEDS `0.929766` and WSL CDM `0.966490`;
+1649/1651 usable (2 budgeted peg-native failures, upstream
+PaddlePaddle/PaddleOCR#18248; the dataset's 2 genuinely empty-GT pages accept
+empty predictions per `scripts/gt_manifest.py`). Full record:
+[`docs/reproduction-full1651-hip-2026-08-03.md`](docs/reproduction-full1651-hip-2026-08-03.md).
+HIP smoke evidence:
+[`docs/reproduction-hip-smoke-2026-08-02.md`](docs/reproduction-hip-smoke-2026-08-02.md).
 
 Latest local Windows-native official-engine CDM evidence:
 `C:\Users\rocm\Desktop\PaddleOCR-VL-ROCm\logs\official_cdm_rerun_20260711_092548.log`

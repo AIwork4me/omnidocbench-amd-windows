@@ -11,12 +11,29 @@ PaddleOCR-VL-1.6-GGUF model. Checks:
   - llama-server answers GET /v1/models at the configured host:port.
   - The expected model id (VL_REC_API_MODEL_NAME) is listed.
 
+When -ExpectedVariant is given, the full backend proof runs (see
+assert-backend-proof.ps1): variant markers, binary evidence, locked tag,
+GPU offload and log-level HIP/ROCm evidence. A reachable HTTP endpoint alone
+never proves the backend.
+
+.PARAMETER ExpectedVariant
+Optional: require the installed backend to be "hip" or "cpu" (full proof).
+.PARAMETER Port
+Optional: override the server port for the HTTP check.
+
 Exit 0 = OK, 1 = FAIL. Suitable for chaining in full-verify.ps1 (Task 7).
 #>
+[CmdletBinding()]
+param(
+    [ValidateSet("hip", "cpu")]
+    [string] $ExpectedVariant = "",
+    [string] $Port = ""
+)
 $ErrorActionPreference = "Stop"
 
 $adapterRoot = Split-Path -Parent $PSScriptRoot
 $envFile     = Join-Path $adapterRoot ".env.local"
+$rootDir     = Split-Path -Parent (Split-Path -Parent $adapterRoot)
 
 function Get-DotEnv {
     param([string]$Path)
@@ -71,7 +88,7 @@ if (-not [string]::IsNullOrWhiteSpace($mmproj) -and -not (Test-Path $mmproj)) {
 
 # --- reachability ---
 $host_  = if ($env["LLAMA_HOST"]) { $env["LLAMA_HOST"] } else { "127.0.0.1" }
-$port   = if ($env["LLAMA_PORT"]) { $env["LLAMA_PORT"] } else { "8111" }
+$port   = if ($Port) { $Port } elseif ($env["LLAMA_PORT"]) { $env["LLAMA_PORT"] } else { "8111" }
 $base   = "http://${host_}:$port"
 
 Write-Host "Checking llama-server at $base/v1/models ..." -ForegroundColor Cyan
@@ -102,6 +119,21 @@ if ($expectedModel) {
 }
 
 if ($ok) {
+    if ($ExpectedVariant) {
+        Write-Host ""
+        Write-Host "Running full backend proof (requested: $ExpectedVariant)..." -ForegroundColor Cyan
+        & powershell -ExecutionPolicy Bypass -File (Join-Path $PSScriptRoot "assert-backend-proof.ps1") `
+            -EnvFile $envFile `
+            -LogFile (Join-Path $adapterRoot "logs\llama-server.log") `
+            -PidFile (Join-Path $adapterRoot "logs\llama-server.pid") `
+            -ExpectedVariant $ExpectedVariant `
+            -LockFile (Join-Path $rootDir "upstream-lock.json") `
+            -BaseUrl $base
+        if ($LASTEXITCODE -ne 0) {
+            Write-Host "VERIFY FAILED: backend proof did not pass." -ForegroundColor Red
+            exit 1
+        }
+    }
     Write-Host "VERIFY OK: PaddleOCR-VL-1.6 VLM server is healthy." -ForegroundColor Green
     exit 0
 } else {

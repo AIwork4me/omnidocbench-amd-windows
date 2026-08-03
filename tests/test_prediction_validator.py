@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import importlib.util
+import json
 from pathlib import Path
 import subprocess
 
@@ -115,3 +116,58 @@ def test_manifest_can_define_expected_prediction_set(tmp_path: Path):
     )
 
     assert failures == []
+
+
+def test_empty_prediction_is_valid_when_gt_is_empty(tmp_path: Path):
+    validator = load_validator()
+    prediction_dir = tmp_path / "predictions"
+    prediction_dir.mkdir()
+    (prediction_dir / "page.md").write_text("", encoding="utf-8")
+    manifest = tmp_path / "subset.json"
+    manifest.write_text(
+        json.dumps(
+            [
+                {
+                    "page_info": {"image_path": "page.png"},
+                    "layout_dets": [
+                        {"category_type": "figure"},
+                        {"category_type": "text_mask", "text": ""},
+                    ],
+                }
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    failures = validator.validate_predictions(
+        None, prediction_dir, minimum_coverage=1.0, manifest_path=manifest
+    )
+
+    assert failures == []
+
+
+def test_empty_prediction_still_fails_when_gt_is_not_empty(tmp_path: Path):
+    validator = load_validator()
+    prediction_dir = tmp_path / "predictions"
+    prediction_dir.mkdir()
+    (prediction_dir / "page.md").write_text("", encoding="utf-8")
+    manifest = tmp_path / "subset.json"
+    manifest.write_text(
+        json.dumps(
+            [
+                {
+                    "page_info": {"image_path": "page.png"},
+                    "layout_dets": [
+                        {"category_type": "text_block", "text": "real gt"},
+                    ],
+                }
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    failures = validator.validate_predictions(
+        None, prediction_dir, minimum_coverage=1.0, manifest_path=manifest
+    )
+
+    assert any("empty" in failure for failure in failures)

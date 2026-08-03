@@ -137,6 +137,16 @@ $repoId     = "PaddlePaddle/PaddleOCR-VL-1.6-GGUF"
 # ===========================================================================
 $serverExe = Get-ChildItem -Path $llamaDir -Filter "llama-server.exe" -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1
 $installedVariant = if (Test-Path -LiteralPath $variantFile) { (Get-Content -Raw -LiteralPath $variantFile).Trim() } else { "" }
+# Repair a missing/mismatched .variant marker when the binary tree already
+# exists: infer the installed build from its DLL set instead of re-downloading.
+if ($serverExe -and $installedVariant -ne $Variant) {
+    $inferredVariant = if (Test-Path -LiteralPath (Join-Path (Split-Path -Parent $serverExe.FullName) "ggml-hip.dll")) { "hip" } else { "cpu" }
+    if ($inferredVariant -eq $Variant) {
+        Set-Content -LiteralPath $variantFile -Value $Variant -Encoding ASCII
+        $installedVariant = $Variant
+        Write-Host "[1/3] Repaired .variant marker (installed binary is $Variant)." -ForegroundColor Green
+    }
+}
 if ($SkipDownload) {
     Write-Host "[1/3] Skipping llama.cpp download (-SkipDownload)." -ForegroundColor Yellow
 } elseif ($serverExe -and $installedVariant -eq $Variant -and -not $Force) {
@@ -292,10 +302,16 @@ if (-not $alreadyUp) {
     # Parameters tuned + verified byte-identical vs conservative config on
     # AMD Radeon 8060S (Phase 5 parameter sweep in the source project).
     $gpuLayers = if ($Variant -eq "hip") { "99" } else { "0" }
+    $modelAlias = Split-Path $mainGguf -Leaf
     $llamaArgs = @(
         "--host", $host_,
         "--port", $Port,
         "-m", $mainGguf,
+        # Serve a deterministic model id: llama-server b9637 reports the -m
+        # argument verbatim (full path on Windows), but the pipeline and
+        # verify.ps1 ask for the basename. --alias pins the served id to the
+        # basename so VL_REC_API_MODEL_NAME always matches /v1/models.
+        "--alias", $modelAlias,
         "--temp", "0",
         "-c", "32768",
         "-ngl", $gpuLayers,

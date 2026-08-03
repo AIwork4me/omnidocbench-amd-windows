@@ -15,3 +15,9 @@ def test_referenced_configs_exist():
     assert refs, "no config references found"
     missing = [r for r in sorted(refs) if not (CONFIG_DIR / r).is_file()]
     assert not missing, f"referenced configs missing: {missing}"
+
+
+def test_score_cdm_sh_raises_the_wsl_open_file_limit():
+    """1651-page CDM runs exhaust WSL's default 1024-file limit (Errno 24)."""
+    script = (ROOT / "eval-infra" / "03-scoring" / "score-cdm.sh").read_text(encoding="utf-8")
+    assert "ulimit -n 65535" in script

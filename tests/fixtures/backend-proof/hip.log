@@ -1,0 +1,9 @@
+HIP Library Path: C:\Windows\SYSTEM32\amdhip64_7.dll
+0.00.456.715 I cmn  common_param: common_params_print_info: verbosity = 3
+ggml_cuda_init: found 1 ROCm devices:
+  Device 0: AMD Radeon Graphics, gfx1151 (0x1151), VMM: 65536 MiB
+llama_model_load: offloaded 37/37 layers to GPU
+0.00.744.076 I srv    load_model: loading model 'C:\models\PaddleOCR-VL-1.6-GGUF.gguf'
+0.06.171.436 I srv    load_model: loaded multimodal model
+0.06.210.365 I srv  llama_server: model loaded
+0.06.210.371 I srv  llama_server: listening on http://127.0.0.1:8122

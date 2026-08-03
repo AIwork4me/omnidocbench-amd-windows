@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "verified_at": "2026-07-26",
+  "verified_at": "2026-08-02",
   "git": {
     "omnidocbench": {
       "url": "https://github.com/opendatalab/OmniDocBench.git",
@@ -89,11 +89,12 @@
     "ubuntu": "22.04",
     "python": "3.10",
     "texlive": "2026",
-    "texlive_tlmgr_revision": "79639",
-    "texlive_tlpdb_bytes": 4871636,
-    "texlive_tlpdb_sha256": "4013c1ec60f436376177522ad7e47101f61bdd377500a744b6a6f028339a6806",
+    "texlive_tlmgr_revision": "79491",
+    "texlive_tlpdb_bytes": 20342364,
+    "texlive_tlpdb_sha256": "2c6aad37ea703d5ed5bbf7f2321dec6929c6201ecfcd284c06be40d3166d8d6c",
     "imagemagick": "7.1.2-26",
     "ghostscript_minimum": "9.55.0",
-    "python_requirements": "eval-infra/02-cdm-environment/requirements.lock.txt"
+    "python_requirements": "eval-infra/02-cdm-environment/requirements.lock.txt",
+    "verified_at_previous": "2026-07-26"
   }
 }
