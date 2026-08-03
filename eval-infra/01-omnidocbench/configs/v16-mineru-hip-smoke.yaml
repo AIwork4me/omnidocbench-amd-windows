@@ -1,0 +1,14 @@
+# MinerU pipeline HIP smoke (10 pages, non-CDM metrics). Provisioning evidence,
+# not an accuracy benchmark run.
+end2end_eval:
+  metrics:
+    text_block:      { metric: [Edit_dist] }
+    display_formula: { metric: [Edit_dist] }
+    table:           { metric: [TEDS, Edit_dist], teds_workers: 1 }
+    reading_order:   { metric: [Edit_dist] }
+  dataset:
+    dataset_name: end2end_dataset
+    ground_truth: { data_path: <REPO_ROOT>/eval-infra/01-omnidocbench/data/OmniDocBench_mineru_hip_smoke.json }
+    prediction:   { data_path: <REPO_ROOT>/predictions/mineru_pipeline_hip_smoke }
+    match_method: quick_match
+    match_workers: 1
