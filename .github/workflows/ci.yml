@@ -110,12 +110,14 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v7.0.1 # v7.0.1 - pin to full SHA before release
-      - name: Parse Bash scripts
-        run: find . -type f -name '*.sh' -print0 | xargs -0 -n1 bash -n
-      - name: ShellCheck
+      - name: Parse our Bash scripts (repo-owned .sh only; the cloned upstream
+              OmniDocBench tree is excluded)
+        run: |
+          find eval-infra/02-cdm-environment eval-infra/03-scoring adapters -type f -name '*.sh' -print0 | xargs -0 -n1 bash -n
+      - name: ShellCheck (SC1090: dynamic source is a known false positive)
         run: |
           sudo apt-get update -qq && sudo apt-get install -y -qq shellcheck
-          find . -type f -name '*.sh' -print0 | xargs -0 -n1 shellcheck -S warning
+          find eval-infra/02-cdm-environment eval-infra/03-scoring adapters -type f -name '*.sh' -print0 | xargs -0 -n1 shellcheck -S warning -e SC1090
 
   actionlint:
     runs-on: ubuntu-latest
@@ -134,6 +136,11 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v7.0.1 # v7.0.1 - pin to full SHA before release
+      - name: Install uv
+        uses: astral-sh/setup-uv@v9.0.0 # v9.0.0
+        with:
+          python-version: '3.11'
+          enable-cache: true
       - name: Validate internal markdown links
         run: |
           uv sync --locked --all-groups --python 3.11
@@ -150,7 +157,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v7.0.1 # v7.0.1 - pin to full SHA before release
       - name: Dependency Review
-        uses: actions/dependency-review-action@v5.5.1 # v5.5.1 - pin to full SHA before release
+        uses: actions/dependency-review-action@v5.0.0 # v5.0.0 - pin to full SHA before release
         with:
           fail-on-severity: high
 

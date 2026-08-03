@@ -5,6 +5,11 @@ from pathlib import Path
 import subprocess
 import sys
 
+import pytest
+
+pytestmark = pytest.mark.win32
+
+
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 LOCK = REPO_ROOT / "upstream-lock.json"
