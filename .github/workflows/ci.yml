@@ -110,11 +110,10 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v7.0.1 # v7.0.1 - pin to full SHA before release
-      - name: Parse our Bash scripts (repo-owned .sh only; the cloned upstream
-              OmniDocBench tree is excluded)
+      - name: Parse our Bash scripts (repo-owned .sh only; the cloned upstream OmniDocBench tree is excluded)
         run: |
           find eval-infra/02-cdm-environment eval-infra/03-scoring adapters -type f -name '*.sh' -print0 | xargs -0 -n1 bash -n
-      - name: ShellCheck (SC1090: dynamic source is a known false positive)
+      - name: "ShellCheck (SC1090: dynamic source is a known false positive)"
         run: |
           sudo apt-get update -qq && sudo apt-get install -y -qq shellcheck
           find eval-infra/02-cdm-environment eval-infra/03-scoring adapters -type f -name '*.sh' -print0 | xargs -0 -n1 shellcheck -S warning -e SC1090
