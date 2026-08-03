@@ -26,5 +26,8 @@
     "teds_min": 0.0,
     "cdm_min": 0.0
   },
-  "expected_runtime_class": "minutes"
+  "expected_runtime_class": "minutes",
+  "max_timeout_cases": 8,
+  "max_exception_cases": 4,
+  "max_metric_error_cases": 8
 }
