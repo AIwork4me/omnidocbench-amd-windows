@@ -34,7 +34,12 @@ def run_ps(script: str) -> subprocess.CompletedProcess:
 def ps_json(script: str):
     result = run_ps(script)
     assert result.returncode == 0, result.stdout + result.stderr
-    return json.loads(result.stdout)
+    try:
+        return json.loads(result.stdout)
+    except json.JSONDecodeError as error:
+        raise AssertionError(
+            f"PS output is not JSON: {error}\nSTDOUT: {result.stdout[:2000]}\nSTDERR: {result.stderr[:2000]}"
+        ) from error
 
 
 def test_artifact_resolution_covers_every_owned_path(tmp_path):

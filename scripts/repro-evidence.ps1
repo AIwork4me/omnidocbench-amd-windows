@@ -101,7 +101,11 @@ function Get-HardwareInfo {
             $wslVersion = wsl -l -v 2>$null
             if ($LASTEXITCODE -eq 0) { $wsl = ((@($wslVersion) -join "`n") -replace "`0", "").Trim() }
         } catch { }
-        finally { $ErrorActionPreference = $previousErrorActionPreference }
+        finally {
+            # Best-effort probe: never leak its exit code into the caller.
+            $LASTEXITCODE = 0
+            $ErrorActionPreference = $previousErrorActionPreference
+        }
     }
     $info.wsl = $wsl
     return $info
@@ -339,6 +343,8 @@ function Get-WslResultPath {
         $ErrorActionPreference = "Continue"
         $wslHome = ((@(wsl -d Ubuntu2204 -- sh -lc 'printf %s "$HOME"' 2>$null) -join "") -replace "`0", "").Trim()
     } finally {
+        # Best-effort probe: never leak its exit code into the caller.
+        $LASTEXITCODE = 0
         $ErrorActionPreference = $previousErrorActionPreference
     }
     if (-not $wslHome) { $wslHome = "/root" }

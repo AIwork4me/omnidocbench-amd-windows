@@ -337,6 +337,9 @@ function Invoke-Stage {
     $started = Get-Date
     $exitCode = 0
     $errorText = ""
+    # Reset $LASTEXITCODE so a best-effort native probe (e.g. a wsl presence
+    # check inside a helper) cannot poison the stage's exit-code gate.
+    $LASTEXITCODE = 0
     try {
         & $Action
         if ($LASTEXITCODE -ne 0) { $exitCode = $LASTEXITCODE; throw "Command exited $exitCode" }
