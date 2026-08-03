@@ -7,15 +7,33 @@
 [![GitHub stars](https://img.shields.io/github/stars/AIwork4me/omnidocbench-amd-windows)](https://github.com/AIwork4me/omnidocbench-amd-windows)
 [![ci](https://github.com/AIwork4me/omnidocbench-amd-windows/actions/workflows/ci.yml/badge.svg)](https://github.com/AIwork4me/omnidocbench-amd-windows/actions/workflows/ci.yml)
 
-[English](README.md) · [架构图](docs/architecture.md) · [踩坑知识库](docs/pitfalls.md) · [AGENTS.md](AGENTS.md)
+[English](README.md) · [架构图](docs/architecture.md) · [踩坑知识库](docs/pitfalls.md) · [AGENTS.md](AGENTS.md) · [治理](GOVERNANCE.md) · [发布](RELEASE.md)
 
 > **我们踩了 20+ 个坑才跑通 OmniDocBench CDM。这个 repo 把它们压缩成一条命令。**
 
-在 **Windows + AMD Radeon GPU** 上从零搭建 [OmniDocBench](https://github.com/opendatalab/OmniDocBench) v1.6 全量评测系统
-（1651 页，四项标准指标：文本 / 阅读顺序 / 表格 TEDS / **公式 CDM**）。模型无关——换任何文档解析模型只需写一个
-[适配器](adapters/)。以 PaddleOCR-VL-1.6 为已验证参考。
+**一个统一入口**在 **Windows + AMD Radeon GPU** 上搭建 [OmniDocBench](https://github.com/opendatalab/OmniDocBench) v1.6 全量评测系统
+（1651 页，四项标准指标：文本 / 阅读顺序 / 表格 TEDS / **公式 CDM**），并提供完整证据包。
+“一条命令”指统一编排器（`scripts\reproduce.ps1`）；首次运行仍可能需要下载、UAC/驱动提示、
+WSL 或重启等人机协作步骤（见 [AGENTS.md](AGENTS.md) 的 ⚠️ 门），绝不假装完全无人值守。
+
+**当前可信能力：** 评分与适配器输出契约与模型无关；PaddleOCR-VL-1.6 在 Radeon 8060S（gfx1151）
+上是已验证的单命令参考 profile，全量结果标注为 **validated resumed**（尚未 clean-room）；
+**MinerU 使用文档化的适配器工作流**，带独立的人工介入门（Python 3.12 + ROCm torch）。
+参见 [`docs/hardware-support.md`](docs/hardware-support.md) 与下方[证据等级](#measured-results)。
 
 ![OmniDocBench AMD Windows 概览](overview.jpg)
+
+<!-- benchmark-table:start -->
+| Model | Backend | Run | Coverage | Text Edit-dist ↓ | Reading-order Edit-dist ↓ | Table TEDS ↑ | Formula CDM ↑ | Evidence |
+|---|---|---|---:|---:|---:|---:|---:|---|
+| PaddleOCR-VL-1.6 1.6 | llama.cpp GGUF (ROCm/HIP) | validated resumed | 0.9988 | 0.0354 | 0.1295 | 92.9766 | 96.6490 | [docs/reproduction-full1651-hip-2026-08-03.md](docs/reproduction-full1651-hip-2026-08-03.md) |
+| PaddleOCR-VL-1.6 1.6 | llama.cpp GGUF (ROCm/HIP) | smoke | 1.0000 | 0.0143 | — | 100.0000 | 99.3280 | [docs/reproduction-hip-smoke-2026-08-02.md](docs/reproduction-hip-smoke-2026-08-02.md) |
+| MinerU2.5-Pro-2605-1.2B 2605-1.2B | llama.cpp GGUF (HIP) | validated resumed | — | 0.0373 | 0.1225 | 93.1100 | 97.0100 | [docs/benchmarks/leaderboard-evidence-2026-08-01.md](docs/benchmarks/leaderboard-evidence-2026-08-01.md) |
+| MinerU 3.4.4 3.4.4 | ROCm PyTorch + ONNX DirectML | validated resumed | — | 0.0566 | 0.1531 | 82.0400 | 83.3900 | [docs/benchmarks/mineru-sample81-gate-2026-08-01.md](docs/benchmarks/mineru-sample81-gate-2026-08-01.md) |
+| PaddleOCR-VL-1.6 1.6 | llama.cpp GGUF (ROCm/HIP) | validated resumed | 0.9988 | 0.0349 | 0.1288 | 94.0900 | 97.3600 | [docs/release-paddleocr-vl-1.6-amd-windows-2026-07-16.md](docs/release-paddleocr-vl-1.6-amd-windows-2026-07-16.md) |
+| PaddleOCR-VL-1.6 1.6 | llama.cpp GGUF (ROCm/HIP) | validated resumed | 0.9988 | 0.0340 | 0.1282 | 94.3222 | 96.9219 | [docs/windows-native-cdm-verification-2026-07-11.md](docs/windows-native-cdm-verification-2026-07-11.md) |
+| PaddleOCR-VL-1.6 1.6 | llama.cpp GGUF (ROCm/HIP), official doc_parser engine | validated resumed | 0.9988 | 0.0344 | 0.1295 | 94.2393 | 96.5022 | [docs/release-paddleocr-vl-1.6-amd-windows-2026-07-16.md](docs/release-paddleocr-vl-1.6-amd-windows-2026-07-16.md) |
+<!-- benchmark-table:end -->
 
 ## 本机实测结果
 

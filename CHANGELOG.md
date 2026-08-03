@@ -6,11 +6,101 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [Unreleased]
 
 ### Added
+- Phase-scoped fingerprints for safe resume: provisioning / inference /
+  scoring / evidence phases via `scripts/compute_fingerprint.py --phase`;
+  formal (full) profiles fail closed on a dirty working tree; non-formal
+  profiles bind a content hash of `git diff --binary HEAD` plus untracked
+  files (further edits to an already-modified file are detected).
+- Deterministic prediction-tree hashing (`scripts/hash_prediction_tree.py`):
+  manifest-ordered relative path + byte length + SHA-256, no mtimes;
+  missing/unexpected files and `_run_stats.json` recorded separately.
+- Metric-result provenance sidecars (`<save>_metric_result.provenance.json`)
+  via `scripts/metric_provenance.py`: prediction tree, manifest, config,
+  scorer checkout/code, result SHA, expected pages. Resume re-validates the
+  sidecar before reusing a score; a mismatch re-runs scoring.
+- Prediction-change invalidation: pre/post inference tree hashes clear
+  `inference.prediction_check` / `scoring.windows` / `scoring.wsl_cdm` /
+  `verification.final` / `evidence.pack` passed states so stale scores are
+  never reused.
+- Known-failure allowlist (`allowed_failed_page_stems`) for formal profiles:
+  `verify_prediction_set.py` reports `known_allowed_failures` /
+  `unknown_failures` / `recovered_known_failures`, rejects unknown failed
+  pages, checks `_run_stats.json` per-page status against the files and fails
+  on duplicate manifest stems.
+- `verify_prediction_set.py` is now the single source of truth for
+  `prediction-summary.json` (canonical schema incl. `empty_gt_valid`,
+  `prediction_tree_sha256`, `verdict`); the evidence pack only verifies and
+  copies it (smoke profiles use the same verifier).
+- Adapter manifests (`adapters/<adapter>/adapter.json`) with
+  `scripts/validate_adapter_manifest.py` (schema + repo-relative path safety);
+  the orchestrator runs only the lifecycle stages an adapter declares.
+- `mineru-pipeline-hip-smoke` profile with a documented human-intervention
+  gate (Python 3.12 + ROCm torch; never pretends to be unattended).
+- Benchmark single source of truth: `benchmarks/schema.json`,
+  `benchmarks/index.json`, `scripts/validate_benchmark_index.py` and
+  `scripts/render_benchmark_tables.py` (README tables generated, CI drift
+  check). The 2026-08-03 full-set row is labelled **validated resumed**.
+- Release gate `scripts/release-gate.ps1` (version/tag, CHANGELOG, tests,
+  table drift, benchmark/adapter schema, clean tree, release notes) with
+  optional SBOM/SHA256SUMS/evidence manifest; `CITATION.cff`, `RELEASE.md`,
+  `SUPPORT.md`, `GOVERNANCE.md`, `MAINTAINERS.md`,
+  `docs/benchmark-evidence-policy.md`, `docs/deprecation-policy.md` and the
+  hardware support matrix (`docs/hardware-support.{md,json}`).
+- Executable orchestrator integration tests
+  (`tests/test_reproduce_harness.py`, `tests/test_repro_artifacts.py`,
+  `tests/test_reproduce_harness.py`) via test-only `REPRO_*` injection
+  (fake scripts/root; the formal path is unchanged) covering fresh runs,
+  interrupt/resume, prediction-change invalidation, stale-provenance
+  rejection, scoped ForceInference, dirty-formal rejection, empty-GT and
+  allowlist gates; hardened HIP backend proof (strict layer parsing,
+  Win32_Process identity, server start-time/log-freshness, one minimal
+  inference request, DLL hashes) with fixture tests.
+- CI hardening: Ubuntu pure-Python jobs, Ruff/Pyright, ShellCheck,
+  actionlint, benchmark drift + adapter/benchmark schema checks, dependency
+  review, OpenSSF Scorecard, Dependabot, concurrency/timeouts, and a manual
+  self-hosted AMD GPU HIP-smoke workflow with scrubbed evidence upload.
+
+### Changed
+- `scripts/reproduce.ps1`: unified owned-artifact path block (Fix
+  `-ForceInference` referencing `$fingerprintFile` before definition),
+  manifest-driven adapter lifecycle, resolved server port recorded in
+  evidence, `-ServerPort` never leaks the profile default, conditional
+  budget parameters.
+- `scripts/assert-metrics.ps1`: `-ExpectedPages` (full denominator),
+  `-ProvenanceFile` (result SHA + prediction-tree binding),
+  `-MaxTimeouts/-MaxExceptions/-MaxMetricErrors`, Windows↔WSL cross-platform
+  tolerance check, explicit aggregation paths.
+- Canonical metrics naming in `metrics-summary.json`: pooled vs page-level
+  TEDS are distinct keys (`table_teds_pooled`, `table_teds_page_avg`,
+  `official_overall`); `artifact-hashes.json` now covers prediction tree,
+  run stats, strict summary, backend proof, both metric results + provenance
+  sidecars, state, report, profile.resolved and the resolved port.
+- `build_prediction_subset.py` accepts empty predictions for empty-GT pages.
+- Version single source: `pyproject.toml` bumped 0.0.0 → 1.0.0 (mirrored in
+  `uv.lock`, `CITATION.cff`).
+
+### Fixed
+- Clean-checkout resume no longer fails on `pipeline_checkout_commit = null`:
+  provisioning no longer binds the pipeline checkout; the inference phase
+  binds it after provision.
+- Resume after an early interrupt (fingerprint not yet written) computes the
+  fingerprint fresh instead of throwing.
+- `-AllowedFailedPageStem` passed once with comma-joined stems (PowerShell
+  5.1 rejects repeated array-parameter occurrences on `-File`).
+- MinerU/other adapters may declare HIP profiles without the
+  llama.cpp-specific backend proof when their manifest documents the
+  capability gap.
+
+### Deprecated
+- `scripts/validate_predictions.py` remains for CLI compatibility; the
+  orchestrator uses `verify_prediction_set.py` for every profile.
+
+### Added (reproduction profiles system)
 - Profile-driven reproduction system: declarative profiles in
   `scripts/profiles/*.profile.json` (`cpu-smoke-10`, `hip-smoke-10`,
-  `paddleocr-vl-hip-full-1651`), schema validation in
-  `scripts/repro-profiles.ps1`, `-ListProfiles`, `-DryRun`, and stable
-  machine-readable stage IDs in `scripts/reproduce.ps1`.
+  `paddleocr-vl-hip-full-1651`, `mineru-pipeline-hip-smoke`) with schema
+  validation in `scripts/repro-profiles.ps1`, `-ListProfiles`, `-DryRun` and
+  stable machine-readable stage IDs in `scripts/reproduce.ps1`.
 - Full 1651-page HIP benchmark as a single command:
   `reproduce.ps1 -Profile paddleocr-vl-hip-full-1651` with strict acceptance
   (exact manifest count, >=99.8% coverage, <=2 failed pages, selected_pages

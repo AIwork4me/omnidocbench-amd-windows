@@ -84,10 +84,26 @@ thresholds; `reproduce.ps1` runs the same stage chain for every profile,
 keyed by stable stage IDs (`environment.python`, `dataset.setup`,
 `inference.server`, `inference.backend_proof`, `inference.run`,
 `scoring.windows`, `scoring.wsl_cdm`, `verification.final`,
-`evidence.pack`, ...). Resume re-checks the input fingerprint
-(`scripts/compute_fingerprint.py`) and continues inference per page with
-`--skip-existing`; a fingerprint mismatch refuses resume until a fresh run or
-`-ForceInference` (scoped to the profile's own artifacts).
+`evidence.pack`, ...). Resume re-checks the phase fingerprints — provisioning
+(`fingerprint.provisioning.json`), inference (`fingerprint.inference.json`),
+scoring (`fingerprint.scoring.json`) and evidence
+(`fingerprint.evidence.json`) — via `scripts/compute_fingerprint.py --phase`,
+and continues inference per page with `--skip-existing`. Each phase fingerprint
+is computed only after its inputs are provisioned and lock-verified; a
+mismatch refuses resume until a fresh run or `-ForceInference`. Formal (full)
+profiles additionally fail closed on a dirty git working tree. On resume,
+predictions are tree-hashed before and after inference
+(`scripts/hash_prediction_tree.py`); any content change automatically
+invalidates `inference.prediction_check` / `scoring.windows` /
+`scoring.wsl_cdm` / `verification.final` / `evidence.pack` so stale scores are
+never reused, while unchanged predictions reuse scores only after the
+`<save>_metric_result.provenance.json` sidecar re-validates against the
+current prediction tree (`scripts/metric_provenance.py`).
+`verify_prediction_set.py` is the SINGLE source of truth for
+`prediction-summary.json` (strict GT-aware summary with
+`known_allowed_failures` / `unknown_failures` / `recovered_known_failures` and
+the profile `allowed_failed_page_stems` allowlist); the evidence pack only
+verifies and copies it.
 
 `-Resume` reuses only passed stages whose inputs are unchanged; `-DryRun`
 prints the resolved profile and stage commands; `-ListProfiles` lists the
@@ -323,10 +339,31 @@ The system is fully operational when all criteria for the **selected CDM path** 
    be positive when present or required. A selected CDM scoring path requires
    a present, finite CDM score.
 7. Full reproduction runs additionally pass `scripts/verify_prediction_set.py`
-   (manifest page count, coverage, failed-page budget, selected pages),
+   (manifest page count, coverage, failed-page budget, the
+   `allowed_failed_page_stems` allowlist — unknown failed pages fail the run,
+   `_run_stats.json` per-page status must match the prediction files),
    `scripts/assert-metrics.ps1` (presence, finiteness, raw scale, profile
-   thresholds, freshness), and leave a complete evidence pack under
-   `outputs/reproduction/<profile>/`.
+   thresholds, freshness, full-denominator page_count, provenance sidecar
+   binding, timeout/exception budgets, Windows↔WSL cross-platform agreement),
+   and leave a complete evidence pack under `outputs/reproduction/<profile>/`
+   (profile.resolved.json with the resolved server port, artifact-hashes.json
+   incl. prediction tree + provenance hashes, canonical metrics-summary.json,
+   and a strict prediction-summary.json that is never overwritten by the
+   evidence pack).
+8. The executable integration harness
+   (`tests/test_reproduce_harness.py`, `tests/test_repro_artifacts.py`) passes:
+   it runs the real `reproduce.ps1` state machine against fake scripts
+   (`REPRO_TEST_HOOKS`/`REPRO_ROOT` test-only injection; the formal path is
+   unchanged) and covers fresh runs, interrupt/resume, prediction-change
+   invalidation, stale-provenance rejection, scoped `-ForceInference`,
+   dirty-formal rejection, empty-GT and allowlist gates.
+9. Releases are gated by `scripts/release-gate.ps1` (version/tag match,
+   CHANGELOG, green tests, generated benchmark tables, benchmark evidence
+   schema, adapter manifests, clean tree, release notes with evidence levels).
+   Benchmark rows live in `benchmarks/index.json` (single source of truth;
+   README tables are generated) and are labelled `smoke` / `validated resumed`
+   / `clean-room` / `independent` per `docs/benchmark-evidence-policy.md` — the
+   2026-08-03 full-set row is a **validated resumed run**, not clean-room.
 
 Reference targets (our validated PaddleOCR-VL-1.6 results on OmniDocBench v1.6):
 

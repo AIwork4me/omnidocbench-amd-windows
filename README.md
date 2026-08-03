@@ -7,36 +7,65 @@
 [![GitHub stars](https://img.shields.io/github/stars/AIwork4me/omnidocbench-amd-windows)](https://github.com/AIwork4me/omnidocbench-amd-windows)
 [![ci](https://github.com/AIwork4me/omnidocbench-amd-windows/actions/workflows/ci.yml/badge.svg)](https://github.com/AIwork4me/omnidocbench-amd-windows/actions/workflows/ci.yml)
 
-[中文文档](README.zh-CN.md) · [Architecture](docs/architecture.md) · [Pitfalls KB](docs/pitfalls.md) · [AGENTS.md](AGENTS.md)
+[中文文档](README.zh-CN.md) · [Architecture](docs/architecture.md) · [Pitfalls KB](docs/pitfalls.md) · [AGENTS.md](AGENTS.md) · [Governance](GOVERNANCE.md) · [Release](RELEASE.md)
 
 > **Setting up OmniDocBench CDM took us 20+ debugging sessions. This repo distills them into one command.**
 
-One-command setup of [OmniDocBench](https://github.com/opendatalab/OmniDocBench) v1.6 full evaluation
-(1651 pages) on **Windows + AMD Radeon GPUs** (ROCm/HIP). All four standard metrics: text Edit-distance,
-reading-order Edit-distance, table TEDS, **formula CDM**. Model-agnostic — swap any document parsing
-model via [adapters](adapters/). PaddleOCR-VL-1.6 ships as the validated reference.
+**One unified entry point** for a full [OmniDocBench](https://github.com/opendatalab/OmniDocBench) v1.6
+evaluation (1651 pages) on **Windows + AMD Radeon GPUs** (ROCm/HIP) — all four
+standard metrics (text Edit-distance, reading-order Edit-distance, table TEDS,
+formula CDM) behind three formal profiles and a complete evidence pack.
+"One command" means one orchestrator (`scripts\reproduce.ps1`); the human may
+still be needed for first-run downloads, UAC/driver prompts, WSL or a reboot
+(see the ⚠️ gates in [AGENTS.md](AGENTS.md)) — it never silently pretends to
+be unattended.
+
+**What is verified today:** PaddleOCR-VL-1.6 on a Radeon 8060S (gfx1151) is the
+validated one-command reference profile, with a full-set result labelled
+**validated resumed** (not clean-room). Scoring and adapter output contracts
+are model-agnostic; **MinerU uses a documented adapter workflow** with its own
+human-intervention gate (Python 3.12 + ROCm torch). See
+[`docs/hardware-support.md`](docs/hardware-support.md) and the
+[evidence levels](#measured-results).
 
 ![OmniDocBench AMD Windows overview](overview.jpg)
 
-## Measured results on this machine
+<!-- benchmark-table:start -->
+| Model | Backend | Run | Coverage | Text Edit-dist ↓ | Reading-order Edit-dist ↓ | Table TEDS ↑ | Formula CDM ↑ | Evidence |
+|---|---|---|---:|---:|---:|---:|---:|---|
+| PaddleOCR-VL-1.6 1.6 | llama.cpp GGUF (ROCm/HIP) | validated resumed | 0.9988 | 0.0354 | 0.1295 | 92.9766 | 96.6490 | [docs/reproduction-full1651-hip-2026-08-03.md](docs/reproduction-full1651-hip-2026-08-03.md) |
+| PaddleOCR-VL-1.6 1.6 | llama.cpp GGUF (ROCm/HIP) | smoke | 1.0000 | 0.0143 | — | 100.0000 | 99.3280 | [docs/reproduction-hip-smoke-2026-08-02.md](docs/reproduction-hip-smoke-2026-08-02.md) |
+| MinerU2.5-Pro-2605-1.2B 2605-1.2B | llama.cpp GGUF (HIP) | validated resumed | — | 0.0373 | 0.1225 | 93.1100 | 97.0100 | [docs/benchmarks/leaderboard-evidence-2026-08-01.md](docs/benchmarks/leaderboard-evidence-2026-08-01.md) |
+| MinerU 3.4.4 3.4.4 | ROCm PyTorch + ONNX DirectML | validated resumed | — | 0.0566 | 0.1531 | 82.0400 | 83.3900 | [docs/benchmarks/mineru-sample81-gate-2026-08-01.md](docs/benchmarks/mineru-sample81-gate-2026-08-01.md) |
+| PaddleOCR-VL-1.6 1.6 | llama.cpp GGUF (ROCm/HIP) | validated resumed | 0.9988 | 0.0349 | 0.1288 | 94.0900 | 97.3600 | [docs/release-paddleocr-vl-1.6-amd-windows-2026-07-16.md](docs/release-paddleocr-vl-1.6-amd-windows-2026-07-16.md) |
+| PaddleOCR-VL-1.6 1.6 | llama.cpp GGUF (ROCm/HIP) | validated resumed | 0.9988 | 0.0340 | 0.1282 | 94.3222 | 96.9219 | [docs/windows-native-cdm-verification-2026-07-11.md](docs/windows-native-cdm-verification-2026-07-11.md) |
+| PaddleOCR-VL-1.6 1.6 | llama.cpp GGUF (ROCm/HIP), official doc_parser engine | validated resumed | 0.9988 | 0.0344 | 0.1295 | 94.2393 | 96.5022 | [docs/release-paddleocr-vl-1.6-amd-windows-2026-07-16.md](docs/release-paddleocr-vl-1.6-amd-windows-2026-07-16.md) |
+<!-- benchmark-table:end -->
 
-| Model | Backend (this machine) | Overall | Text Edit-dist ↓ | Reading-order Edit-dist ↓ | Table TEDS ↑ | Formula CDM ↑ |
-|---|---|---:|---:|---:|---:|---:|
-| PaddleOCR-VL-1.6 | llama.cpp GGUF (ROCm/HIP) | **95.99** | 0.03488 | 0.12882 | **94.09** | **97.36** |
-| MinerU2.5-Pro-2605-1.2B | llama.cpp GGUF (HIP) | 95.46 | 0.03734 | **0.12250** | 93.11 | 97.01 |
-| MinerU 3.4.4 pipeline | ROCm PyTorch + ONNX DirectML | 86.59 | 0.05655 | 0.15314 | 82.04 | 83.39 |
+## Measured results
 
-All rows are full-set (1651-page) results measured on this machine (AI MAX+ 395
-/ Radeon 8060S); page-level aggregation per the OmniDocBench official notebook;
-MinerU rows use quick-match CDM. Per-cell evidence:
-[`docs/benchmarks/leaderboard-evidence-2026-08-01.md`](docs/benchmarks/leaderboard-evidence-2026-08-01.md).
-MinerU pipeline numbers are validated by a 130-page stratified-sample gate
-([`docs/benchmarks/mineru-sample81-gate-2026-08-01.md`](docs/benchmarks/mineru-sample81-gate-2026-08-01.md),
-verdict ACCEPT); MinerU2.5 numbers are cross-checked against the MinerU-ROCm
-windows-hip model card (1e-6). PaddleOCR-VL official-engine comparison
-(official-local Formula CDM `96.5022`; one deterministic VLM-500 page tracked
-upstream as [PaddleOCR issue #18248](https://github.com/PaddlePaddle/PaddleOCR/issues/18248)):
-see the evidence doc.
+The table above is generated from the single source of truth
+[`benchmarks/index.json`](benchmarks/index.json) (see
+[`docs/benchmarks/`](docs/benchmarks/)); hand-edited benchmark numbers drift and
+are rejected in CI. Metric conventions: text/reading-order Edit-distance and
+TEDS/CDM use the raw 0-1 `metric_result.json` values (displayed 0-100); "Run"
+labels the evidence level:
+
+| Level | Meaning |
+|---|---|
+| `validated resumed` | Full-set run resumed from the repo's own artifacts with provenance-verified inputs; not yet a clean-room run |
+| `clean-room` | Full 1651-page run on a fresh checkout (requires the Release Gate; none published yet) |
+| `independent` | Same, executed by a second machine (none published yet) |
+| `smoke` | 10-page acceptance evidence, not a benchmark |
+
+PaddleOCR-VL-1.6 rows: llama.cpp GGUF (ROCm/HIP) on this machine (AI MAX+ 395 /
+Radeon 8060S). MinerU rows use quick-match CDM; MinerU2.5 numbers are
+cross-checked against the MinerU-ROCm windows-hip model card (1e-6) and the
+MinerU 3.4.4 pipeline numbers are validated by a 130-page stratified-sample
+gate (verdict ACCEPT). PaddleOCR-VL official-engine comparison (official-local
+Formula CDM `96.5022`; one deterministic VLM-500 page tracked upstream as
+[PaddleOCR issue #18248](https://github.com/PaddlePaddle/PaddleOCR/issues/18248)):
+see the evidence docs.
 
 > **Reproduction thresholds:** Text Edit-dist < 0.10, Reading-order < 0.20,
 > TEDS > 85, CDM > 85 (in raw `metric_result.json`, TEDS/CDM correspond to
@@ -373,20 +402,24 @@ Ghostscript stack. See [`docs/architecture.md`](docs/architecture.md) and
 
 ## Adapters: add a new model
 
-You only touch `adapters/`. Each adapter's only contract:
-
-```python
-def run_adapter(img_dir: Path, out_dir: Path, server_url: str = ""):
-    """Write out_dir/<image_stem>.md for every page image in img_dir."""
-```
+You only touch `adapters/`. Every adapter declares an
+**adapter manifest** (`adapters/<adapter>/adapter.json`) — the safety contract
+the orchestrator validates before running any lifecycle stage: repo-relative
+script paths inside the adapter dir, no `..`, backend-proof capability,
+resume support, output contract (`<image_stem>.md` per page, UTF-8,
+`_run_stats.json`) and required env vars. Conformance is enforced by
+`scripts/validate_adapter_manifest.py` and the adapter conformance tests; the
+orchestrator only runs lifecycle stages the manifest declares (MinerU skips the
+VLM-server stages it does not have).
 
 The scoring layer consumes those `.md` files and never imports the adapter.
 Five steps (full detail in
 [`adapters/_template/README.md`](adapters/_template/README.md)):
 
 1. `cp -r adapters/_template adapters/<your-model>`
-2. Edit `run_adapter.py` — implement `run_adapter(img_dir, out_dir, server_url)`
-   to call your model; write `out_dir/<image_stem>.md` per page. Catch per-page
+2. Write `adapter.json` (copy the reference manifest) and `run_adapter.py` —
+   implement `run_adapter(img_dir, out_dir, server_url)` to call your model;
+   write `out_dir/<image_stem>.md` per page atomically. Catch per-page
    failures so one bad page doesn't abort the run.
 3. Edit `setup.ps1` (or split into numbered sub-directories like the reference
    adapter) to provision weights / start a server. Write machine-local paths to
@@ -395,6 +428,8 @@ Five steps (full detail in
 5. Re-run the scorer unchanged (it only reads the prediction path):
    `eval-infra\03-scoring\score.ps1`; for CDM, use `score.ps1 -Config v16-cdm.yaml`
    after `verify-windows.ps1`, or use WSL `score-cdm.sh`, then run `verify.ps1`.
+   For a one-command profile, add a `scripts/profiles/*.profile.json` that
+   binds your adapter and prediction dir.
 
 Proven examples to copy from:
 [`adapters/paddleocr-vl-1.6/`](adapters/paddleocr-vl-1.6/) (ONNX layout +

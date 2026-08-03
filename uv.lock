@@ -931,7 +931,7 @@ wheels = [
 
 [[package]]
 name = "omnidocbench-amd-windows"
-version = "0.0.0"
+version = "1.0.0"
 source = { virtual = "." }
 dependencies = [
     { name = "apted" },

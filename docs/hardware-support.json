@@ -1,0 +1,44 @@
+{
+  "schema_version": 1,
+  "legend": {
+    "supported": "measured on this repo's profiles with a published evidence doc",
+    "unsupported": "no official Windows HIP binaries (use the CPU variant)",
+    "unverified": "expected to work, not measured in this repo yet"
+  },
+  "devices": [
+    {
+      "gpu": "Radeon 8060S",
+      "platform": "Ryzen AI MAX+ 395",
+      "gfx_architecture": "gfx1151",
+      "status": "supported",
+      "hip_binary": "llama.cpp HIP build, locked tag b9637",
+      "cpu_fallback": "cpu-smoke-10",
+      "validated_profiles": ["paddleocr-vl-hip-full-1651", "hip-smoke-10"],
+      "evidence": [
+        "docs/reproduction-full1651-hip-2026-08-03.md",
+        "docs/reproduction-hip-smoke-2026-08-02.md"
+      ]
+    },
+    {
+      "gpu": "RX 7900 XTX",
+      "gfx_architecture": "gfx1100",
+      "status": "unverified",
+      "hip_binary": "same locked HIP build (RDNA3 family)",
+      "cpu_fallback": "cpu-smoke-10",
+      "validated_profiles": ["hip-smoke-10 (proposed)"],
+      "evidence": []
+    },
+    {
+      "gpu": "Radeon 860M",
+      "gfx_architecture": "gfx1152",
+      "status": "unsupported",
+      "hip_binary": null,
+      "cpu_fallback": "cpu-smoke-10 / paddleocrvl_cpu_860m_200 subset",
+      "validated_profiles": ["cpu-smoke-10"],
+      "evidence": [
+        "docs/reproduction-cpu-200-2026-07-26.md",
+        "docs/llama-cpp-radeon-860m-gfx1152-issue-draft-2026-07-26.md"
+      ]
+    }
+  ]
+}

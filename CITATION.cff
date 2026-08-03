@@ -1,0 +1,24 @@
+cff-version: 1.2.0
+message: "If you use this repository in your work, please cite it as follows."
+title: "OmniDocBench AMD Windows: full OmniDocBench v1.6 evaluation on Windows + AMD Radeon (ROCm/HIP)"
+# DOI: no DOI has been assigned yet. The repository URL is the canonical
+# identifier until a release is archived (e.g. via Zenodo).
+repository-code: "https://github.com/AIwork4me/omnidocbench-amd-windows"
+keywords:
+  - OmniDocBench
+  - document parsing evaluation
+  - AMD
+  - ROCm
+  - Windows
+  - PaddleOCR-VL
+license: Apache-2.0
+# NOTE: replace with the real maintainers' names/ORCIDs before archiving.
+# Do not invent identities; this is a placeholder that must be edited by the
+# maintainers listed in MAINTAINERS.md.
+authors:
+  - family-names: "Maintainer"
+    given-names: "OmniDocBench AMD Windows"
+    affiliation: "AIwork4me"
+    orcid: ""
+date-released: "2026-08-03"
+version: "1.0.0"
