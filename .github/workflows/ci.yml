@@ -149,18 +149,25 @@ jobs:
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    # continue-on-error: the action fails with "Dependency review is not
-    # supported on this repository" until the repo owner enables the GitHub
-    # Dependency Graph (Settings -> Code security and analysis). Once enabled
-    # this job starts enforcing the high-severity gate.
-    continue-on-error: true
     permissions:
       contents: read
       pull-requests: write
     steps:
       - name: Checkout
         uses: actions/checkout@v7.0.1 # v7.0.1 - pin to full SHA before release
+      - name: Check Dependency Graph availability
+        id: depgraph
+        shell: bash
+        run: |
+          ENABLED=$(gh api repos/${{ github.repository }} --jq '.security_and_analysis.dependency_graph.enabled // false' 2>/dev/null || echo false)
+          echo "enabled=$ENABLED" >> "$GITHUB_OUTPUT"
+          if [ "$ENABLED" = "true" ]; then
+            echo "Dependency Graph enabled - running Dependency Review"
+          else
+            echo "Dependency Graph not enabled on this repository - skipping Dependency Review (enable at Settings -> Code security and analysis)"
+          fi
       - name: Dependency Review
+        if: steps.depgraph.outputs.enabled == 'true'
         uses: actions/dependency-review-action@v5.0.0 # v5.0.0 - pin to full SHA before release
         with:
           fail-on-severity: high
