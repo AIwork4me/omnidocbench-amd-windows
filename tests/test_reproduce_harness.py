@@ -120,7 +120,7 @@ def test_01_clean_fresh_run_passes(harness):
 def test_02_03_interrupt_before_checkout_then_resume(harness):
     set_behavior(harness["hooks"], {"pipeline_deps_fail": True})
     result = run_reproduce(harness["env"], "-Profile", SMOKE)
-    assert result.returncode != 0
+    assert result.returncode != 0, result.stdout + result.stderr
     state = read_state(harness)
     assert state["status"] == "failed"
     assert state["resume_command"], "resume_command must be persisted on failure"
@@ -260,7 +260,7 @@ def test_09_dirty_formal_run_rejected(harness):
     lock = harness["root"] / "upstream-lock.json"
     lock.write_text(lock.read_text(encoding="utf-8") + "\n", encoding="utf-8")
     result = run_reproduce(harness["env"], "-Profile", FULL)
-    assert result.returncode != 0
+    assert result.returncode != 0, result.stdout + result.stderr
     output = result.stdout + result.stderr
     assert "dirty" in output.lower() or "clean" in output.lower()
     state = read_state(harness)
@@ -357,7 +357,7 @@ def test_14_dry_run_no_state_pollution(harness):
 def test_15_failure_persists_stage_error_and_exit_code(harness):
     set_behavior(harness["hooks"], {"pipeline_deps_fail": True})
     result = run_reproduce(harness["env"], "-Profile", SMOKE)
-    assert result.returncode != 0
+    assert result.returncode != 0, result.stdout + result.stderr
     state = read_state(harness)
     failed = [s for s in state["stages"] if s["status"] == "failed"]
     assert any(s["id"] == "inference.pipeline_deps" for s in failed)

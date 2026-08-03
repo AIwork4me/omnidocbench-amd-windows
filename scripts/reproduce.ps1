@@ -200,6 +200,7 @@ $state = [ordered]@{
     stages = @()
     seeded_from = $(if ([string]::IsNullOrWhiteSpace($SeedFrom)) { $null } else { [System.IO.Path]::GetFullPath($SeedFrom) })
 }
+$script:ReproLastExit = 0
 $completedStageIds = @()
 $alwaysRunStageIds = @(
     "environment.wsl",
@@ -263,7 +264,7 @@ trap {
 }
 
 function Assert-LastExit([string] $Label) {
-    if ($LASTEXITCODE -ne 0) { throw "$Label exited $LASTEXITCODE" }
+    if ($script:ReproLastExit -ne 0) { throw "$Label exited $script:ReproLastExit" }
 }
 
 function Set-StageRecord {
@@ -314,7 +315,7 @@ function Invoke-Stage {
         $guardExit = 0
         try {
             & $ResumeGuard
-            if ($LASTEXITCODE -ne 0) { $guardExit = $LASTEXITCODE }
+            if ($script:ReproLastExit -ne 0) { $guardExit = $script:ReproLastExit }
         } catch {
             $guardExit = 1
             Write-Host "RESUME GUARD ERROR: $($_.Exception.Message)" -ForegroundColor Red
@@ -337,12 +338,12 @@ function Invoke-Stage {
     $started = Get-Date
     $exitCode = 0
     $errorText = ""
-    # Reset $LASTEXITCODE so a best-effort native probe (e.g. a wsl presence
-    # check inside a helper) cannot poison the stage's exit-code gate.
-    $LASTEXITCODE = 0
+    # Reset the script-scoped exit-code holder so a best-effort native probe
+    # (e.g. a wsl presence check inside a helper) cannot poison the gate.
+    $script:ReproLastExit = 0
     try {
         & $Action
-        if ($LASTEXITCODE -ne 0) { $exitCode = $LASTEXITCODE; throw "Command exited $exitCode" }
+        if ($script:ReproLastExit -ne 0) { $exitCode = $script:ReproLastExit; throw "Command exited $exitCode" }
     } catch {
         if ($exitCode -eq 0) { $exitCode = 1 }
         $errorText = $_.Exception.Message
@@ -389,6 +390,11 @@ function Invoke-Stage {
 # repo (so the real gates like assert-metrics.ps1 still execute), while all
 # paths/arguments still point at the fake root. The formal path is
 # byte-for-byte unchanged when REPRO_TEST_HOOKS is absent.
+#
+# Exit codes are captured via Start-Process -Wait -PassThru: $LASTEXITCODE is
+# unreliable across scriptblock boundaries in PowerShell 5.1 (a native call
+# inside a scriptblock invoked via & from a function can leave it unset), so
+# no stage gate may depend on it.
 # ---------------------------------------------------------------------------
 function Resolve-ReproScriptPath {
     param([string] $Relative)
@@ -402,16 +408,48 @@ function Resolve-ReproScriptPath {
     return Join-Path $script:RealRepoRoot $rel
 }
 
+function Invoke-ReproNative {
+    param([string] $FilePath, [string[]] $Arguments)
+    # Runs a native command, preserving its console output and returning its
+    # REAL exit code. Start-Process -Wait -PassThru is used because
+    # $LASTEXITCODE is not propagated from a native call made inside a
+    # function that itself runs inside a scriptblock invoked via & from a
+    # function (PowerShell 5.1 scope quirk). The ArgumentList is passed as a
+    # single joined string: PS 5.1 Start-Process rejects an array variable.
+    $outFile = Join-Path $env:TEMP ("repro-native-out-" + $PID + ".log")
+    $errFile = Join-Path $env:TEMP ("repro-native-err-" + $PID + ".log")
+    try {
+        $joined = [string]::Join(" ", $Arguments)
+        $proc = Start-Process -FilePath $FilePath -ArgumentList $joined `
+            -Wait -PassThru -WindowStyle Hidden `
+            -RedirectStandardOutput $outFile -RedirectStandardError $errFile
+        if (Test-Path -LiteralPath $outFile) {
+            $outText = Get-Content -Raw -LiteralPath $outFile -ErrorAction SilentlyContinue
+            if ($outText) { Write-Output $outText.TrimEnd("`r", "`n") }
+        }
+        if (Test-Path -LiteralPath $errFile) {
+            $errText = Get-Content -Raw -LiteralPath $errFile -ErrorAction SilentlyContinue
+            if ($errText) { Write-Output $errText.TrimEnd("`r", "`n") }
+        }
+        $script:ReproLastExit = $proc.ExitCode
+        return $script:ReproLastExit
+    } finally {
+        Remove-Item -LiteralPath $outFile, $errFile -Force -ErrorAction SilentlyContinue
+    }
+}
+
 function Invoke-ReproExternal {
     param([string] $Relative, [string[]] $Arguments)
-    & powershell -NoProfile -ExecutionPolicy Bypass -File (Resolve-ReproScriptPath -Relative $Relative) @Arguments
-    return $LASTEXITCODE
+    $resolved = Resolve-ReproScriptPath -Relative $Relative
+    $allArgs = @("-NoProfile", "-ExecutionPolicy", "Bypass", "-File", $resolved) + $Arguments
+    return (Invoke-ReproNative -FilePath "powershell.exe" -Arguments $allArgs)
 }
 
 function Invoke-ReproPython {
     param([string] $Relative, [string[]] $Arguments)
-    & $python (Resolve-ReproScriptPath -Relative $Relative) @Arguments
-    return $LASTEXITCODE
+    $resolved = Resolve-ReproScriptPath -Relative $Relative
+    $allArgs = @($resolved) + $Arguments
+    return (Invoke-ReproNative -FilePath $python -Arguments $allArgs)
 }
 
 function Invoke-ReproWsl {
@@ -419,12 +457,10 @@ function Invoke-ReproWsl {
     if ($script:TestHooksDir) {
         $shim = Join-Path $script:TestHooksDir "wsl.ps1"
         if (Test-Path -LiteralPath $shim -PathType Leaf) {
-            & powershell -NoProfile -ExecutionPolicy Bypass -File $shim @Arguments
-            return $LASTEXITCODE
+            return (Invoke-ReproNative -FilePath "powershell.exe" -Arguments (@("-NoProfile", "-ExecutionPolicy", "Bypass", "-File", $shim) + $Arguments))
         }
     }
-    & wsl @Arguments
-    return $LASTEXITCODE
+    return (Invoke-ReproNative -FilePath "wsl.exe" -Arguments $Arguments)
 }
 
 function Invoke-ReproUv {
@@ -432,12 +468,12 @@ function Invoke-ReproUv {
     if ($script:TestHooksDir) {
         $shim = Join-Path $script:TestHooksDir "uv.ps1"
         if (Test-Path -LiteralPath $shim -PathType Leaf) {
-            & powershell -NoProfile -ExecutionPolicy Bypass -File $shim @Arguments
-            return $LASTEXITCODE
+            return (Invoke-ReproNative -FilePath "powershell.exe" -Arguments (@("-NoProfile", "-ExecutionPolicy", "Bypass", "-File", $shim) + $Arguments))
         }
     }
-    & uv @Arguments
-    return $LASTEXITCODE
+    $uvPath = (Get-Command uv -ErrorAction SilentlyContinue).Source
+    if (-not $uvPath) { $uvPath = "uv" }
+    return (Invoke-ReproNative -FilePath $uvPath -Arguments $Arguments)
 }
 
 if ($ForceInference -and -not $DryRun) {
@@ -553,7 +589,7 @@ Invoke-Stage -Id "dataset.setup" -Name "OmniDocBench and dataset" {
 Invoke-Stage -Id "dataset.upstream_locks" -Name "Upstream locks" {
     foreach ($component in @("OmniDocBench", "DatasetManifest")) {
         Invoke-ReproExternal -Relative "scripts\verify-upstream-lock.ps1" -Arguments @("-Component", $component)
-        if ($LASTEXITCODE -ne 0) { throw "$component lock failed" }
+        if ($script:ReproLastExit -ne 0) { throw "$component lock failed" }
     }
     Invoke-ReproPython -Relative "scripts\verify_dataset_tree.py" -Arguments @("--manifest", $fullManifest, "--image-dir", (Join-Path $rootDir "eval-infra\01-omnidocbench\data\images"), "--lock", (Join-Path $rootDir "upstream-lock.json"))
     Assert-LastExit "dataset tree lock"
@@ -580,7 +616,7 @@ Invoke-Stage -Id "inputs.fingerprint" -Name "Provisioning fingerprint" -AlwaysRu
     Save-JsonAtomic -Path $fingerprintProvisioningSpec -Value $spec
     if ($profile.run_kind -eq "full") {
         Invoke-ReproPython -Relative "scripts\compute_fingerprint.py" -Arguments @("--phase", "provisioning", "--root", $rootDir, "--inputs", $fingerprintProvisioningSpec, "--check-clean")
-        if ($LASTEXITCODE -ne 0) { throw "Formal profile requires a clean git working tree" }
+        if ($script:ReproLastExit -ne 0) { throw "Formal profile requires a clean git working tree" }
     }
     $fpArgs = @("--phase", "provisioning", "--root", $rootDir, "--inputs", $fingerprintProvisioningSpec)
     if ($Resume -and -not $ForceInference -and (Test-Path -LiteralPath $fingerprintProvisioningFile -PathType Leaf)) {
@@ -592,7 +628,7 @@ Invoke-Stage -Id "inputs.fingerprint" -Name "Provisioning fingerprint" -AlwaysRu
     }
     $fpArgs += @("--out", $fingerprintProvisioningFile)
     Invoke-ReproPython -Relative "scripts\compute_fingerprint.py" -Arguments $fpArgs
-    if ($LASTEXITCODE -ne 0) { throw "Provisioning fingerprint check failed - inputs changed since the previous run" }
+    if ($script:ReproLastExit -ne 0) { throw "Provisioning fingerprint check failed - inputs changed since the previous run" }
 } -Command "compute_fingerprint.py --phase provisioning$(if ($profile.run_kind -eq 'full') { ' --check-clean' }) $(if ($Resume -and -not $ForceInference) { ' --check fingerprint.provisioning.json' }) --out fingerprint.provisioning.json"
 
 function Get-RepoWslPath {
@@ -716,7 +752,7 @@ Invoke-Stage -Id "inference.fingerprint" -Name "Inference fingerprint" -AlwaysRu
     }
     $fpArgs += @("--out", $fingerprintInferenceFile)
     Invoke-ReproPython -Relative "scripts\compute_fingerprint.py" -Arguments $fpArgs
-    if ($LASTEXITCODE -ne 0) { throw "Inference fingerprint check failed - inference inputs changed since the previous run" }
+    if ($script:ReproLastExit -ne 0) { throw "Inference fingerprint check failed - inference inputs changed since the previous run" }
 } -Command "compute_fingerprint.py --phase inference --out fingerprint.inference.json"
 
 $maxPagesArgs = if ($null -ne $profile.max_pages) { @("--max-pages", "$($profile.max_pages)") } else { @() }
@@ -727,7 +763,7 @@ Invoke-Stage -Id "inference.run" -Name "Inference" -AlwaysRun {
     # differs, the predictions changed and every downstream score reuse is
     # invalidated (never reuse a score computed from different bytes).
     Invoke-ReproPython -Relative "scripts\hash_prediction_tree.py" -Arguments @("--manifest", $fullManifest, "--pred-dir", $predictionDir, "--out", $predictionTreePreFile)
-    if ($LASTEXITCODE -ne 0) { throw "pre-run prediction tree hash failed" }
+    if ($script:ReproLastExit -ne 0) { throw "pre-run prediction tree hash failed" }
     $preTreeHash = Get-JsonField -Path $predictionTreePreFile -Field "prediction_tree_sha256"
     $adapterArgs = @(
         "--img-dir", (Join-Path $rootDir "eval-infra\01-omnidocbench\data\images"),
@@ -742,7 +778,7 @@ Invoke-Stage -Id "inference.run" -Name "Inference" -AlwaysRun {
         throw "Smoke inference requires exactly $($profile.expected_pages) Markdown predictions; found $predictionCount"
     }
     Invoke-ReproPython -Relative "scripts\hash_prediction_tree.py" -Arguments @("--manifest", $fullManifest, "--pred-dir", $predictionDir, "--out", $predictionTreeFile)
-    if ($LASTEXITCODE -ne 0) { throw "post-run prediction tree hash failed" }
+    if ($script:ReproLastExit -ne 0) { throw "post-run prediction tree hash failed" }
     $postTreeHash = Get-JsonField -Path $predictionTreeFile -Field "prediction_tree_sha256"
     if ($Resume -and $preTreeHash -and $postTreeHash -and $preTreeHash -ne $postTreeHash) {
         Write-Host "PREDICTION CONTENT CHANGED: invalidating prediction_check, scoring and evidence reuse" -ForegroundColor Yellow
@@ -802,7 +838,7 @@ Invoke-Stage -Id "scoring.fingerprint" -Name "Scoring fingerprint" {
     $fpArgs = @("--phase", "scoring", "--root", $rootDir, "--inputs", $fingerprintScoringSpec)
     $fpArgs += @("--out", $fingerprintScoringFile)
     Invoke-ReproPython -Relative "scripts\compute_fingerprint.py" -Arguments $fpArgs
-    if ($LASTEXITCODE -ne 0) { throw "scoring fingerprint failed" }
+    if ($script:ReproLastExit -ne 0) { throw "scoring fingerprint failed" }
 } -Command "compute_fingerprint.py --phase scoring --out fingerprint.scoring.json" -ResumeGuard {
     $treeHash = Get-JsonField -Path $predictionTreeFile -Field "prediction_tree_sha256"
     $spec = [ordered]@{
@@ -984,7 +1020,7 @@ Invoke-Stage -Id "evidence.pack" -Name "Evidence pack" -AlwaysRun {
         }
         Save-JsonAtomic -Path (Join-Path $evidenceDir "fingerprint.evidence.spec.json") -Value $spec
         Invoke-ReproPython -Relative "scripts\compute_fingerprint.py" -Arguments @("--phase", "evidence", "--root", $rootDir, "--inputs", (Join-Path $evidenceDir "fingerprint.evidence.spec.json"), "--out", $fingerprintEvidenceFile)
-        if ($LASTEXITCODE -ne 0) { throw "evidence fingerprint failed" }
+        if ($script:ReproLastExit -ne 0) { throw "evidence fingerprint failed" }
     }
 }
 
