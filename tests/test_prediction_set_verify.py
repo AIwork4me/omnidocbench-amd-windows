@@ -201,3 +201,148 @@ def test_full_set_with_one_empty_gt_page_and_two_missing_passes(tmp_path):
     result = _run(manifest, pred, "--expected-pages", "1651", "--min-coverage", "0.998", "--max-failed-pages", "2")
     assert result.returncode == 0, result.stdout + result.stderr
     assert "1649/1651" in result.stdout
+
+
+def test_allowlist_permits_known_failures_and_counts_them(tmp_path):
+    manifest, pred = _make_dataset(tmp_path, 1651)
+    (pred / "page-0000.md").unlink()
+    (pred / "page-0001.md").unlink()
+    summary = tmp_path / "summary.json"
+    result = _run(
+        manifest, pred,
+        "--expected-pages", "1651", "--min-coverage", "0.998", "--max-failed-pages", "2",
+        "--allowed-failed-page-stems", "page-0000,page-0001",
+        "--summary-out", str(summary),
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+    data = json.loads(summary.read_text(encoding="utf-8"))
+    assert data["known_allowed_failures"] == ["page-0000", "page-0001"]
+    assert data["unknown_failures"] == []
+    assert data["recovered_known_failures"] == []
+    assert data["verdict"] == "pass"
+
+
+def test_unknown_failed_page_outside_allowlist_fails(tmp_path):
+    manifest, pred = _make_dataset(tmp_path, 1651)
+    (pred / "page-0000.md").unlink()
+    (pred / "page-0001.md").unlink()
+    (pred / "page-0002.md").unlink()
+    summary = tmp_path / "summary.json"
+    result = _run(
+        manifest, pred,
+        "--expected-pages", "1651", "--min-coverage", "0.998", "--max-failed-pages", "2",
+        "--allowed-failed-page-stems", "page-0000,page-0001",
+        "--summary-out", str(summary),
+    )
+    assert result.returncode != 0
+    output = result.stdout + result.stderr
+    assert "page-0002" in output
+    assert "unknown failed pages" in output
+    data = json.loads(summary.read_text(encoding="utf-8"))
+    assert data["unknown_failures"] == ["page-0002"]
+    assert data["known_allowed_failures"] == ["page-0000", "page-0001"]
+    assert data["verdict"] == "fail"
+
+
+def test_total_failed_budget_still_binds_with_allowlist(tmp_path):
+    """Even allowlisted failures cannot exceed maximum_failed_pages."""
+    manifest, pred = _make_dataset(tmp_path, 1651)
+    for i in range(3):
+        (pred / f"page-{i:04d}.md").unlink()
+    result = _run(
+        manifest, pred,
+        "--expected-pages", "1651", "--min-coverage", "0.998", "--max-failed-pages", "2",
+        "--allowed-failed-page-stems", "page-0000,page-0001,page-0002",
+    )
+    assert result.returncode != 0
+    assert "maximum allowed" in result.stdout + result.stderr
+
+
+def test_recovered_known_failures_are_reported(tmp_path):
+    manifest, pred = _make_dataset(tmp_path, 1651)
+    summary = tmp_path / "summary.json"
+    result = _run(
+        manifest, pred,
+        "--expected-pages", "1651", "--min-coverage", "0.998", "--max-failed-pages", "2",
+        "--allowed-failed-page-stems", "page-0000,page-0001",
+        "--summary-out", str(summary),
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+    data = json.loads(summary.read_text(encoding="utf-8"))
+    assert data["recovered_known_failures"] == ["page-0000", "page-0001"]
+    assert data["known_allowed_failures"] == []
+    assert data["verdict"] == "pass"
+
+
+def test_duplicate_manifest_stems_fail(tmp_path):
+    manifest, pred = _make_dataset(tmp_path, 10)
+    pages = json.loads(manifest.read_text(encoding="utf-8"))
+    pages.append(dict(pages[0]))
+    manifest.write_text(json.dumps(pages), encoding="utf-8")
+    result = _run(manifest, pred, "--expected-pages", "11", "--min-coverage", "1.0", "--max-failed-pages", "0")
+    assert result.returncode != 0
+    assert "duplicate" in (result.stdout + result.stderr).lower()
+
+
+def test_run_stats_failed_status_must_match_files(tmp_path):
+    manifest, pred = _make_dataset(tmp_path, 10)
+    (pred / "page-0000.md").unlink()
+    stats = {
+        "schema_version": 2,
+        "selected_pages": 10,
+        "count": 10,
+        "ok": 9,
+        "fail": 1,
+        "pages": {"page-0000.png": {"status": "ok"}},
+        "invocations": [],
+        "failed_pages": [],
+    }
+    (pred / "_run_stats.json").write_text(json.dumps(stats), encoding="utf-8")
+    result = _run(manifest, pred, "--expected-pages", "10", "--min-coverage", "1.0", "--max-failed-pages", "0", "--require-selected")
+    assert result.returncode != 0
+    assert "page-0000" in result.stdout + result.stderr
+
+
+def test_run_stats_ok_status_must_not_claim_failure(tmp_path):
+    manifest, pred = _make_dataset(tmp_path, 10)
+    stats = {
+        "schema_version": 2,
+        "selected_pages": 10,
+        "count": 10,
+        "ok": 10,
+        "fail": 0,
+        "pages": {"page-0000.png": {"status": "failed: boom"}},
+        "invocations": [],
+        "failed_pages": [],
+    }
+    (pred / "_run_stats.json").write_text(json.dumps(stats), encoding="utf-8")
+    result = _run(manifest, pred, "--expected-pages", "10", "--min-coverage", "1.0", "--max-failed-pages", "0", "--require-selected")
+    assert result.returncode != 0
+    assert "page-0000" in result.stdout + result.stderr
+
+
+def test_summary_schema_is_canonical(tmp_path):
+    manifest, pred = _make_dataset_with_empty_gt(tmp_path, 10, {"page-0003"})
+    (pred / "page-0003.md").write_text("", encoding="utf-8")
+    tree = tmp_path / "tree.json"
+    tree.write_text(
+        json.dumps({"prediction_tree_sha256": "ab" * 32}), encoding="utf-8"
+    )
+    summary = tmp_path / "prediction-summary.json"
+    result = _run(
+        manifest, pred,
+        "--expected-pages", "10", "--min-coverage", "1.0", "--max-failed-pages", "0",
+        "--prediction-tree-json", str(tree), "--summary-out", str(summary),
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+    data = json.loads(summary.read_text(encoding="utf-8"))
+    for key in (
+        "expected", "manifest_unique_stems", "markdown_files", "valid",
+        "empty_gt_valid", "missing", "invalid", "unexpected",
+        "known_allowed_failures", "unknown_failures", "recovered_known_failures",
+        "coverage", "selected_pages", "prediction_tree_sha256", "verdict",
+    ):
+        assert key in data, f"summary missing {key}"
+    assert data["manifest_unique_stems"] == 10
+    assert data["empty_gt_valid"] == 1
+    assert data["prediction_tree_sha256"] == "ab" * 32
