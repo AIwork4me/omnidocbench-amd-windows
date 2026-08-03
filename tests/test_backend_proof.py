@@ -8,6 +8,9 @@ from pathlib import Path
 
 import pytest
 
+pytestmark = pytest.mark.win32
+
+
 REPO_ROOT = Path(__file__).resolve().parents[1]
 ASSERT = (
     REPO_ROOT
@@ -60,19 +63,22 @@ def _install_variant(adapter: Path, variant: str, with_hip_dlls: bool):
                 path.unlink()
 
 
-def _run_proof(adapter: Path, log_file: Path, expected_variant: str) -> subprocess.CompletedProcess:
+def _run_proof(adapter: Path, log_file: Path, expected_variant: str, start_time_file: Path | None = None) -> subprocess.CompletedProcess:
     out = adapter / "backend-proof.json"
+    args = [
+        "powershell", "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", str(ASSERT),
+        "-EnvFile", str(adapter / ".env.local"),
+        "-LogFile", str(log_file),
+        "-PidFile", str(adapter / "pid"),
+        "-ExpectedVariant", expected_variant,
+        "-LockFile", str(LOCK),
+        "-OutFile", str(out),
+        "-SkipHttp",
+    ]
+    if start_time_file is not None:
+        args += ["-StartTimeFile", str(start_time_file)]
     return subprocess.run(
-        [
-            "powershell", "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", str(ASSERT),
-            "-EnvFile", str(adapter / ".env.local"),
-            "-LogFile", str(log_file),
-            "-PidFile", str(adapter / "pid"),
-            "-ExpectedVariant", expected_variant,
-            "-LockFile", str(LOCK),
-            "-OutFile", str(out),
-            "-SkipHttp",
-        ],
+        args,
         cwd=REPO_ROOT,
         capture_output=True,
         text=True,
@@ -155,3 +161,52 @@ def test_utf16_log_is_parsed(adapter_dir, tmp_path):
     _install_variant(adapter_dir, "hip", with_hip_dlls=True)
     result = _run_proof(adapter_dir, utf16_log, "hip")
     assert result.returncode == 0, result.stdout + result.stderr
+
+
+def test_gpu_layers_must_parse_strictly(adapter_dir):
+    _env_file(adapter_dir, variant="hip", gpu_layers="none", tag="locked")
+    _install_variant(adapter_dir, "hip", with_hip_dlls=True)
+    result = _run_proof(adapter_dir, FIXTURES / "hip.log", "hip")
+    assert result.returncode != 0
+    assert "not an integer" in result.stdout
+
+
+def test_cpu_profile_forbids_nonzero_layers(adapter_dir):
+    _env_file(adapter_dir, variant="cpu", gpu_layers="5", tag="locked")
+    _install_variant(adapter_dir, "cpu", with_hip_dlls=False)
+    result = _run_proof(adapter_dir, FIXTURES / "cpu.log", "cpu")
+    assert result.returncode != 0
+    assert "must be exactly 0" in result.stdout
+
+
+def test_stale_log_rejected_by_start_time(adapter_dir, tmp_path):
+    """A log written BEFORE the recorded server start must fail the proof."""
+    log = tmp_path / "hip.log"
+    log.write_text((FIXTURES / "hip.log").read_text(encoding="utf-8"), encoding="utf-8")
+    start_file = tmp_path / "llama-server.started"
+    start_file.write_text("2099-01-01T00:00:00.0000000Z", encoding="utf-8")
+    _env_file(adapter_dir, variant="hip", gpu_layers="99", tag="locked")
+    _install_variant(adapter_dir, "hip", with_hip_dlls=True)
+    result = _run_proof(adapter_dir, log, "hip", start_time_file=start_file)
+    assert result.returncode != 0
+    assert "stale log" in result.stdout
+    proof = json.loads((adapter_dir / "backend-proof.json").read_text(encoding="utf-8"))
+    assert proof["server"]["start_time"] == "2099-01-01T00:00:00.0000000Z"
+
+
+def test_fresh_log_passes_start_time_gate(adapter_dir, tmp_path):
+    log = tmp_path / "hip.log"
+    log.write_text((FIXTURES / "hip.log").read_text(encoding="utf-8"), encoding="utf-8")
+    start_file = tmp_path / "llama-server.started"
+    start_file.write_text("2020-01-01T00:00:00.0000000Z", encoding="utf-8")
+    _env_file(adapter_dir, variant="hip", gpu_layers="99", tag="locked")
+    _install_variant(adapter_dir, "hip", with_hip_dlls=True)
+    result = _run_proof(adapter_dir, log, "hip", start_time_file=start_file)
+    assert result.returncode == 0, result.stdout + result.stderr
+    proof = json.loads((adapter_dir / "backend-proof.json").read_text(encoding="utf-8"))
+    assert proof["server"]["start_time"] == "2020-01-01T00:00:00.0000000Z"
+    assert proof["server"]["log_mtime_utc"]
+    assert proof["server"]["actual_gpu_layers"] == 99
+    assert proof["server"]["gpu_layers_raw"] == "99"
+    assert proof["server"]["ggml_hip_dll_sha256"]
+    assert proof["server"]["libhipblas_dll_sha256"]

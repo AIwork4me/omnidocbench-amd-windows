@@ -338,6 +338,16 @@ if (-not $alreadyUp) {
     $literalLog  = "'" + ($logFile -replace "'", "''") + "'"
     $bgCommand   = "& $literalExe $literalArgs *>> $literalLog"
 
+    # Record the server start time and truncate the log so it contains ONLY
+    # output produced by this server instance. assert-backend-proof.ps1 uses
+    # both to reject stale logs and markers from earlier sessions.
+    $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
+    $startedFile = Join-Path $logDir "llama-server.started"
+    [System.IO.File]::WriteAllText($startedFile, (Get-Date).ToUniversalTime().ToString("o"), $utf8NoBom)
+    if (Test-Path -LiteralPath $logFile) {
+        [System.IO.File]::WriteAllText($logFile, "", $utf8NoBom)
+    }
+
     $proc = Start-Process -FilePath "powershell.exe" `
         -ArgumentList @("-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", $bgCommand) `
         -WindowStyle Hidden -PassThru
