@@ -4,6 +4,7 @@ import importlib.util
 import json
 from pathlib import Path
 import subprocess
+import sys
 
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -21,7 +22,8 @@ def load_validator():
 def run_validator(image_dir: Path, prediction_dir: Path, coverage: str = "1.0"):
     return subprocess.run(
         [
-            str(REPO_ROOT / ".venv" / "Scripts" / "python.exe"),
+            # The interpreter running the tests (works on Windows and Linux CI).
+            sys.executable,
             str(VALIDATOR),
             "--img-dir",
             str(image_dir),

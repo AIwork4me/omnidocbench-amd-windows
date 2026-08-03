@@ -72,7 +72,16 @@ def read_state(harness: dict) -> dict:
 # --- 1. clean fresh run -----------------------------------------------------
 def test_01_clean_fresh_run_passes(harness):
     result = run_reproduce(harness["env"], "-Profile", SMOKE)
-    assert result.returncode == 0, result.stdout + result.stderr
+    if result.returncode != 0:
+        diag = ""
+        state_p = state_path(harness)
+        if state_p.is_file():
+            try:
+                state = load_json(state_p)
+                diag = "\nSTATE: " + json.dumps(state, ensure_ascii=False, indent=1)[:4000]
+            except Exception as error:  # noqa: BLE001
+                diag = f"\nSTATE UNREADABLE: {error}"
+        assert False, result.stdout + result.stderr + diag
     assert "REPRODUCTION OK" in result.stdout
     state = read_state(harness)
     assert state["status"] == "passed"
