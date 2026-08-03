@@ -501,19 +501,22 @@ Invoke-Stage -Id "evidence.pack" -Name "Evidence pack" -AlwaysRun {
         if (Test-Path -LiteralPath $fingerprintFile) {
             $fingerprint = Get-Content -Raw -Encoding UTF8 -LiteralPath $fingerprintFile | ConvertFrom-Json
         }
+        # Mark the run passed BEFORE the report is rendered so report.md reflects
+        # the final verdict instead of the in-flight "running" status.
+        $state.status = "passed"
+        $state.completed_at = (Get-Date).ToUniversalTime().ToString("o")
+        $state.artifacts = [ordered]@{
+            predictions = $predictionRel
+            manifest = $manifestRel
+            windows_metric = $windowsResult.Substring($rootDir.Length + 1)
+            save_name = $saveName
+        }
         Write-Report -EvidenceDir $evidenceDir -State $state -Profile $profile -Fingerprint $fingerprint -ResumeCommand "powershell -ExecutionPolicy Bypass -File scripts\reproduce.ps1 -Profile $RunProfile -Resume" | Out-Null
+        Save-State
     }
 } -Command "evidence pack -> outputs\reproduction\$RunProfile"
 
 if (-not $DryRun) {
-    $state.status = "passed"
-    $state.completed_at = (Get-Date).ToUniversalTime().ToString("o")
-    $state.artifacts = [ordered]@{
-        predictions = $predictionRel
-        manifest = $manifestRel
-        windows_metric = $windowsResult.Substring($rootDir.Length + 1)
-        save_name = $saveName
-    }
     Save-State
 }
 Write-Host ""
