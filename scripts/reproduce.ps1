@@ -303,7 +303,8 @@ function Invoke-Stage {
         [scriptblock] $Action,
         [string] $Command,
         [scriptblock] $ResumeGuard = $null,
-        [string[]] $ResumeGuardPurges = @()
+        [string[]] $ResumeGuardPurges = @(),
+        [scriptblock] $AfterSave = $null
     )
     Write-Host ""; Write-Host "=== $Name [$Id] ===" -ForegroundColor Cyan
     Write-Host $Command -ForegroundColor DarkGray
@@ -362,6 +363,19 @@ function Invoke-Stage {
         throw "$Name [$Id] failed: $errorText"
     }
     Save-State
+    if ($null -ne $AfterSave) {
+        # Runs AFTER the stage record is appended and the state is on disk, so
+        # evidence computed here (artifact hashes, evidence fingerprint) binds
+        # the TRUE final state.json instead of a stale pre-record version.
+        try {
+            & $AfterSave
+        } catch {
+            $state.status = "failed"
+            $state.resume_command = "powershell -ExecutionPolicy Bypass -File scripts\reproduce.ps1 -Profile $RunProfile -Resume"
+            Save-State
+            throw
+        }
+    }
 }
 
 # ---------------------------------------------------------------------------
@@ -947,12 +961,14 @@ Invoke-Stage -Id "evidence.pack" -Name "Evidence pack" -AlwaysRun {
         }
         Write-Report -EvidenceDir $evidenceDir -State $state -Profile $profile -Fingerprint $fingerprint -ResumeCommand "powershell -ExecutionPolicy Bypass -File scripts\reproduce.ps1 -Profile $RunProfile -Resume" -ServerPort $serverPort -PredictionTreeHash (Get-JsonField -Path $predictionTreeFile -Field "prediction_tree_sha256") | Out-Null
         Save-State
-        # Artifact hashes must be computed LAST, over the FINAL artifacts:
-        # report.md and the final state.json only exist after the above, so
-        # hashing earlier would record null/stale values for them.
+    }
+} -Command "evidence pack -> outputs\reproduction\$RunProfile" -AfterSave {
+    # Runs after the evidence.pack stage record is appended to state.json and
+    # saved, so these hashes bind the TRUE final artifacts (report.md and the
+    # final state.json with this stage's record).
+    if (-not $DryRun) {
         Write-ArtifactHashes -EvidenceDir $evidenceDir -Profile $profile -PipelineCheckout $pipelineCheckout -EnvFile $adapterEnvFile -ServerPort $serverPort -PredictionTreeFile $predictionTreeFile -PredictionSummaryFile $predictionSummaryFile -BackendProofFile $backendProofFile -WindowsResult $windowsResult -WindowsProvenanceFile $windowsProvenanceFile -WslResult (Get-WslResultPath -SaveName $saveName) -WslProvenanceFile (Get-WslResultPath -SaveName $saveName -FileSuffix "_metric_result.provenance.json") -StateFile $stateFile -ReportFile $reportFile -ProfileResolvedFile $profileResolvedFile | Out-Null
-        # Evidence fingerprint must bind the FINAL state file, so it is
-        # computed after the run is marked passed.
+        $wslResult = Get-WslResultPath -SaveName $saveName
         $spec = [ordered]@{
             strict_prediction_summary_sha256 = @{ file = $predictionSummaryFile }
             windows_metric_result_sha256 = @{ file = $windowsResult }
@@ -967,7 +983,7 @@ Invoke-Stage -Id "evidence.pack" -Name "Evidence pack" -AlwaysRun {
         Invoke-ReproPython -Relative "scripts\compute_fingerprint.py" -Arguments @("--phase", "evidence", "--root", $rootDir, "--inputs", (Join-Path $evidenceDir "fingerprint.evidence.spec.json"), "--out", $fingerprintEvidenceFile)
         if ($LASTEXITCODE -ne 0) { throw "evidence fingerprint failed" }
     }
-} -Command "evidence pack -> outputs\reproduction\$RunProfile"
+}
 
 if (-not $DryRun) {
     Save-State
