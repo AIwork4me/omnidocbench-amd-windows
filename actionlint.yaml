@@ -1,4 +1,5 @@
 # actionlint configuration: declare the custom self-hosted runner labels used
 # by .github/workflows/amd-gpu.yml (the AMD GPU HIP-smoke workflow).
-runner-label:
-  - amd-gpu
+self-hosted-runner:
+  labels:
+    - amd-gpu

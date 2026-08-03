@@ -78,7 +78,17 @@ def test_01_clean_fresh_run_passes(harness):
         if state_p.is_file():
             try:
                 state = load_json(state_p)
-                diag = "\nSTATE: " + json.dumps(state, ensure_ascii=False, indent=1)[:4000]
+                failed = [
+                    {k: s.get(k) for k in ("id", "status", "exit_code", "error", "command")}
+                    for s in state.get("stages", [])
+                    if s.get("status") != "passed"
+                ]
+                diag = (
+                    f"\nSTATUS={state.get('status')} "
+                    f"RESUME={state.get('resume_command')} "
+                    f"INTERRUPTED={state.get('interruption_reason')} "
+                    f"FAILED={json.dumps(failed, ensure_ascii=False)}"
+                )
             except Exception as error:  # noqa: BLE001
                 diag = f"\nSTATE UNREADABLE: {error}"
         assert False, result.stdout + result.stderr + diag
