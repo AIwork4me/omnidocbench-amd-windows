@@ -629,6 +629,10 @@ environment corruption.
 <a id="vlm"></a>
 ## #vlm — VLM server startup failures / 500 errors
 
+**Symptom.** An adapter's `run_adapter.py` gets HTTP 500 (or connection
+refused) from the VLM server. Or the server fails to start with a CUDA / ROCm
+/ OOM error.
+
 **Root cause.** Most commonly: the server wasn't started, started on a
 different port than the adapter points at, or crashed mid-run (OOM). For
 llama.cpp-served GGUF models, also: wrong quantization for available VRAM,

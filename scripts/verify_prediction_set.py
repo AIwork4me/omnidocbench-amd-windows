@@ -62,6 +62,7 @@ def validate_prediction_set(
     missing = sorted(expected - markdown_stems)
 
     invalid: list[str] = []
+    invalid_stems: list[str] = []
     valid = 0
     for stem in sorted(expected):
         path = pred_dir / f"{stem}.md"
@@ -71,6 +72,7 @@ def validate_prediction_set(
             content = path.read_text(encoding="utf-8")
         except (OSError, UnicodeDecodeError):
             invalid.append(f"{stem}.md (not UTF-8)")
+            invalid_stems.append(stem)
             continue
         if not content.strip():
             if stem in empty_gt:
@@ -78,10 +80,11 @@ def validate_prediction_set(
                 valid += 1
             else:
                 invalid.append(f"{stem}.md (empty, GT non-empty)")
+                invalid_stems.append(stem)
             continue
         valid += 1
 
-    failed = sorted(set(missing) | {name.split(" (")[0] for name in invalid})
+    failed = sorted(set(missing) | set(invalid_stems))
     coverage = valid / expected_count if expected_count else 0.0
 
     if missing:

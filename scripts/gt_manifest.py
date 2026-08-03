@@ -15,20 +15,21 @@ def page_has_empty_gt(page: dict) -> bool:
     """True when a manifest page's GT contributes no text or html content.
 
     A page is "empty GT" iff none of its non-ignored layout dets carry
-    non-whitespace ``text`` or ``html``. Figures and empty text-masks do not
-    contribute to the text metrics' ground truth. A page with NO
-    ``layout_dets`` key at all is treated as non-empty (unknown/malformed:
-    only explicitly-empty annotations count).
+    non-whitespace ``text``, ``html``, ``latex`` or ``content``. Figures and
+    empty text-masks do not contribute to the text metrics' ground truth; the
+    scorer also consumes ``latex`` (equation_isolated) and preprocessed
+    ``content``, so those fields count too. A page with NO ``layout_dets`` key
+    at all is treated as non-empty (unknown/malformed: only explicitly-empty
+    annotations count).
     """
     if "layout_dets" not in page:
         return False
     for det in page.get("layout_dets") or []:
         if det.get("ignore"):
             continue
-        if str(det.get("text", "") or "").strip():
-            return False
-        if str(det.get("html", "") or "").strip():
-            return False
+        for field in ("text", "html", "latex", "content"):
+            if str(det.get(field, "") or "").strip():
+                return False
     return True
 
 

@@ -3,7 +3,7 @@ set -euo pipefail
 # The 1651-page CDM run opens many GT/prediction/formula files concurrently
 # (cdm_workers=8); WSL's default 1024-file limit triggers Errno 24
 # "Too many open files" mid-run. Raise it for this process tree.
-ulimit -n 65535 2>/dev/null || true
+ulimit -n 65535 2>/dev/null || echo "WARNING: could not raise the open-file limit (ulimit -n 65535); large runs may hit Errno 24" >&2
 # Score adapter predictions with the FULL metric set INCLUDING CDM in WSL.
 #
 # This is the WSL compatibility/reference CDM path. Native Windows CDM is available via score.ps1 with a CDM config such as v16-cdm.yaml after windows-cdm.patch is applied and verify-windows.ps1 passes.
