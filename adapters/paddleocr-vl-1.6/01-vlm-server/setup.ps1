@@ -362,11 +362,23 @@ if (-not $alreadyUp) {
         [System.IO.File]::WriteAllText($logFile, "", $utf8NoBom)
     }
 
-    $proc = Start-Process -FilePath "powershell.exe" `
-        -ArgumentList @("-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", $bgCommand) `
-        -WindowStyle Hidden -PassThru
-    Set-Content -LiteralPath $pidFile -Value $proc.Id -Encoding ASCII
-    Write-Host "      Launched wrapper PID $($proc.Id); waiting for /v1/models..." -ForegroundColor DarkGray
+    # Launch the wrapper via WMI Win32_Process.Create so it does NOT inherit
+    # this process's handles. The orchestrator (reproduce.ps1 Invoke-ReproNative)
+    # runs setup.ps1 through `Start-Process -Wait -RedirectStandardOutput`; a
+    # wrapper launched by Start-Process would inherit that redirected stdout
+    # pipe, and -Wait would then block until the long-lived server exits (a
+    # deadlock that hangs any fresh inference.server stage). WMI-created
+    # processes are spawned by the WMI service in a separate context and never
+    # inherit caller handles, so the orchestrator's -Wait returns as soon as
+    # setup.ps1 itself exits. (-WindowStyle Hidden keeps the wrapper headless.)
+    $wrapperCmd = "powershell.exe -NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -Command " + $bgCommand
+    $createRes = Invoke-CimMethod -ClassName Win32_Process -MethodName Create -Arguments @{ CommandLine = $wrapperCmd }
+    if ($createRes.ReturnValue -ne 0) {
+        throw "WMI Win32_Process.Create failed (ReturnValue=$($createRes.ReturnValue)) while launching the llama-server wrapper"
+    }
+    $wrapperId = [int]$createRes.ProcessId
+    Set-Content -LiteralPath $pidFile -Value $wrapperId -Encoding ASCII
+    Write-Host "      Launched wrapper PID $wrapperId (via WMI); waiting for /v1/models..." -ForegroundColor DarkGray
 
     $ready = $false
     # Heartbeat: print a dot every ~30s (every 6th iteration of the 5s loop) so
