@@ -70,7 +70,7 @@ jobs:
           }
       - name: Upload evidence artifact
         if: inputs.upload_evidence
-        uses: actions/upload-artifact@v4.6.2 # v4.6.2 - pin to full SHA before release
+        uses: actions/upload-artifact@v7.0.1 # v4.6.2 - pin to full SHA before release
         with:
           name: hip-smoke-evidence-${{ github.run_id }}
           path: outputs/evidence-scrubbed/${{ inputs.profile }}
