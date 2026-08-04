@@ -191,7 +191,7 @@ jobs:
           results_format: sarif
           publish_results: true
       - name: Upload SARIF
-        uses: actions/upload-artifact@v4.7.0 # v4.7.0
+        uses: actions/upload-artifact@v4.6.2 # v4.6.2 - pin to full SHA before release
         with:
           name: scorecard-sarif
           path: results.sarif
