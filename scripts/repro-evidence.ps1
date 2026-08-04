@@ -341,7 +341,13 @@ function Get-WslResultPath {
     $previousErrorActionPreference = $ErrorActionPreference
     try {
         $ErrorActionPreference = "Continue"
-        $wslHome = ((@(wsl -d Ubuntu2204 -- sh -lc 'printf %s "$HOME"' 2>$null) -join "") -replace "`0", "").Trim()
+        $probe = (@(wsl -d Ubuntu2204 -- sh -lc 'printf %s "$HOME"' 2>$null) -join "") -replace "`0", ""
+        # Best-effort probe: wsl.exe leaks UTF-16-ish error garbage (NULs and
+        # non-ASCII bytes) to stdout when the distro is missing or WSL is not
+        # provisioned. Only accept a clean POSIX home path; anything else
+        # falls back to /root so garbage never reaches path building or
+        # captured output.
+        if ($probe -match "^/[A-Za-z0-9_.-]+$") { $wslHome = $probe }
     } finally {
         # Best-effort probe: never leak its exit code into the caller.
         $LASTEXITCODE = 0

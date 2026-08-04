@@ -238,6 +238,7 @@ def run_reproduce(*args: str) -> subprocess.CompletedProcess:
         cwd=REPO_ROOT,
         capture_output=True,
         text=True,
+        errors="replace",
         check=False,
         timeout=300,
     )
