@@ -126,7 +126,7 @@ jobs:
         uses: actions/checkout@v7.0.1 # v7.0.1 - pin to full SHA before release
       - name: Run actionlint
         run: |
-          go run github.com/rhysd/actionlint/cmd/actionlint@v1.7.7 .github/workflows/*.yml
+          go run github.com/rhysd/actionlint/cmd/actionlint@v1.7.7 -config-file actionlint.yaml .github/workflows/*.yml
         shell: bash
 
   markdown-links:
