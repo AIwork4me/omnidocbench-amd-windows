@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+import json
 import subprocess
 
 import yaml
@@ -15,6 +16,88 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 SCRIPT = REPO_ROOT / "scripts" / "reproduce.ps1"
 SEED_SCRIPT = REPO_ROOT / "scripts" / "seed-locked-inputs.ps1"
 CONFIG_DIR = REPO_ROOT / "eval-infra" / "01-omnidocbench" / "configs"
+
+
+def _invoke_repro_native_source() -> str:
+    text = SCRIPT.read_text(encoding="utf-8")
+    return "function Invoke-ReproNative {" + text.split(
+        "function Invoke-ReproNative {", 1
+    )[1].split("function Invoke-ReproExternal {", 1)[0]
+
+
+def _run_invoke_repro_native(
+    tmp_path: Path, *, child_source: str, value: str, spaced_child_path: bool = False
+) -> dict:
+    child_dir = tmp_path / ("child scripts" if spaced_child_path else "child")
+    child_dir.mkdir()
+    child_script = child_dir / "native child.ps1" if spaced_child_path else child_dir / "native-child.ps1"
+    child_script.write_text(child_source, encoding="utf-8")
+
+    runner = tmp_path / "invoke-native-runner.ps1"
+    runner.write_text(
+        """
+param(
+    [string] $Executable,
+    [string] $ChildScript,
+    [string] $Value
+)
+
+%s
+
+function Invoke-ThroughNestedScriptblock {
+    param(
+        [string] $Executable,
+        [string] $ChildScript,
+        [string] $Value
+    )
+    $action = {
+        Invoke-ReproNative -FilePath $Executable -Arguments @(
+            "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", $ChildScript,
+            "-Value", $Value
+        )
+    }
+    return (& $action)
+}
+
+$script:ReproLastExit = 0
+$watch = [System.Diagnostics.Stopwatch]::StartNew()
+$captured = @(Invoke-ThroughNestedScriptblock `
+    -Executable $Executable -ChildScript $ChildScript -Value $Value)
+$watch.Stop()
+[pscustomobject]@{
+    elapsed_ms = $watch.ElapsedMilliseconds
+    captured = @($captured | ForEach-Object { [string] $_ })
+    exit_code = $script:ReproLastExit
+} | ConvertTo-Json -Compress
+"""
+        % _invoke_repro_native_source(),
+        encoding="utf-8",
+    )
+    result = subprocess.run(
+        [
+            "powershell",
+            "-NoProfile",
+            "-ExecutionPolicy",
+            "Bypass",
+            "-File",
+            str(runner),
+            "-Executable",
+            "powershell.exe",
+            "-ChildScript",
+            str(child_script),
+            "-Value",
+            value,
+        ],
+        cwd=REPO_ROOT,
+        capture_output=True,
+        text=True,
+        check=False,
+        timeout=15,
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+    lines = [line for line in result.stdout.splitlines() if line.strip()]
+    assert lines, result.stderr
+    return json.loads(lines[-1])
 
 
 def test_cpu_smoke_configs_bind_exact_ten_page_artifacts():
@@ -57,14 +140,37 @@ def test_orchestrator_is_fail_closed_and_keeps_smoke_artifact_bindings():
     assert 'Invoke-Stage -Id "verification.final"' in text
 
 
-def test_orchestrator_native_launch_keeps_live_output_without_redirected_pipes():
-    text = SCRIPT.read_text(encoding="utf-8")
-    block = text.split("function Invoke-ReproNative {", 1)[1].split(
-        "function Invoke-ReproExternal {", 1
-    )[0]
-    assert "-NoNewWindow" in block
-    assert "-RedirectStandardOutput" not in block
-    assert "-RedirectStandardError" not in block
+def test_invoke_repro_native_returns_before_descendant_and_captures_output_and_exit(tmp_path: Path):
+    observed = _run_invoke_repro_native(
+        tmp_path,
+        child_source="""
+param([string] $Value)
+Start-Process -FilePath "powershell.exe" `
+    -ArgumentList @("-NoProfile", "-Command", "Start-Sleep -Milliseconds 4000") `
+    -WindowStyle Hidden
+Write-Output "SENTINEL:$Value"
+exit 7
+""",
+        value="pipeline",
+    )
+    assert observed["elapsed_ms"] < 2500, observed
+    assert "SENTINEL:pipeline" in observed["captured"], observed
+    assert observed["exit_code"] == 7, observed
+
+
+def test_invoke_repro_native_preserves_spaced_script_path_and_argument(tmp_path: Path):
+    observed = _run_invoke_repro_native(
+        tmp_path,
+        child_source="""
+param([string] $Value)
+Write-Output "SPACED:$Value"
+exit 0
+""",
+        value="argument with spaces",
+        spaced_child_path=True,
+    )
+    assert "SPACED:argument with spaces" in observed["captured"], observed
+    assert observed["exit_code"] == 0, observed
 
 
 def test_orchestrator_uses_stable_stage_ids_for_resume():

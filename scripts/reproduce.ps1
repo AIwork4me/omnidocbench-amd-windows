@@ -410,16 +410,12 @@ function Resolve-ReproScriptPath {
 
 function Invoke-ReproNative {
     param([string] $FilePath, [string[]] $Arguments)
-    # Runs a native command, preserving its console output and returning its
-    # REAL exit code. Start-Process -Wait -PassThru is used because
-    # $LASTEXITCODE is not propagated from a native call made inside a
-    # function that itself runs inside a scriptblock invoked via & from a
-    # function (PowerShell 5.1 scope quirk). The ArgumentList is passed as a
-    # single joined string: PS 5.1 Start-Process rejects an array variable.
-    $joined = [string]::Join(" ", $Arguments)
-    $proc = Start-Process -FilePath $FilePath -ArgumentList $joined `
-        -Wait -PassThru -NoNewWindow
-    $script:ReproLastExit = $proc.ExitCode
+    # Invoke directly so child output remains in the PowerShell pipeline and
+    # waiting is limited to the direct process rather than its descendants.
+    # Copy $LASTEXITCODE immediately: later PowerShell commands can overwrite
+    # it, and callers gate stages through this script-scoped holder.
+    & $FilePath @Arguments
+    $script:ReproLastExit = $LASTEXITCODE
     return $script:ReproLastExit
 }
 

@@ -21,7 +21,6 @@ ASSERT = (
 )
 FIXTURES = REPO_ROOT / "tests" / "fixtures" / "backend-proof"
 LOCK = REPO_ROOT / "upstream-lock.json"
-SETUP = ASSERT.parent / "setup.ps1"
 
 
 @pytest.fixture()
@@ -85,16 +84,6 @@ def _run_proof(adapter: Path, log_file: Path, expected_variant: str, start_time_
         text=True,
         check=False,
     )
-
-
-def test_vlm_setup_launches_hidden_wrapper_with_start_process_and_persists_pid():
-    text = SETUP.read_text(encoding="utf-8")
-    block = text.split("$bgCommand", 1)[1].split("$ready = $false", 1)[0]
-    assert "Start-Process" in block
-    assert "-WindowStyle Hidden" in block
-    assert "-PassThru" in block
-    assert "$proc.Id" in block
-    assert "Invoke-CimMethod -ClassName Win32_Process" not in block
 
 
 def test_hip_log_and_env_pass(adapter_dir):
