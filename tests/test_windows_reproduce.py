@@ -57,6 +57,16 @@ def test_orchestrator_is_fail_closed_and_keeps_smoke_artifact_bindings():
     assert 'Invoke-Stage -Id "verification.final"' in text
 
 
+def test_orchestrator_native_launch_keeps_live_output_without_redirected_pipes():
+    text = SCRIPT.read_text(encoding="utf-8")
+    block = text.split("function Invoke-ReproNative {", 1)[1].split(
+        "function Invoke-ReproExternal {", 1
+    )[0]
+    assert "-NoNewWindow" in block
+    assert "-RedirectStandardOutput" not in block
+    assert "-RedirectStandardError" not in block
+
+
 def test_orchestrator_uses_stable_stage_ids_for_resume():
     text = SCRIPT.read_text(encoding="utf-8")
     for stage_id in (

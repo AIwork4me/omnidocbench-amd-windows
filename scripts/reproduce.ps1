@@ -416,26 +416,11 @@ function Invoke-ReproNative {
     # function that itself runs inside a scriptblock invoked via & from a
     # function (PowerShell 5.1 scope quirk). The ArgumentList is passed as a
     # single joined string: PS 5.1 Start-Process rejects an array variable.
-    $outFile = Join-Path $env:TEMP ("repro-native-out-" + $PID + ".log")
-    $errFile = Join-Path $env:TEMP ("repro-native-err-" + $PID + ".log")
-    try {
-        $joined = [string]::Join(" ", $Arguments)
-        $proc = Start-Process -FilePath $FilePath -ArgumentList $joined `
-            -Wait -PassThru -WindowStyle Hidden `
-            -RedirectStandardOutput $outFile -RedirectStandardError $errFile
-        if (Test-Path -LiteralPath $outFile) {
-            $outText = Get-Content -Raw -LiteralPath $outFile -ErrorAction SilentlyContinue
-            if ($outText) { Write-Output $outText.TrimEnd("`r", "`n") }
-        }
-        if (Test-Path -LiteralPath $errFile) {
-            $errText = Get-Content -Raw -LiteralPath $errFile -ErrorAction SilentlyContinue
-            if ($errText) { Write-Output $errText.TrimEnd("`r", "`n") }
-        }
-        $script:ReproLastExit = $proc.ExitCode
-        return $script:ReproLastExit
-    } finally {
-        Remove-Item -LiteralPath $outFile, $errFile -Force -ErrorAction SilentlyContinue
-    }
+    $joined = [string]::Join(" ", $Arguments)
+    $proc = Start-Process -FilePath $FilePath -ArgumentList $joined `
+        -Wait -PassThru -NoNewWindow
+    $script:ReproLastExit = $proc.ExitCode
+    return $script:ReproLastExit
 }
 
 function Invoke-ReproExternal {
