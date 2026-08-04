@@ -34,7 +34,10 @@ function Fail([string] $Message) {
     exit 1
 }
 
-$version = (Get-Content -Raw -LiteralPath (Join-Path $rootDir "pyproject.toml") | Select-String -Pattern '^version = "(.*)"$').Matches[0].Groups[1].Value
+$pyproject = (Get-Content -Raw -LiteralPath (Join-Path $rootDir "pyproject.toml")) -replace "`r`n", "`n"
+$versionMatch = [regex]::Match($pyproject, '(?m)^version = "([^"]+)"$')
+if (-not $versionMatch.Success) { Fail "pyproject.toml has no version declaration" }
+$version = $versionMatch.Groups[1].Value
 if (-not $Tag) { $Tag = "v$version" }
 
 # 1. tag == pyproject version

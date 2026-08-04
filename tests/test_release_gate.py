@@ -30,6 +30,21 @@ def test_release_gate_parses():
     assert result.returncode == 0, result.stdout + result.stderr
 
 
+def test_release_gate_reads_version_before_tag_check():
+    tag = "v-test-tag-that-does-not-exist"
+    result = subprocess.run(
+        ["powershell", "-NoProfile", "-File", str(GATE), "-Tag", tag],
+        cwd=REPO_ROOT,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    output = result.stdout + result.stderr
+    assert result.returncode != 0
+    assert f"tag {tag} does not exist" in output
+    assert "Cannot index into a null array" not in output
+
+
 def test_release_gate_checks_are_declared():
     text = GATE.read_text(encoding="utf-8")
     for required in (
