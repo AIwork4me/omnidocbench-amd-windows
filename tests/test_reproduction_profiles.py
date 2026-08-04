@@ -8,6 +8,11 @@ from pathlib import Path
 
 import yaml
 
+import pytest
+
+pytestmark = pytest.mark.win32
+
+
 REPO_ROOT = Path(__file__).resolve().parents[1]
 PROFILE_DIR = REPO_ROOT / "scripts" / "profiles"
 CONFIG_DIR = REPO_ROOT / "eval-infra" / "01-omnidocbench" / "configs"
@@ -44,7 +49,12 @@ THRESHOLD_KEYS = {
     "teds_min",
     "cdm_min",
 }
-EXPECTED_PROFILES = {"cpu-smoke-10", "hip-smoke-10", "paddleocr-vl-hip-full-1651"}
+EXPECTED_PROFILES = {
+    "cpu-smoke-10",
+    "hip-smoke-10",
+    "paddleocr-vl-hip-full-1651",
+    "mineru-pipeline-hip-smoke",
+}
 
 
 def load_profiles() -> dict[str, dict]:
@@ -55,8 +65,23 @@ def load_profiles() -> dict[str, dict]:
     return profiles
 
 
-def test_exactly_the_three_formal_profiles_exist():
+def test_exactly_the_four_formal_profiles_exist():
     assert set(load_profiles()) == EXPECTED_PROFILES
+
+
+def test_mineru_profile_declares_hip_without_server_backend_proof():
+    profile = load_profiles()["mineru-pipeline-hip-smoke"]
+    assert profile["variant"] == "hip"
+    assert profile["adapter"] == "mineru"
+    assert profile["require_gpu_backend_proof"] is False
+    assert profile["run_kind"] == "smoke"
+    assert profile["expected_pages"] == 10
+    # The adapter manifest must back up the missing backend-proof capability.
+    manifest = json.loads(
+        (REPO_ROOT / "adapters" / "mineru" / "adapter.json").read_text(encoding="utf-8")
+    )
+    assert manifest["lifecycle"]["backend_proof_capable"] is False
+    assert manifest["human_intervention_gates"], "MinerU must declare its human gates"
 
 
 def test_profile_schema_and_types():
@@ -213,6 +238,7 @@ def run_reproduce(*args: str) -> subprocess.CompletedProcess:
         cwd=REPO_ROOT,
         capture_output=True,
         text=True,
+        errors="replace",
         check=False,
         timeout=300,
     )

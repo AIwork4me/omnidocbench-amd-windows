@@ -1,0 +1,33 @@
+{
+  "schema_version": 1,
+  "name": "mineru-pipeline-hip-smoke",
+  "description": "MinerU 3.4.4 pipeline adapter smoke: 10 pages on the HIP ROCm PyTorch backend. The adapter setup.ps1 prints an explicit human-intervention gate (Python 3.12 conda env + ROCm 7.2.1 torch wheels, any UAC prompt needs a human) and fails closed until the HIP torch environment exists; this profile never pretends to be unattended.",
+  "run_kind": "smoke",
+  "model": "MinerU 3.4.4 pipeline",
+  "adapter": "mineru",
+  "engine": "lightweight",
+  "variant": "hip",
+  "expected_pages": 10,
+  "max_pages": 10,
+  "prediction_dir": "predictions/mineru_pipeline_hip_smoke",
+  "prediction_manifest": "eval-infra/01-omnidocbench/data/OmniDocBench_mineru_hip_smoke.json",
+  "owned_manifest": true,
+  "windows_scoring_config": "v16-mineru-hip-smoke.yaml",
+  "wsl_cdm_config": "v16-cdm-mineru-hip-smoke.yaml",
+  "score_save_name": "mineru_pipeline_hip_smoke_quick_match",
+  "server_port": "8124",
+  "minimum_prediction_coverage": 1.0,
+  "maximum_failed_pages": 0,
+  "require_gpu_backend_proof": false,
+  "require_wsl_cdm": true,
+  "metric_thresholds": {
+    "text_edit_dist_max": 0.5,
+    "reading_order_edit_dist_max": 0.5,
+    "teds_min": 0.0,
+    "cdm_min": 0.0
+  },
+  "expected_runtime_class": "minutes",
+  "max_timeout_cases": 8,
+  "max_exception_cases": 4,
+  "max_metric_error_cases": 8
+}

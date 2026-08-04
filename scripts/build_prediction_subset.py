@@ -7,6 +7,7 @@ from pathlib import Path
 import sys
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+from gt_manifest import page_has_empty_gt
 from windows_paths import through_short_repo
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -40,7 +41,12 @@ def build_subset(
             content = prediction.read_text(encoding="utf-8")
         except UnicodeDecodeError as error:
             raise ValueError(f"prediction is not UTF-8: {prediction.name}") from error
-        if content.strip():
+        page = page_by_stem.get(prediction.stem)
+        empty_gt = page is not None and page_has_empty_gt(page)
+        if content.strip() or empty_gt:
+            # An empty prediction is usable when the page's ground truth is
+            # itself empty (figures-only pages): the verifier counts those as
+            # valid, so they must survive the subset build.
             prediction_stems.append(prediction.stem)
 
     if limit is not None:
@@ -52,7 +58,7 @@ def build_subset(
     if missing:
         raise ValueError(f"predictions have no ground truth: {', '.join(missing[:10])}")
     if not prediction_stems:
-        raise ValueError("no non-empty UTF-8 Markdown predictions found")
+        raise ValueError("no usable Markdown predictions found (non-empty, or empty-GT)")
     if limit is not None and len(prediction_stems) < limit:
         raise ValueError(
             f"only {len(prediction_stems)} usable predictions found; {limit} required"

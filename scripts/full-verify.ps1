@@ -70,6 +70,7 @@ param(
     [int] $ExpectedPages = 0,
     [double] $MinCoverage = 0.0,
     [int] $MaxFailedPages = -1,
+    [string[]] $AllowedFailedPageStem = @(),
     [switch] $RequireRunStatsSelected
 )
 $ErrorActionPreference = "Stop"
@@ -153,7 +154,18 @@ if ($SkipWsl) {
     $distros = (wsl --list --quiet 2>$null) | ForEach-Object { ($_ -replace "`0","").Trim() } | Where-Object { $_ }
     $distroText = ($distros -join "`n")
     if ($distroText -match "Ubuntu2204") {
-        $probe = wsl -d Ubuntu2204 -- echo "WSL_OK" 2>$null
+        # wsl.exe prints a startup warning to stderr on some machines (e.g.
+        # "localhost proxy not mirrored to WSL"); with $ErrorActionPreference
+        # = Stop that warning becomes a terminating error, so probe with
+        # Continue semantics like the orchestrator does.
+        $probe = ""
+        $previousErrorActionPreference = $ErrorActionPreference
+        try {
+            $ErrorActionPreference = "Continue"
+            $probe = ((@(wsl -d Ubuntu2204 -- echo "WSL_OK" 2>$null) -join "") -replace "`0", "").Trim()
+        } finally {
+            $ErrorActionPreference = $previousErrorActionPreference
+        }
         if ($probe -match "WSL_OK") {
             Add-Result "WSL Ubuntu2204" "PASS" "reachable"
         } else {
@@ -256,7 +268,7 @@ if ($SkipVlm) {
     # Strict mode (formal reproduction profiles): delegate to
     # verify_prediction_set.py with exact page counts, coverage and failed-page
     # budgets. Default mode keeps the historical >=95% heuristic.
-    $strictCheck = ($ExpectedPages -gt 0) -or ($MinCoverage -gt 0.0) -or ($MaxFailedPages -ge 0) -or $RequireRunStatsSelected
+    $strictCheck = ($ExpectedPages -gt 0) -or ($MinCoverage -gt 0.0) -or ($MaxFailedPages -ge 0) -or $RequireRunStatsSelected -or (@($AllowedFailedPageStem).Count -gt 0)
     if ($strictCheck) {
         $manifestPath = if ([string]::IsNullOrWhiteSpace($PredictionManifest)) { "" } else { if ([System.IO.Path]::IsPathRooted($PredictionManifest)) { $PredictionManifest } else { Join-Path $rootDir $PredictionManifest } }
         $pythonExe = Join-Path $rootDir ".venv\Scripts\python.exe"
@@ -269,6 +281,9 @@ if ($SkipVlm) {
         $verifyArgs += @("--min-coverage", "$coverage")
         if ($ExpectedPages -gt 0) { $verifyArgs += @("--expected-pages", "$ExpectedPages") }
         if ($MaxFailedPages -ge 0) { $verifyArgs += @("--max-failed-pages", "$MaxFailedPages") }
+        foreach ($stem in @($AllowedFailedPageStem)) {
+            if ($stem) { $verifyArgs += @("--allowed-failed-page-stems", $stem) }
+        }
         if ($RequireRunStatsSelected) { $verifyArgs += "--require-selected" }
         $previousErrorActionPreference = $ErrorActionPreference
         try {

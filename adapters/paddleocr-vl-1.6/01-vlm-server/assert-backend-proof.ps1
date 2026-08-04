@@ -38,8 +38,14 @@ Path to upstream-lock.json.
 Where to write backend-proof.json (default: alongside the env file).
 .PARAMETER BaseUrl
 Server base URL (default http://127.0.0.1:<LLAMA_PORT>).
+.PARAMETER StartTimeFile
+Path to the server start-time file written by setup.ps1 (default:
+<llama-server.started> next to -PidFile). When the file exists, the log must
+be modified AFTER the recorded start (stale logs from earlier sessions cannot
+pass the proof) and the recorded start is stored in the proof output.
 .PARAMETER SkipHttp
-Skip PID-alive and /v1/models checks (used by offline fixture tests).
+Skip PID-alive, process-identity, /v1/models and the minimal inference request
+checks (used by offline fixture tests). The env/log/layer gates still run.
 #>
 [CmdletBinding()]
 param(
@@ -51,6 +57,7 @@ param(
     [string] $LockFile,
     [string] $OutFile = "",
     [string] $BaseUrl = "",
+    [string] $StartTimeFile = "",
     [switch] $SkipHttp
 )
 $ErrorActionPreference = "Stop"
@@ -137,6 +144,8 @@ $proof = [ordered]@{
     checks = @()
     server = [ordered]@{}
     log_evidence = [ordered]@{}
+    process = [ordered]@{}
+    inference_request = [ordered]@{}
     generated_at = (Get-Date).ToUniversalTime().ToString("o")
 }
 
@@ -181,6 +190,10 @@ if (-not $exePath -or -not (Test-Path -LiteralPath $exePath -PathType Leaf)) {
     $hasHipblas = Test-Path -LiteralPath $hipblasDll
     $proof.server.ggml_hip_dll = $hasHipDll
     $proof.server.libhipblas_dll = $hasHipblas
+    # DLL content hashes: the proof records what the binary links against so a
+    # later tamper with the runtime DLLs is detectable in the evidence pack.
+    $proof.server.ggml_hip_dll_sha256 = if ($hasHipDll) { Get-Sha256Hex -FilePath $hipDll } else { $null }
+    $proof.server.libhipblas_dll_sha256 = if ($hasHipblas) { Get-Sha256Hex -FilePath $hipblasDll } else { $null }
     if ($ExpectedVariant -eq "hip") {
         if (-not $hasHipDll -or -not $hasHipblas) {
             Add-Check "binary.hip_dlls" $false "HIP build must ship ggml-hip.dll and libhipblas.dll beside the exe"
@@ -222,34 +235,157 @@ if (-not $tag) {
     }
 }
 
-# --- 5. process alive ---
+# --- 5. strict LLAMA_GPU_LAYERS parsing -------------------------------
+# A layer count is only evidence when it is a real integer: "0" proves no
+# offload, ">= 1" proves offload was requested, anything else (empty, "none",
+# "99.5") is refused.
+$gpuLayersRaw = [string]$envValues["LLAMA_GPU_LAYERS"]
+$actualGpuLayers = $null
+$layersParsed = [int]::TryParse($gpuLayersRaw, [ref]$actualGpuLayers)
+$proof.server.actual_gpu_layers = if ($layersParsed) { $actualGpuLayers } else { $null }
+$proof.server.gpu_layers_raw = $gpuLayersRaw
+if (-not $layersParsed) {
+    Add-Check "offload.layers_parse" $false "LLAMA_GPU_LAYERS='$gpuLayersRaw' is not an integer (a layer count must parse strictly)"
+} elseif ($ExpectedVariant -eq "hip") {
+    if ($actualGpuLayers -lt 1) {
+        Add-Check "offload.layers" $false "LLAMA_GPU_LAYERS=$actualGpuLayers proves no GPU offload (HIP requires >= 1)"
+    } else {
+        Add-Check "offload.layers" $true "LLAMA_GPU_LAYERS=$actualGpuLayers (>= 1 layer offloaded)"
+    }
+} else {
+    if ($actualGpuLayers -ne 0) {
+        Add-Check "offload.layers" $false "LLAMA_GPU_LAYERS=$actualGpuLayers on a CPU profile (must be exactly 0)"
+    } else {
+        Add-Check "offload.layers" $true "LLAMA_GPU_LAYERS=0 (CPU build, no offload)"
+    }
+}
+
+# --- 6. process identity + server start time ---------------------------
 $pidValue = ""
 if (Test-Path -LiteralPath $PidFile -PathType Leaf) { $pidValue = (Get-Content -Raw -LiteralPath $PidFile).Trim() }
+$proof.server.pid = $pidValue
+
+$startTimeFile = $StartTimeFile
+if (-not $startTimeFile -and $PidFile) {
+    $startTimeFile = Join-Path (Split-Path -Parent $PidFile) "llama-server.started"
+}
+$serverStart = $null
+$proof.server.start_time = $null
+$proof.server.log_mtime_utc = $null
+if ($startTimeFile -and (Test-Path -LiteralPath $startTimeFile -PathType Leaf)) {
+    $rawStart = (Get-Content -Raw -LiteralPath $startTimeFile).Trim()
+    $serverStart = [datetime]::MinValue
+    if (-not [datetime]::TryParse($rawStart, [System.Globalization.CultureInfo]::InvariantCulture,
+            [System.Globalization.DateTimeStyles]::AdjustToUniversal -bor [System.Globalization.DateTimeStyles]::AssumeUniversal,
+            [ref]$serverStart)) {
+        Add-Check "server.start_time" $false "start-time file unreadable at $startTimeFile ('$rawStart')"
+        $serverStart = $null
+    } else {
+        $proof.server.start_time = $serverStart.ToUniversalTime().ToString("o")
+        Add-Check "server.start_time" $true "server started $($serverStart.ToUniversalTime().ToString('o'))"
+        if (Test-Path -LiteralPath $LogFile -PathType Leaf) {
+            $logMtime = (Get-Item -LiteralPath $LogFile).LastWriteTimeUtc
+            $proof.server.log_mtime_utc = $logMtime.ToString("o")
+            if ($logMtime -le $serverStart.ToUniversalTime()) {
+                Add-Check "log.freshness" $false "log mtime $($logMtime.ToString('o')) is NOT after server start $($serverStart.ToUniversalTime().ToString('o')) - stale log from an earlier session"
+            } else {
+                Add-Check "log.freshness" $true "log mtime $($logMtime.ToString('o')) is after server start"
+            }
+        } else {
+            Add-Check "log.freshness" $false "log file missing: $LogFile"
+        }
+    }
+}
+
+$port = [string]$envValues["LLAMA_PORT"]
+$proof.server.port = $port
+if (-not $BaseUrl) { $base = "http://127.0.0.1:$port" } else { $base = $BaseUrl }
+
 if (-not $SkipHttp) {
     if (-not $pidValue -or -not ($pidValue -match "^\d+$")) {
         Add-Check "process.alive" $false "pid file missing or invalid: $PidFile"
     } else {
-        $proc = Get-Process -Id ([int]$pidValue) -ErrorAction SilentlyContinue
-        if ($null -eq $proc) {
-            Add-Check "process.alive" $false "pid $pidValue is not running"
+        $wrapperProc = Get-Process -Id ([int]$pidValue) -ErrorAction SilentlyContinue
+        if ($null -eq $wrapperProc) {
+            Add-Check "process.alive" $false "wrapper pid $pidValue is not running"
         } else {
             Add-Check "process.alive" $true "server wrapper pid $pidValue is running"
         }
     }
+    # Identity proof: the running llama-server must be THIS executable, serving
+    # THIS port, THIS model path and THIS alias. An unrelated process (or an
+    # old server instance on a different model) can never pass.
+    $proof.process.wrapper_pid = $pidValue
+    $proof.process.server_pids = @()
+    $proof.process.command_line = $null
+    $matched = $null
+    $exeLower = $exePath.ToLowerInvariant()
+    if ($exePath -and (Test-Path -LiteralPath $exePath -PathType Leaf)) {
+        $procs = @(Get-CimInstance Win32_Process -ErrorAction SilentlyContinue | Where-Object {
+            $_.ExecutablePath -and $_.ExecutablePath.ToLowerInvariant() -eq $exeLower
+        })
+        $expectedModelPath = [string]$envValues["PADDLEOCR_VL_GGUF"]
+        $expectedAlias = [string]$envValues["VL_REC_API_MODEL_NAME"]
+        if (-not $expectedModelPath) { $expectedModelPath = "" }
+        foreach ($p in $procs) {
+            $cmd = [string]$p.CommandLine
+            if ($cmd -match "--port\s+$port" -and
+                ($expectedModelPath -eq "" -or $cmd.IndexOf($expectedModelPath, [System.StringComparison]::OrdinalIgnoreCase) -ge 0) -and
+                ($expectedAlias -eq "" -or $cmd -match "--alias\s+" + [regex]::Escape($expectedAlias))) {
+                $matched = $p
+                break
+            }
+        }
+        if ($null -eq $matched) {
+            Add-Check "process.identity" $false "no llama-server process with ExecutablePath=$exePath, --port $port, model path and alias '$(if ($expectedAlias) { $expectedAlias } else { '?' })'"
+        } else {
+            $proof.process.server_pids = @([int]$matched.ProcessId)
+            $proof.process.command_line = [string]$matched.CommandLine
+            $proof.process.executable_path = [string]$matched.ExecutablePath
+            Add-Check "process.identity" $true "llama-server pid $($matched.ProcessId) matches exe, --port $port, model and alias"
+        }
+    } else {
+        Add-Check "process.identity" $false "cannot validate process identity: server exe missing"
+    }
+    # One minimal inference request: proves the loaded model actually generates
+    # (a reachable /v1/models endpoint alone is not proof).
+    try {
+        $reqBody = @{
+            model = [string]$envValues["VL_REC_API_MODEL_NAME"]
+            messages = @(@{ role = "user"; content = "Reply with: OK" })
+            max_tokens = 8
+            temperature = 0
+        } | ConvertTo-Json -Depth 6
+        $requestTs = (Get-Date).ToUniversalTime().ToString("o")
+        $resp = Invoke-RestMethod -Uri "$base/v1/chat/completions" -Method Post -Body $reqBody -ContentType "application/json" -TimeoutSec 60
+        $status = "200"
+        $proof.inference_request.timestamp = $requestTs
+        $proof.inference_request.status = $status
+        $content = ""
+        try { $content = [string]$resp.choices[0].message.content } catch { }
+        $proof.inference_request.usage = $resp.usage
+        $proof.inference_request.response_snippet = $content.Substring(0, [math]::Min(80, $content.Length))
+        Add-Check "inference.request" $true "minimal chat completion returned HTTP 200 (snippet: '$($proof.inference_request.response_snippet)')"
+    } catch {
+        $proof.inference_request.timestamp = (Get-Date).ToUniversalTime().ToString("o")
+        $proof.inference_request.status = "error"
+        $proof.inference_request.error = $_.Exception.Message
+        Add-Check "inference.request" $false "minimal chat completion failed: $($_.Exception.Message)"
+    }
 } else {
     Add-Check "process.alive" $true "skipped (-SkipHttp)"
+    Add-Check "process.identity" $true "skipped (-SkipHttp)"
+    Add-Check "inference.request" $true "skipped (-SkipHttp)"
 }
-$proof.server.pid = $pidValue
 
-# --- 6. HTTP + model id ---
-$port = [string]$envValues["LLAMA_PORT"]
-$proof.server.port = $port
-if (-not $BaseUrl) { $base = "http://127.0.0.1:$port" } else { $base = $BaseUrl }
+# --- 7. HTTP + model id ---
 if (-not $SkipHttp) {
     try {
         $resp = Invoke-RestMethod -Uri "$base/v1/models" -Method Get -TimeoutSec 5
         $ids = @($resp.data | ForEach-Object { $_.id })
         $expectedModel = [string]$envValues["VL_REC_API_MODEL_NAME"]
+        $proof.server.requested_model = $expectedModel
+        $proof.server.returned_model = ($ids -join ", ")
         if ($ids -contains $expectedModel) {
             Add-Check "http.models" $true "server lists expected model $expectedModel"
         } else {
@@ -262,8 +398,7 @@ if (-not $SkipHttp) {
     Add-Check "http.models" $true "skipped (-SkipHttp)"
 }
 
-# --- 7. GPU offload + log evidence ---
-$gpuLayers = [string]$envValues["LLAMA_GPU_LAYERS"]
+# --- 8. GPU offload + log evidence ---
 $logText = Get-TextAnyEncoding -Path $LogFile
 $hipMarkers = @(
     "HIP Library Path",
@@ -284,11 +419,6 @@ $proof.log_evidence.markers_found = $hipHits
 $proof.log_evidence.fallback_markers = $fallbackHits
 $proof.log_evidence.log_file = $LogFile
 if ($ExpectedVariant -eq "hip") {
-    if ($gpuLayers -ne "0" -and $gpuLayers -ne "") {
-        Add-Check "offload.layers" $true "LLAMA_GPU_LAYERS=$gpuLayers (>= 1 layer offloaded)"
-    } else {
-        Add-Check "offload.layers" $false "LLAMA_GPU_LAYERS=$gpuLayers proves no GPU offload (must be >= 1 for HIP)"
-    }
     if ($hipHits.Count -eq 0) {
         Add-Check "log.hip_evidence" $false "no HIP/ROCm runtime marker in $LogFile"
     } else {
@@ -300,11 +430,6 @@ if ($ExpectedVariant -eq "hip") {
         Add-Check "log.cpu_fallback" $true "no CPU-fallback markers in log"
     }
 } else {
-    if ($gpuLayers -eq "0" -or $gpuLayers -eq "") {
-        Add-Check "offload.layers" $true "LLAMA_GPU_LAYERS=$gpuLayers (CPU build, no offload)"
-    } else {
-        Add-Check "offload.layers" $false "LLAMA_GPU_LAYERS=$gpuLayers on a CPU profile (must be 0)"
-    }
     Add-Check "log.cpu_evidence" $true "CPU profiles do not require log markers (no GPU offload expected)"
 }
 

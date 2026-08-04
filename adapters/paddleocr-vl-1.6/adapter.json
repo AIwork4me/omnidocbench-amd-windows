@@ -1,0 +1,25 @@
+{
+  "contract_version": 1,
+  "name": "paddleocr-vl-1.6",
+  "maturity": "reference",
+  "supported_platforms": ["windows"],
+  "python_runtime_policy": "3.11 (repo-local locked venv via uv)",
+  "lifecycle": {
+    "server_setup": "adapters/paddleocr-vl-1.6/01-vlm-server/setup.ps1",
+    "server_verify": "adapters/paddleocr-vl-1.6/01-vlm-server/verify.ps1",
+    "backend_proof_capable": true,
+    "layout_setup": "adapters/paddleocr-vl-1.6/02-layout-model/setup.ps1",
+    "layout_verify": "adapters/paddleocr-vl-1.6/02-layout-model/verify.ps1",
+    "install_deps": "adapters/paddleocr-vl-1.6/00-install-deps/setup.ps1",
+    "inference_entrypoint": "adapters/paddleocr-vl-1.6/run_adapter.py",
+    "resume_support": true
+  },
+  "output_contract": {
+    "markdown_per_page": true,
+    "utf8": true,
+    "stats_file": "_run_stats.json",
+    "atomic_writes": true
+  },
+  "required_env_vars": ["LLAMA_VARIANT", "LLAMA_SERVER_EXE", "LLAMA_TAG", "LLAMA_PORT", "LLAMA_GPU_LAYERS", "PADDLEOCR_VL_GGUF", "VL_REC_API_MODEL_NAME"],
+  "human_intervention_gates": []
+}

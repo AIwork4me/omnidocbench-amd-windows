@@ -7,6 +7,11 @@ import shutil
 import subprocess
 import uuid
 
+import pytest
+
+pytestmark = pytest.mark.win32
+
+
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 PATCH = REPO_ROOT / "patches" / "omnidocbench" / "windows-cdm.patch"

@@ -338,6 +338,30 @@ if (-not $alreadyUp) {
     $literalLog  = "'" + ($logFile -replace "'", "''") + "'"
     $bgCommand   = "& $literalExe $literalArgs *>> $literalLog"
 
+    # Record the server start time and truncate the log so it contains ONLY
+    # output produced by this server instance. assert-backend-proof.ps1 uses
+    # both to reject stale logs and markers from earlier sessions.
+    # A stale llama-server from an earlier session (same locked exe, different
+    # port, or wedged) holds the log open and would make the truncate fail:
+    # reclaim it first, but ONLY when the requested port is not answering and
+    # ONLY instances of OUR locked executable.
+    $staleServers = @(Get-CimInstance Win32_Process -ErrorAction SilentlyContinue | Where-Object {
+        $_.Name -ieq "llama-server.exe" -and
+        $_.ExecutablePath -and $_.ExecutablePath -ieq $serverExe.FullName -and
+        $_.CommandLine -notmatch "--port\s+$Port"
+    })
+    foreach ($stale in $staleServers) {
+        Write-Host "      Reclaiming stale llama-server pid $($stale.ProcessId) (port $Port not answering, instance serves a different port)..." -ForegroundColor Yellow
+        Stop-Process -Id $stale.ProcessId -Force -ErrorAction SilentlyContinue
+        Start-Sleep -Milliseconds 500
+    }
+    $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
+    $startedFile = Join-Path $logDir "llama-server.started"
+    [System.IO.File]::WriteAllText($startedFile, (Get-Date).ToUniversalTime().ToString("o"), $utf8NoBom)
+    if (Test-Path -LiteralPath $logFile) {
+        [System.IO.File]::WriteAllText($logFile, "", $utf8NoBom)
+    }
+
     $proc = Start-Process -FilePath "powershell.exe" `
         -ArgumentList @("-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", $bgCommand) `
         -WindowStyle Hidden -PassThru

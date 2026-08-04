@@ -33,7 +33,6 @@ import html
 import json
 import os
 import re
-import shutil
 import time
 import traceback
 from pathlib import Path
@@ -160,18 +159,49 @@ def _load_prior_stats(out_dir: Path) -> dict:
     return {**empty, "pages": pages, "count": prior.get("count", 0)}
 
 
-def _write_stats_atomic(stats_path: Path, stats: dict) -> None:
-    """Atomically persist stats (temp file + os.replace) so a killed run keeps
-    every completed page and its counters."""
-    temp = stats_path.with_name(stats_path.name + ".tmp")
+def _write_text_atomic(path: Path, text: str) -> None:
+    """Atomically write UTF-8 text: same-dir temp file, flush, fsync, replace.
+
+    A reader (the scorer, hash_prediction_tree.py, the strict verifier) can
+    therefore never observe a half-written prediction: it sees either the old
+    file or the complete new one. The temp file is cleaned up on failure.
+    """
+    temp = path.with_name(path.name + ".tmp")
     try:
-        temp.write_text(json.dumps(stats, ensure_ascii=False, indent=2), encoding="utf-8")
-        os.replace(temp, stats_path)
-    except OSError:
+        with open(temp, "w", encoding="utf-8", newline="") as fh:
+            fh.write(text)
+            fh.flush()
+            os.fsync(fh.fileno())
+        os.replace(temp, path)
+    except BaseException:
         try:
             temp.unlink(missing_ok=True)
         except OSError:
             pass
+        raise
+
+
+def _write_stats_atomic(stats_path: Path, stats: dict) -> None:
+    """Atomically persist stats (temp file + fsync + os.replace).
+
+    A killed run keeps every completed page and its counters. Unlike the old
+    implementation this NEVER silently swallows the final write failure: a
+    failed stats write means the run cannot be resumed safely, so the failure
+    propagates and the orchestrator marks the run interrupted.
+    """
+    temp = stats_path.with_name(stats_path.name + ".tmp")
+    try:
+        with open(temp, "w", encoding="utf-8", newline="") as fh:
+            fh.write(json.dumps(stats, ensure_ascii=False, indent=2))
+            fh.flush()
+            os.fsync(fh.fileno())
+        os.replace(temp, stats_path)
+    except BaseException:
+        try:
+            temp.unlink(missing_ok=True)
+        except OSError:
+            pass
+        raise
 
 
 def _select_images(img_dir: Path, max_pages: int | None = None) -> list[Path]:
@@ -298,7 +328,7 @@ def run_lightweight_folder(
             continue
         try:
             result = pipeline.predict(img)
-            md_path.write_text(result.markdown_text, encoding="utf-8")
+            _write_text_atomic(md_path, result.markdown_text)
             stats["newly_processed"] += 1
             invocation["newly_processed"] += 1
             ok_count += 1
@@ -533,7 +563,7 @@ def run_official_folder(
                 else:
                     markdown = _official_result_to_markdown(result)
                 markdown = _normalize_official_markdown_for_omnidocbench(markdown)
-                (out_dir / expected_md_name(img.name)).write_text(markdown, encoding="utf-8")
+                _write_text_atomic(out_dir / expected_md_name(img.name), markdown)
                 stats.append(
                     {
                         "image": img.name,
@@ -556,7 +586,10 @@ def run_official_folder(
                 else None
             )
             if fallback_path is not None and fallback_path.is_file():
-                shutil.copyfile(fallback_path, out_dir / expected_md_name(img.name))
+                _write_text_atomic(
+                    out_dir / expected_md_name(img.name),
+                    fallback_path.read_text(encoding="utf-8", errors="replace"),
+                )
                 assert last_exc is not None
                 write_error(img.name, last_exc, last_tb, attempts, fallback_from=fallback_path)
                 stats.append(
@@ -592,7 +625,7 @@ def run_official_folder(
         "engine": "official",
         "stats": stats,
     }
-    stats_path.write_text(json.dumps(summary, ensure_ascii=False, indent=2), encoding="utf-8")
+    _write_stats_atomic(stats_path, summary)
     if len(images) > 0 and ok_count < 0.5 * len(images):
         import sys as _sys
 

@@ -1,0 +1,24 @@
+{
+  "contract_version": 1,
+  "name": "mineru",
+  "maturity": "validated",
+  "supported_platforms": ["windows"],
+  "python_runtime_policy": "3.12 external conda env with ROCm 7.2.1 torch wheels (human/UAC install, see setup.ps1)",
+  "lifecycle": {
+    "install_deps": "adapters/mineru/setup.ps1",
+    "inference_entrypoint": "adapters/mineru/run_adapter.py",
+    "verify_script": "adapters/mineru/verify.ps1",
+    "backend_proof_capable": false,
+    "resume_support": true
+  },
+  "output_contract": {
+    "markdown_per_page": true,
+    "utf8": true,
+    "stats_file": "_run_stats.json",
+    "atomic_writes": false
+  },
+  "required_env_vars": ["MINERU_WIN_ROCM_PYTHON", "MINERU_ROCM_REPO"],
+  "human_intervention_gates": [
+    "The MinerU adapter needs a Python 3.12 conda env with AMD ROCm 7.2.1 torch wheels. setup.ps1 prints the exact install block and exits 1 until torch.version.hip and torch.cuda.is_available() hold; any UAC/driver prompt requires a human."
+  ]
+}

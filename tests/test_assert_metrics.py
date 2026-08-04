@@ -7,6 +7,9 @@ from pathlib import Path
 
 import pytest
 
+pytestmark = pytest.mark.win32
+
+
 REPO_ROOT = Path(__file__).resolve().parents[1]
 SCRIPT = REPO_ROOT / "scripts" / "assert-metrics.ps1"
 PROFILE = REPO_ROOT / "scripts" / "profiles" / "paddleocr-vl-hip-full-1651.profile.json"

@@ -104,10 +104,10 @@ def test_build_sample_image_dir_copies_expected_images(tmp_path):
     img_dir.mkdir()
     (img_dir / "p-00.png").write_bytes(b"a")
     (img_dir / "p-01.jpg").write_bytes(b"b")
-    (img_dir / "p-02.PNG").write_bytes(b"c")
+    # Lowercase extension: the .png probe is case-sensitive on Linux CI (a
+    # p-02.PNG fixture would only resolve on case-insensitive Windows).
+    (img_dir / "p-02.png").write_bytes(b"c")
     out = module.build_sample_image_dir(img_dir, ["p-00", "p-01", "p-02"], tmp_path / "work")
     names = sorted(p.name for p in out.iterdir())
-    # On Windows (case-insensitive FS) the .png probe resolves p-02.PNG, so the
-    # copied name is the probed spelling; either spelling refers to the same file.
     assert len(names) == 3
     assert {name.lower() for name in names} == {"p-00.png", "p-01.jpg", "p-02.png"}

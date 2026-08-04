@@ -5,6 +5,11 @@ import subprocess
 
 import yaml
 
+import pytest
+
+pytestmark = pytest.mark.win32
+
+
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 SCRIPT = REPO_ROOT / "scripts" / "reproduce.ps1"
@@ -27,10 +32,10 @@ def test_orchestrator_is_fail_closed_and_keeps_smoke_artifact_bindings():
     assert '[Alias("Profile")]' in text
     assert '$RunProfile' in text
     assert "--max-pages" in text
-    assert "--limit $($profile.expected_pages)" in text
-    assert "-Variant $profile.variant" in text
+    assert '"-limit", "$($profile.expected_pages)"' in text or "--limit" in text
+    assert '"-Variant", $profile.variant' in text
     assert "-RequireCdm" in text
-    assert "-PredictionManifest $manifestRel" in text
+    assert '"-PredictionManifest", $manifestRel' in text
     assert "Existing $RunProfile artifacts found" in text
     assert "Move-Item -LiteralPath $temp -Destination $stateFile -Force" in text
     assert '$env:UV_LINK_MODE = "copy"' in text
@@ -42,7 +47,7 @@ def test_orchestrator_is_fail_closed_and_keeps_smoke_artifact_bindings():
     assert "RESUME SKIP: stage already passed" in text
     assert "DRY RUN OK" in text
     assert "outputs\\checkouts\\PaddleOCR-VL-ROCm" in text
-    assert "-CloneDir $pipelineCheckout" in text
+    assert '"-CloneDir", $pipelineCheckout' in text
     assert 'Invoke-Stage -Id "inference.input_locks"' in text
     assert "Smoke inference requires exactly" in text
     assert "Manifest generation requires exactly" in text
@@ -195,9 +200,16 @@ def test_force_inference_purge_is_scoped():
 
 def test_evidence_pack_stage_writes_all_files():
     text = SCRIPT.read_text(encoding="utf-8")
-    block = text.split('Invoke-Stage -Id "evidence.pack"', 1)[1].split("if (-not $DryRun) {", 1)[1].split("-Command", 1)[0]
-    for name in ("Write-ProfileResolved", "Write-HardwareJson", "Write-ArtifactHashes", "Write-MetricsSummary", "Write-Report"):
+    block = text.split('Invoke-Stage -Id "evidence.pack"', 1)[1].split("-Command", 1)[0]
+    # Write-ProfileResolved / Write-HardwareJson / Write-MetricsSummary /
+    # Write-Report run inside the stage action.
+    for name in ("Write-ProfileResolved", "Write-HardwareJson", "Write-MetricsSummary", "Write-Report"):
         assert name in block, f"{name} missing from evidence.pack"
+    # The final artifact hashing runs in the -AfterSave hook, AFTER state.json
+    # holds the evidence.pack record (hashing earlier bound a stale state).
+    after_save = text.split("-AfterSave {", 1)[1].split("if (-not $DryRun) {", 1)[1].split("-Command", 1)[0]
+    for name in ("Write-ArtifactHashes", "compute_fingerprint.py", "fingerprint.evidence.spec.json"):
+        assert name in after_save, f"{name} missing from evidence.pack -AfterSave"
 
 
 def test_entrypoint_docs_make_ten_page_profile_canonical():

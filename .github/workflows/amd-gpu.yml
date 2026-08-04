@@ -1,0 +1,76 @@
+name: AMD GPU HIP smoke (self-hosted, manual)
+
+# Runs the hip-smoke-10 reproduction on an AMD self-hosted runner.
+#
+# Safety rules:
+#   * workflow_dispatch ONLY - never auto-runs on push or fork PRs
+#   * requires a self-hosted runner labelled 'amd-gpu'
+#   * no secrets are exposed; evidence is uploaded as an artifact
+#   * log output is scrubbed for machine paths before upload
+#
+# The full 1651-page run is reserved for the manual Release Gate
+# (scripts/release-gate.ps1) on controlled machines - never in CI.
+on:
+  workflow_dispatch:
+    inputs:
+      profile:
+        description: 'Profile to run (hip-smoke-10 is the acceptance gate)'
+        required: true
+        default: 'hip-smoke-10'
+        type: choice
+        options:
+          - hip-smoke-10
+      upload_evidence:
+        description: 'Upload the evidence pack as an artifact'
+        required: true
+        default: true
+        type: boolean
+
+concurrency:
+  group: amd-gpu-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  hip-smoke:
+    runs-on: [self-hosted, amd-gpu]
+    timeout-minutes: 240
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7.0.1 # v7.0.1 - pin to full SHA before release
+      - name: Sync locked environment
+        run: uv sync --locked --all-groups
+      - name: Detect mirrors
+        shell: powershell
+        run: powershell -ExecutionPolicy Bypass -File scripts\detect-mirrors.ps1
+      - name: Run HIP smoke profile
+        shell: powershell
+        run: powershell -ExecutionPolicy Bypass -File scripts\reproduce.ps1 -Profile ${{ inputs.profile }}
+      - name: Verify evidence pack
+        shell: powershell
+        run: |
+          $ev = (Get-ChildItem outputs\reproduction\${{ inputs.profile }} -ErrorAction SilentlyContinue)
+          if (-not $ev) { Write-Error "no evidence pack produced"; exit 1 }
+          Write-Host "Evidence pack: $ev"
+      - name: Scrub machine paths and upload evidence
+        if: inputs.upload_evidence
+        shell: powershell
+        run: |
+          $ev = "outputs\reproduction\${{ inputs.profile }}"
+          $scrubbed = "outputs\evidence-scrubbed\${{ inputs.profile }}"
+          New-Item -ItemType Directory -Force -Path $scrubbed | Out-Null
+          Copy-Item -Path (Join-Path $ev "*") -Destination $scrubbed -Recurse -Force
+          Get-ChildItem -Path $scrubbed -Recurse -File | ForEach-Object {
+            $text = [System.IO.File]::ReadAllText($_.FullName)
+            $text = $text -replace [regex]::Escape($env:RUNNER_WORKSPACE), '<runner-workspace>'
+            $text = $text -replace [regex]::Escape($env:USERPROFILE), '<user-home>'
+            [System.IO.File]::WriteAllText($_.FullName, $text)
+          }
+      - name: Upload evidence artifact
+        if: inputs.upload_evidence
+        uses: actions/upload-artifact@v4.7.0 # v4.7.0
+        with:
+          name: hip-smoke-evidence-${{ github.run_id }}
+          path: outputs/evidence-scrubbed/${{ inputs.profile }}

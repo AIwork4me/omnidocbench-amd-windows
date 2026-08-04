@@ -1,0 +1,82 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "OmniDocBench AMD Windows benchmark result entry",
+  "description": "One verified result row in benchmarks/index.json. Every claim must be traceable to an evidence document in docs/.",
+  "type": "object",
+  "required": [
+    "id",
+    "model",
+    "model_version",
+    "adapter",
+    "backend",
+    "device",
+    "gfx_architecture",
+    "driver",
+    "dataset_version",
+    "date",
+    "page_count",
+    "prediction_coverage",
+    "failed_pages",
+    "known_failures",
+    "unknown_failures",
+    "scoring_mode",
+    "aggregation_mode",
+    "raw_metrics",
+    "display_metrics",
+    "run_type",
+    "repo_commit",
+    "evidence_document"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "id": { "type": "string", "pattern": "^[a-z0-9-]+$" },
+    "model": { "type": "string" },
+    "model_version": { "type": "string" },
+    "adapter": { "type": "string" },
+    "backend": { "type": "string" },
+    "device": { "type": "string" },
+    "gfx_architecture": { "type": ["string", "null"] },
+    "driver": { "type": ["string", "null"] },
+    "dataset_version": { "type": "string" },
+    "date": { "type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}$" },
+    "page_count": { "type": "integer", "minimum": 1 },
+    "prediction_coverage": { "type": "number", "minimum": 0, "maximum": 1 },
+    "failed_pages": { "type": "integer", "minimum": 0 },
+    "known_failures": { "type": "integer", "minimum": 0 },
+    "unknown_failures": { "type": "integer", "minimum": 0 },
+    "scoring_mode": { "enum": ["quick_match", "official"] },
+    "aggregation_mode": {
+      "enum": [
+        "text_ro_page_avg_teds_pooled_cdm_pooled",
+        "page_avg_official_notebook",
+        "quick_match_cdm"
+      ]
+    },
+    "raw_metrics": {
+      "type": "object",
+      "required": ["text_edit_dist", "reading_order_edit_dist"],
+      "properties": {
+        "text_edit_dist": { "type": "number", "minimum": 0 },
+        "reading_order_edit_dist": { "type": "number", "minimum": 0 },
+        "table_teds_pooled": { "type": ["number", "null"], "minimum": 0, "maximum": 1 },
+        "table_teds_page_avg": { "type": ["number", "null"], "minimum": 0, "maximum": 1 },
+        "formula_cdm": { "type": ["number", "null"], "minimum": 0, "maximum": 1 }
+      }
+    },
+    "display_metrics": {
+      "type": "object",
+      "properties": {
+        "overall": { "type": ["number", "null"] },
+        "table_teds": { "type": ["number", "null"] },
+        "formula_cdm": { "type": ["number", "null"] }
+      }
+    },
+    "run_type": { "enum": ["resumed", "clean-room", "independent", "smoke"] },
+    "evidence_level": { "type": "string" },
+    "repo_commit": { "type": ["string", "null"] },
+    "profile_hash": { "type": ["string", "null"] },
+    "prediction_tree_hash": { "type": ["string", "null"] },
+    "result_hashes": { "type": ["object", "null"] },
+    "evidence_document": { "type": "string" }
+  }
+}

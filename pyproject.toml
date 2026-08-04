@@ -1,6 +1,6 @@
 [project]
 name = "omnidocbench-amd-windows"
-version = "0.0.0"
+version = "1.0.0"
 description = "Reproducible local environment for OmniDocBench on AMD Windows"
 requires-python = ">=3.10,<3.12"
 dependencies = [

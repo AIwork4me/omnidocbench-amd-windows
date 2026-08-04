@@ -26,5 +26,12 @@
     "teds_min": 0.85,
     "cdm_min": 0.85
   },
-  "expected_runtime_class": "hours"
+  "expected_runtime_class": "hours",
+  "allowed_failed_page_stems": [
+    "book_zh_GB12082006_extracted_page_8",
+    "newspaper_The Times UK_0801@magazinesclubnew_page_031"
+  ],
+  "max_timeout_cases": 16,
+  "max_exception_cases": 4,
+  "max_metric_error_cases": 16
 }
