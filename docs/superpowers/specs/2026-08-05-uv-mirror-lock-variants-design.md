@@ -2,7 +2,7 @@
 
 **Date:** 2026-08-05
 
-**Status:** Approved for specification by the user; implementation requires a separate plan and review
+**Status:** Approved by the user, including the live mirror-metadata amendment; implementation remains task-gated and independently reviewed
 
 **Scope:** Strict, reproducible `uv` environment bootstrap with PyPI, Tsinghua, and Aliyun source failover
 
@@ -25,6 +25,22 @@ The failure was reproduced on the target Windows machine:
 - a fresh resolution configured with Tsinghua, Aliyun, and PyPI locked all 75
   registry packages to Tsinghua, the first index containing them. Aliyun did
   not become a runtime fallback.
+
+Live three-lock generation after the first implementation added two further
+constraints that the original design did not model:
+
+- all three sources produced the same 76 packages and the same 798 artifact
+  filename/SHA-256 identities, but PyPI declared 798 artifact sizes, Tsinghua
+  omitted 4, and Aliyun omitted all 798;
+- `--refresh`, `--no-cache`, and their combination did not make uv 0.11.16
+  populate the missing mirror sizes;
+- every lock also contained 26 dependency-entry registry annotations in
+  addition to package-level registry sources.
+
+Artifact size is therefore canonical PyPI metadata, not a field that every
+supported mirror can be required to publish. Missing mirror size is normalized
+in memory as described below; the uv-generated mirror lockfiles are never
+post-processed.
 
 This matches uv's documented model: project lockfiles are generated and
 managed by uv, each registry package has one selected source, and multiple
@@ -134,11 +150,20 @@ the PEP 503 `index_url` separate from `artifact_url_prefix`: PyPI resolves from
 `pypi.org/simple` but downloads from the `files.pythonhosted.org` CDN, while the
 two mirrors expose the measured prefixes shown above. URL validation requires
 HTTPS, lower-case scheme and host, no user information, query, or fragment, and
-the exact manifest path form. For registry packages, normalization replaces an
-exact approved `source.registry` with the token `<registry>` and compares each
-artifact by decoded filename, SHA-256, and declared size instead of its mirror-
-specific URL. Non-registry, Git, path, and direct URLs remain byte-for-byte
-significant. It retains and compares:
+the exact manifest path form. Normalization recursively replaces every registry
+annotation that is exactly equal to the current lock's approved `index_url`
+with the token `<registry>`, including package-level and nested dependency
+sources. An unknown, mixed, or malformed registry annotation fails closed.
+Non-registry, Git, path, and direct URLs remain byte-for-byte significant.
+
+Artifact identity is package name/version, role (`sdist` or `wheel`), decoded
+filename, and SHA-256. Canonical PyPI is authoritative for size: every canonical
+artifact must declare a non-boolean, non-negative integer size. A mirror may
+omit size; the verifier projects the matching canonical size only into its
+in-memory normalized graph. If a mirror declares size, it must be a valid
+integer equal to the canonical value. The tracked mirror locks remain exact uv
+output. The normalized digest retains the projected canonical sizes rather than
+discarding size globally. It retains and compares:
 
 - lock schema version, revision, Python requirement, and resolution markers;
 - every package name, version, source kind, dependency, optional dependency,
@@ -146,10 +171,11 @@ significant. It retains and compares:
 - sdist and wheel filenames plus SHA-256 hashes;
 - the virtual root package version and dependency groups.
 
-Every registry source must equal that file's declared `index_url`; every sdist
-and wheel URL must begin with that file's separate `artifact_url_prefix` and
-contain a non-empty relative path. Aliases and mixed trailing-slash forms are
-rejected rather than silently normalized as additional sources.
+Every registry source at any nesting depth must equal that file's declared
+`index_url`; every sdist and wheel URL must begin with that file's separate
+`artifact_url_prefix` and contain a non-empty relative path. Aliases and mixed
+trailing-slash forms are rejected rather than silently normalized as additional
+sources.
 The normalized graph digests of all three locks must be identical. Unknown
 registries, missing artifacts, changed hashes, changed package versions, or a
 mixed-source variant fail the gate.
@@ -294,9 +320,12 @@ Implementation follows TDD. Required behavioral coverage is:
 4. **Repository cleanliness:** canonical `uv.lock` hash and tracked status are
    unchanged before and after success and all-source failure.
 5. **Lock equivalence:** versions, graph, markers, and artifact hashes match
-   across all three variants; the canonical PyPI CDN and both measured mirror
-   prefixes are accepted, while an artifact outside its declared prefix and
-   intentional mutation of each semantic class are rejected.
+   across all three variants; canonical sizes remain in the normalized graph;
+   mirror size omission is accepted by canonical projection, while canonical
+   missing/invalid size and a wrong declared mirror size are rejected. Exact
+   nested registry sources normalize across sources; unknown/mixed nested
+   sources, an artifact outside its declared prefix, and intentional mutation
+   of every other semantic class are rejected.
 6. **Unknown source:** an unrecognized candidate fails before uv execution.
 7. **Environment restoration:** all inherited uv variables are byte-for-byte
    restored after success and failure, including absent versus empty values;

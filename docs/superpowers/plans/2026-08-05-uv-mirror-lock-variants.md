@@ -13,6 +13,8 @@
 - The root `uv.lock` remains the canonical PyPI lock and is read-only during generation and sync.
 - The only supported source IDs and PEP 503 indexes are `pypi=https://pypi.org/simple`, `tuna=https://pypi.tuna.tsinghua.edu.cn/simple`, and `aliyun=https://mirrors.aliyun.com/pypi/simple` in that order.
 - Allowed artifact prefixes are exactly `https://files.pythonhosted.org/packages/`, `https://pypi.tuna.tsinghua.edu.cn/packages/`, and `https://mirrors.aliyun.com/pypi/packages/` for those IDs respectively.
+- Canonical PyPI artifacts must declare valid non-negative integer sizes; a mirror may omit size, but a declared mirror size must equal canonical and missing values are projected only in the in-memory normalized graph.
+- Every exact source-specific registry annotation is normalized recursively, including nested dependency sources; unknown or mixed registry annotations fail closed.
 - Every environment installation remains `uv sync --locked --all-groups`; `--frozen`, unlocked resolution, package upgrades, and string-rewritten lockfiles are forbidden.
 - All PowerShell must parse and run under Windows PowerShell 5.1; use nested two-argument `Join-Path`, no ternary syntax, and `$ErrorActionPreference = "Stop"`.
 - All task-owned temporary projects are outside the repository and are deleted only after their resolved absolute path is proven to be under `[System.IO.Path]::GetTempPath()` and to use the `omnidocbench-uv-` prefix.
@@ -40,185 +42,163 @@
 
 ---
 
-### Task 1: Offline semantic-equivalence verifier
+### Task 1: Correct live mirror semantics in the offline verifier
 
 **Files:**
-- Create: `scripts/verify_uv_lock_variants.py`
-- Create: `tests/test_uv_lock_variants.py`
+- Modify: `scripts/verify_uv_lock_variants.py`
+- Modify: `tests/test_uv_lock_variants.py`
 
 **Interfaces:**
-- Produces: `SOURCE_SPECS: tuple[SourceSpec, ...]` in fixed `pypi`, `tuna`, `aliyun` order.
-- Produces: `normalize_lock(lock: dict, source: SourceSpec) -> dict`.
-- Produces: `verify_catalog(root: Path, manifest_path: Path) -> dict` returning the validated manifest.
-- CLI check: `python scripts/verify_uv_lock_variants.py --root <repo> --manifest locks/manifest.json`.
-- CLI generation: `python scripts/verify_uv_lock_variants.py --root <staging-root> --write-manifest locks/manifest.json`.
+- Preserve: `SOURCE_SPECS: tuple[SourceSpec, ...]` in fixed `pypi`, `tuna`, `aliyun` order.
+- Preserve: `normalize_lock(lock: dict, source: SourceSpec) -> dict`.
+- Preserve: `verify_catalog(root: Path, manifest_path: Path) -> dict` and both existing CLI modes.
+- Add internal canonical size-map/projection helpers; do not expose network behavior.
 
-- [ ] **Step 1: Write minimal-lock fixtures and failing source/origin tests**
+- [ ] **Step 1: Add failing live-shape tests before changing production code**
 
-Create a `_lock_text(index_url, artifact_prefix, *, version="1.0", artifact_hash="sha256:" + "1" * 64)` helper in `tests/test_uv_lock_variants.py`. It must emit lock schema fields, one registry package with sdist and wheel entries, and a virtual root package. Add tests asserting:
+Extend the existing minimal-lock fixture so size can be removed or changed per
+source and a dependency can carry `source = { registry = <index> }`. Add these
+required tests:
 
 ```python
-def test_canonical_pypi_cdn_is_distinct_from_index(tmp_path):
+def test_mirror_missing_sizes_projects_canonical_sizes(tmp_path):
     root = write_three_lock_catalog(tmp_path)
-    manifest = verifier.build_manifest(root)
-    assert manifest["locks"]["pypi"]["index_url"] == "https://pypi.org/simple"
-    assert manifest["locks"]["pypi"]["artifact_url_prefix"] == "https://files.pythonhosted.org/packages/"
+    remove_all_artifact_sizes(root / "locks" / "uv.aliyun.lock")
+    assert len(verifier.normalized_graph_sha256(root)) == 64
 
 
-@pytest.mark.parametrize("source_id", ["pypi", "tuna", "aliyun"])
-def test_artifact_outside_declared_prefix_is_rejected(tmp_path, source_id):
+def test_canonical_missing_size_is_rejected(tmp_path):
     root = write_three_lock_catalog(tmp_path)
-    mutate_artifact_url(root, source_id, "https://evil.example/packages/demo.whl")
-    with pytest.raises(verifier.CatalogError, match="artifact_url_prefix"):
+    remove_one_artifact_size(root / "uv.lock")
+    with pytest.raises(verifier.CatalogError, match="canonical artifact size"):
         verifier.build_manifest(root)
+
+
+def test_wrong_declared_mirror_size_is_rejected(tmp_path):
+    root = write_three_lock_catalog(tmp_path)
+    change_one_artifact_size(root / "locks" / "uv.tuna.lock", 999)
+    with pytest.raises(verifier.CatalogError, match="mirror artifact size"):
+        verifier.build_manifest(root)
+
+
+def test_nested_registry_sources_normalize(tmp_path):
+    root = write_three_lock_catalog(tmp_path, nested_registry_sources=True)
+    assert len(verifier.normalized_graph_sha256(root)) == 64
 ```
 
-- [ ] **Step 2: Run the focused tests and confirm the red state**
+Also cover one missing mirror size, equal declared mirror size, boolean/negative
+canonical size, canonical size mutation invalidating an existing manifest,
+unknown and mixed nested registry objects, and significant direct/Git/path
+sources.
 
-Run:
+- [ ] **Step 2: Run the focused tests and confirm the red state**
 
 ```powershell
 .\.venv\Scripts\python.exe -m pytest tests\test_uv_lock_variants.py -q
 ```
 
-Expected: collection fails because `scripts.verify_uv_lock_variants` does not exist.
+Expected: mirror omission and exact nested-source tests fail with normalized
+graph differences; canonical-missing and wrong-mirror-size tests do not yet
+raise the required diagnostics.
 
-- [ ] **Step 3: Add the strict public model and schema constants**
+- [ ] **Step 3: Recursively normalize exact registry annotations**
 
-Create these concrete definitions in `scripts/verify_uv_lock_variants.py`:
-
-```python
-@dataclass(frozen=True)
-class SourceSpec:
-    source_id: str
-    path: str
-    index_url: str
-    artifact_url_prefix: str
-
-
-SOURCE_SPECS = (
-    SourceSpec("pypi", "uv.lock", "https://pypi.org/simple", "https://files.pythonhosted.org/packages/"),
-    SourceSpec("tuna", "locks/uv.tuna.lock", "https://pypi.tuna.tsinghua.edu.cn/simple", "https://pypi.tuna.tsinghua.edu.cn/packages/"),
-    SourceSpec("aliyun", "locks/uv.aliyun.lock", "https://mirrors.aliyun.com/pypi/simple", "https://mirrors.aliyun.com/pypi/packages/"),
-)
-
-
-class CatalogError(ValueError):
-    pass
-```
-
-Use `tomllib` with the Python 3.10 `tomli` fallback. Validate exact manifest top-level keys `schema_version`, `normalized_graph_sha256`, `locks`; exact lock-object keys `path`, `index_url`, `artifact_url_prefix`, `sha256`; fixed IDs/order; lowercase 64-hex hashes; and no unknown fields.
-
-- [ ] **Step 4: Add deterministic normalization and manifest operations**
-
-Implement the following behavior without network access:
+Add a recursive transformation and call it from `normalize_lock` after artifact
+URL normalization:
 
 ```python
-def _artifact(artifact: dict, source: SourceSpec) -> dict:
-    url = artifact.get("url")
-    if not isinstance(url, str):
-        raise CatalogError(f"artifact URL is missing for {source.source_id}: {url}")
-    parsed = urllib.parse.urlsplit(url)
-    relative = urllib.parse.unquote(url[len(source.artifact_url_prefix):]) if url.startswith(source.artifact_url_prefix) else ""
-    relative_parts = PurePosixPath(relative).parts
-    if (
-        not url.startswith(source.artifact_url_prefix)
-        or parsed.scheme != "https"
-        or parsed.username is not None
-        or parsed.password is not None
-        or parsed.query
-        or parsed.fragment
-        or not relative
-        or any(part in ("", ".", "..") for part in relative_parts)
-    ):
-        raise CatalogError(f"artifact URL is outside artifact_url_prefix for {source.source_id}: {url}")
-    filename = urllib.parse.unquote(PurePosixPath(parsed.path).name)
-    if not filename:
-        raise CatalogError(f"artifact URL has no filename for {source.source_id}: {url}")
-    normalized = copy.deepcopy(artifact)
-    normalized["url"] = filename
-    normalized.pop("upload-time", None)
-    return normalized
-
-
-def normalize_lock(lock: dict, source: SourceSpec) -> dict:
-    normalized = copy.deepcopy(lock)
-    for package in normalized.get("package", []):
-        package_source = package.get("source", {})
-        if "registry" in package_source:
-            if package_source != {"registry": source.index_url}:
-                raise CatalogError(f"registry mismatch for {package.get('name')}: {package_source}")
-            sdist = package.get("sdist")
-            wheels = package.get("wheels", [])
-            if sdist is not None and not isinstance(sdist, dict):
-                raise CatalogError(f"sdist must be an object for {package.get('name')}")
-            if not isinstance(wheels, list):
-                raise CatalogError(f"wheels must be an array for {package.get('name')}")
-            if sdist is None and not wheels:
-                raise CatalogError(f"registry package has no artifacts: {package.get('name')}")
-            package["source"] = {"registry": "<registry>"}
-            if sdist is not None:
-                package["sdist"] = _artifact(sdist, source)
-            if "wheels" in package:
-                package["wheels"] = [_artifact(wheel, source) for wheel in wheels]
-    return normalized
-
-
-def normalized_graph_sha256(root: Path) -> str:
-    graphs = [normalize_lock(load_lock(root / spec.path), spec) for spec in SOURCE_SPECS]
-    baseline = _canonical_json(graphs[0])
-    for spec, graph in zip(SOURCE_SPECS[1:], graphs[1:]):
-        if _canonical_json(graph) != baseline:
-            raise CatalogError(f"normalized dependency graph differs for {spec.source_id}")
-    return hashlib.sha256(baseline).hexdigest()
-
-
-def build_manifest(root: Path) -> dict:
-    digest = normalized_graph_sha256(root)
-    locks = {}
-    for spec in SOURCE_SPECS:
-        locks[spec.source_id] = {
-            "path": spec.path,
-            "index_url": spec.index_url,
-            "artifact_url_prefix": spec.artifact_url_prefix,
-            "sha256": _sha256(root / spec.path),
-        }
-    return {"schema_version": 1, "normalized_graph_sha256": digest, "locks": locks}
-
-
-def verify_catalog(root: Path, manifest_path: Path) -> dict:
-    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
-    validate_manifest_schema(manifest)
-    expected = build_manifest(root)
-    if manifest != expected:
-        raise CatalogError("lock manifest does not match the tracked catalog")
-    return manifest
+def _normalize_registry_sources(value: object, source: SourceSpec) -> object:
+    if isinstance(value, dict):
+        if "registry" in value:
+            if value != {"registry": source.index_url}:
+                raise CatalogError(
+                    f"registry annotation must exactly match {source.source_id}: {value}"
+                )
+            return {"registry": "<registry>"}
+        return {key: _normalize_registry_sources(item, source) for key, item in value.items()}
+    if isinstance(value, list):
+        return [_normalize_registry_sources(item, source) for item in value]
+    return value
 ```
 
-Define `_canonical_json(value)` as `json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode("utf-8")`. The deep-copy transformation therefore retains `version`, `revision`, `requires-python`, `resolution-markers`, dependency groups, markers, conflicts, hashes, sizes, and all unknown semantic fields. It changes only a validated registry location, a validated artifact URL to its decoded filename, and removes `upload-time`. Every non-registry/direct/Git/path URL remains byte-for-byte significant.
+This must normalize package and nested dependency registry objects. It must not
+change direct, Git, path, marker, URL, or arbitrary string values.
 
-- [ ] **Step 5: Add mutation, schema, and CLI tests**
+- [ ] **Step 4: Project canonical sizes only for matching mirror artifacts**
 
-Cover package version, dependency edge, marker, artifact hash, artifact size, direct URL, unknown registry, mixed registry, missing artifact, duplicate/unknown manifest fields, bad hash, and all three valid origins. Exercise both CLI modes; `--write-manifest` must use UTF-8 without BOM and `os.replace()` only after the staged catalog validates.
+Artifact identity is `(package name, package version, role, decoded filename,
+SHA-256)`. Build the canonical map from the already URL-normalized PyPI graph:
 
-- [ ] **Step 6: Run focused and compatibility tests**
+```python
+def _canonical_artifact_sizes(graph: dict) -> dict[tuple[str, str, str, str, str], int]:
+    sizes = {}
+    for key, artifact in _iter_artifacts(graph):
+        size = artifact.get("size")
+        if isinstance(size, bool) or not isinstance(size, int) or size < 0:
+            raise CatalogError(f"canonical artifact size is missing or invalid: {key}")
+        if key in sizes:
+            raise CatalogError(f"duplicate canonical artifact identity: {key}")
+        sizes[key] = size
+    return sizes
 
-Run:
+
+def _project_canonical_sizes(
+    graph: dict,
+    canonical_sizes: dict[tuple[str, str, str, str, str], int],
+    source: SourceSpec,
+) -> dict:
+    projected = copy.deepcopy(graph)
+    seen = set()
+    for key, artifact in _iter_artifacts(projected):
+        if key not in canonical_sizes:
+            raise CatalogError(f"mirror artifact is absent from canonical lock: {key}")
+        declared = artifact.get("size")
+        canonical = canonical_sizes[key]
+        if declared is None:
+            artifact["size"] = canonical
+        elif isinstance(declared, bool) or not isinstance(declared, int) or declared < 0 or declared != canonical:
+            raise CatalogError(f"mirror artifact size differs for {source.source_id}: {key}")
+        seen.add(key)
+    if seen != set(canonical_sizes):
+        raise CatalogError(f"mirror artifact set differs for {source.source_id}")
+    return projected
+```
+
+`_iter_artifacts` must yield stable keys for sdist and each wheel without
+reordering the graph. `normalized_graph_sha256` must normalize canonical first,
+validate its sizes, normalize each mirror, project only missing sizes, compare
+canonical JSON bytes, and hash the canonical normalized bytes. Raw tracked
+mirror locks are never rewritten.
+
+- [ ] **Step 5: Complete mutation and manifest regression coverage**
+
+Retain all existing URL, schema, version, dependency, marker, artifact hash,
+direct URL and CLI atomicity tests. Split size coverage into omission versus
+numeric mutation. Prove canonical size changes alter the normalized digest and
+invalidate the old manifest; prove missing mirror size does not. Add a fixture
+matching live output where Tsinghua omits four sizes, Aliyun omits all sizes,
+and all three locks have nested dependency registry annotations.
+
+- [ ] **Step 6: Run focused and full verification**
 
 ```powershell
 .\.venv\Scripts\python.exe -m pytest tests\test_uv_lock_variants.py tests\test_uv_environment.py -q
+.\.venv\Scripts\python.exe -m pytest -q
 ```
 
-Expected: all tests pass, including Python 3.10 fallback assertions.
+Expected: focused and full suites pass with pristine output.
 
-- [ ] **Step 7: Commit Task 1**
+- [ ] **Step 7: Commit the Task 1 correction**
 
 ```powershell
 git add scripts\verify_uv_lock_variants.py tests\test_uv_lock_variants.py
-git commit -m "feat: verify uv lock catalog semantics"
+git commit -m "fix: normalize live uv mirror metadata"
 ```
 
-Independent gate: a fresh spec reviewer must confirm all approved normalization rules are represented; a separate quality reviewer must confirm deterministic hashing, fail-closed schema handling, and mutation coverage. Do not start Task 2 until both approve.
+Independent gate: a fresh reviewer must verify canonical-size authority,
+omission-only projection, declared-size mismatch rejection, recursive exact
+registry normalization, raw lock immutability, deterministic digest behavior,
+and complete RED/GREEN evidence before Task 2 resumes.
 
 ---
 
@@ -240,7 +220,7 @@ Independent gate: a fresh spec reviewer must confirm all approved normalization 
 
 - [ ] **Step 1: Write fake-uv red tests for exact generation commands**
 
-The fake uv executable must log argv, assert that every temporary project starts with byte-identical copies of `pyproject.toml` and canonical `uv.lock`, rewrite only its temporary lock fixture, and support a configured failure on the Tsinghua or Aliyun source. Assert each mirror uses:
+The fake uv executable must log argv, assert that every temporary project starts with byte-identical copies of `pyproject.toml` and canonical `uv.lock`, rewrite only its temporary lock fixture, and support a configured failure on the Tsinghua or Aliyun source. At least one success fixture must match the measured live shape: Tsinghua omits four artifact sizes, Aliyun omits every artifact size, and all locks carry exact source-specific nested dependency registry annotations. The staged verifier must accept that fixture without editing the generated locks. Assert each mirror uses:
 
 ```text
 lock --no-config --project <external-temp> --default-index <exact-url>
@@ -257,7 +237,11 @@ Run:
 .\.venv\Scripts\python.exe -m pytest tests\test_uv_lock_generation.py -q
 ```
 
-Expected: FAIL because `scripts/generate-uv-lock-variants.ps1` is absent.
+Historical RED already captured in the Task 2 report: the focused test failed
+because `scripts/generate-uv-lock-variants.ps1` was absent. On resume, retain
+that evidence and require the current generator suite to pass, including the
+new measured missing-size/nested-source fixture; do not manufacture a second
+absence failure by deleting the partial implementation.
 
 - [ ] **Step 3: Write the isolated generation workflow**
 
@@ -266,12 +250,20 @@ Use these parameters and guards:
 ```powershell
 [CmdletBinding()]
 param(
-    [string] $RepoRoot = (Split-Path -Parent $PSScriptRoot),
+    [string] $RepoRoot = "",
     [string] $UvExecutable = "uv",
     [string] $PythonExecutable = ""
 )
 $ErrorActionPreference = "Stop"
+if ([string]::IsNullOrWhiteSpace($RepoRoot)) {
+    $RepoRoot = Split-Path -Parent $PSScriptRoot
+}
 ```
+
+Windows PowerShell 5.1 evaluates parameter default expressions before
+`$PSScriptRoot` is populated, so repository-root resolution must occur after
+the `param` block. A regression test invokes the script without `-RepoRoot`
+from an unrelated current directory.
 
 Resolve `$RepoRoot`, calculate the canonical root lock hash once, and create one `omnidocbench-uv-generate-<guid>` directory under the OS temp directory. Within it create separate `pypi`, `tuna`, and `aliyun` uv projects plus a distinct `catalog-stage\locks` directory. Copy canonical `pyproject.toml` and `uv.lock` into each uv project before invocation. Clear and restore all controlled uv variables in `finally`, retaining absent-versus-empty state.
 
