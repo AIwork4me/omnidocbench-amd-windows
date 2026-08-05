@@ -93,7 +93,7 @@ function Test-FileContentEqual([string] $Left, [string] $Right) {
         )
         if ($leftStream.Length -ne $rightStream.Length) { return $false }
 
-        $bufferSize = 4MB
+        $bufferSize = 64KB
         $leftBuffer = New-Object byte[] $bufferSize
         $rightBuffer = New-Object byte[] $bufferSize
         $comparer = [System.Collections.StructuralComparisons]::StructuralEqualityComparer
@@ -161,7 +161,8 @@ foreach ($relative in $imagePaths) {
             (Join-LiteralPath (Join-Path $sourceShortRoot "eval-infra\01-omnidocbench\data\images") $relative) `
             (Join-LiteralPath (Join-Path $destinationShortRoot "eval-infra\01-omnidocbench\data\images") $relative)
     } catch {
-        throw "Seed copy failed for '$relative': $($_.Exception.Message)"
+        $message = "Seed copy failed for '$relative': $($_.Exception.Message)"
+        throw (New-Object System.IO.IOException($message, $_.Exception))
     }
 }
 
