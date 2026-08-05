@@ -60,12 +60,76 @@ function Initialize-ShortRepoRoot([string] $RepoRoot) {
 $sourceShortRoot = Initialize-ShortRepoRoot $SourceRoot
 $destinationShortRoot = Initialize-ShortRepoRoot $DestinationRoot
 
+function Read-FileBlock([System.IO.FileStream] $Stream, [byte[]] $Buffer) {
+    $total = 0
+    while ($total -lt $Buffer.Length) {
+        $read = $Stream.Read($Buffer, $total, $Buffer.Length - $total)
+        if ($read -eq 0) { break }
+        $total += $read
+    }
+    return $total
+}
+
+function Test-FileContentEqual([string] $Left, [string] $Right) {
+    $extendedLeft = ConvertTo-ExtendedPath $Left
+    $extendedRight = ConvertTo-ExtendedPath $Right
+    if (-not [System.IO.File]::Exists($extendedLeft) -or -not [System.IO.File]::Exists($extendedRight)) {
+        return $false
+    }
+    $share = [System.IO.FileShare]::ReadWrite -bor [System.IO.FileShare]::Delete
+    $leftStream = [System.IO.File]::Open(
+        $extendedLeft,
+        [System.IO.FileMode]::Open,
+        [System.IO.FileAccess]::Read,
+        $share
+    )
+    $rightStream = $null
+    try {
+        $rightStream = [System.IO.File]::Open(
+            $extendedRight,
+            [System.IO.FileMode]::Open,
+            [System.IO.FileAccess]::Read,
+            $share
+        )
+        if ($leftStream.Length -ne $rightStream.Length) { return $false }
+
+        $bufferSize = 4MB
+        $leftBuffer = New-Object byte[] $bufferSize
+        $rightBuffer = New-Object byte[] $bufferSize
+        $comparer = [System.Collections.StructuralComparisons]::StructuralEqualityComparer
+        while ($true) {
+            $leftRead = Read-FileBlock $leftStream $leftBuffer
+            $rightRead = Read-FileBlock $rightStream $rightBuffer
+            if ($leftRead -ne $rightRead) { return $false }
+            if ($leftRead -eq 0) { return $true }
+            if (-not $comparer.Equals($leftBuffer, $rightBuffer)) { return $false }
+        }
+    } finally {
+        if ($null -ne $rightStream) { $rightStream.Dispose() }
+        $leftStream.Dispose()
+    }
+}
+
 function Copy-LockedFile([string] $Source, [string] $Destination) {
     $extendedSource = ConvertTo-ExtendedPath $Source
     if (-not [System.IO.File]::Exists($extendedSource)) { throw "Seed source missing: $Source" }
+    $extendedDestination = ConvertTo-ExtendedPath $Destination
+    if ([System.IO.File]::Exists($extendedDestination)) {
+        if (Test-FileContentEqual $Source $Destination) {
+            Write-Verbose "Seed destination already byte-identical; skipping: $Destination"
+            return
+        }
+    }
     $parent = [System.IO.Path]::GetDirectoryName($Destination)
     [System.IO.Directory]::CreateDirectory((ConvertTo-ExtendedPath $parent)) | Out-Null
-    [System.IO.File]::Copy($extendedSource, (ConvertTo-ExtendedPath $Destination), $true)
+    try {
+        [System.IO.File]::Copy($extendedSource, $extendedDestination, $true)
+    } catch {
+        $message = "Unable to replace seed destination '$Destination'. " +
+            "The file may be in use or memory-mapped; stop the VLM server/process using it, then rerun. " +
+            "Original error: $($_.Exception.Message)"
+        throw (New-Object System.IO.IOException($message, $_.Exception))
+    }
 }
 
 if (-not (Test-Path -LiteralPath $python)) { throw "Destination locked Python missing: $python" }
