@@ -274,14 +274,22 @@ def test_orchestrator_dry_run_parses_and_records_ordered_stages(tmp_path: Path):
     assert "pypi" in python_block and "tuna" in python_block and "aliyun" in python_block
 
 
-def test_uv_environment_lock_is_the_only_profile_owned_uv_purge_artifact():
+def test_force_inference_does_not_purge_environment_lock_or_uv_catalog():
     text = SCRIPT.read_text(encoding="utf-8")
     block = text.split("if ($ForceInference -and -not $DryRun) {", 1)[1].split("Remove-StageRecords -Ids $purgeIds", 1)[0]
-    assert "$environmentLockFile" in block
+    assert "$environmentLockFile" not in block
     assert "$uvLockManifestPath" not in block
     assert "$mirrorsJsonPath" not in block
     assert "uv.tuna.lock" not in block
     assert "uv.aliyun.lock" not in block
+
+
+def test_environment_python_invalidates_old_evidence_and_revalidates_before_resume():
+    text = SCRIPT.read_text(encoding="utf-8")
+    block = text.split('Invoke-Stage -Id "environment.python"', 1)[1].split('Invoke-Stage -Id "environment.wsl"', 1)[0]
+    assert "Remove-Item -LiteralPath $environmentLockFile" in block
+    assert "-ResumeGuard" in block
+    assert "Assert-EnvironmentLockEvidence" in block
 
 
 def test_provisioning_fingerprint_binds_only_canonical_lock_and_normalized_graph():

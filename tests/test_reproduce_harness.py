@@ -409,8 +409,13 @@ def test_16_strict_uv_fallback_uses_catalog_and_writes_provenance(harness):
     for call in calls:
         assert set(call["environment"]) == CONTROLLED_UV_ENV
     for call in sync_calls:
-        assert call["argv"][:4] == ["sync", "--locked", "--all-groups", "--no-config"]
-        assert call["argv"][-2:] == ["--index-strategy", "first-index"]
+        assert len(call["argv"]) == 10
+        assert call["argv"] == [
+            "sync", "--locked", "--all-groups", "--no-config",
+            "--project", call["argv"][5],
+            "--default-index", call["argv"][7],
+            "--index-strategy", "first-index",
+        ]
         assert Path(call["argv"][5]).is_absolute()
         assert call["environment"]["UV_PROJECT_ENVIRONMENT"] == {
             "present": True, "value": str((harness["root"] / ".venv").resolve())
@@ -466,3 +471,66 @@ def test_17_uv_failure_state_resumes_from_environment_python(harness):
     assert resumed.returncode == 0, resumed.stdout + resumed.stderr
     assert read_state(harness)["status"] == "passed"
     assert load_json(evidence_dir(harness) / "environment-lock.json")["selected_source_id"] == "pypi"
+
+
+def test_18_resume_force_inference_preserves_environment_lock_without_uv_sync(harness):
+    first = run_reproduce(harness["env"], "-Profile", SMOKE)
+    assert first.returncode == 0, first.stdout + first.stderr
+    environment_lock = evidence_dir(harness) / "environment-lock.json"
+    evidence_before = environment_lock.read_bytes()
+    uv_count_before = len(uv_calls(harness))
+
+    forced = run_reproduce(harness["env"], "-Profile", SMOKE, "-Resume", "-ForceInference")
+    assert forced.returncode == 0, forced.stdout + forced.stderr
+    assert len(uv_calls(harness)) == uv_count_before
+    assert environment_lock.read_bytes() == evidence_before
+    python_stage = next(stage for stage in read_state(harness)["stages"] if stage["id"] == "environment.python")
+    assert python_stage["status"] == "passed"
+
+
+def test_19_fresh_failed_sync_invalidates_environment_lock_from_prior_failed_run(harness):
+    first = run_reproduce(harness["env"], "-Profile", SMOKE)
+    assert first.returncode == 0, first.stdout + first.stderr
+
+    set_behavior(harness["hooks"], {"pipeline_deps_fail": True})
+    interrupted = run_reproduce(harness["env"], "-Profile", SMOKE, "-ForceInference")
+    assert interrupted.returncode != 0
+    environment_lock = evidence_dir(harness) / "environment-lock.json"
+    stale_evidence = environment_lock.read_bytes()
+
+    set_behavior(harness["hooks"], {
+        "pipeline_deps_fail": False,
+        "uv_fail_source_ids": ["pypi", "tuna", "aliyun"],
+    })
+    failed = run_reproduce(harness["env"], "-Profile", SMOKE)
+    assert failed.returncode != 0
+    python_stage = next(stage for stage in read_state(harness)["stages"] if stage["id"] == "environment.python")
+    assert python_stage["status"] == "failed"
+    assert python_stage["error"] == "uv sync failed for all reachable sources: pypi=41, tuna=42, aliyun=43"
+    assert not environment_lock.exists(), "failed Python provisioning must not retain stale evidence"
+    assert stale_evidence
+    assert "inputs.fingerprint" not in [stage["id"] for stage in read_state(harness)["stages"]]
+
+
+@pytest.mark.parametrize("tamper", ["missing", "invalid"])
+def test_20_resume_revalidates_environment_lock_before_reusing_python_stage(harness, tamper):
+    first = run_reproduce(harness["env"], "-Profile", SMOKE)
+    assert first.returncode == 0, first.stdout + first.stderr
+    environment_lock = evidence_dir(harness) / "environment-lock.json"
+    if tamper == "missing":
+        environment_lock.unlink()
+    else:
+        evidence = load_json(environment_lock)
+        evidence["selected_lock_sha256"] = "0" * 64
+        environment_lock.write_text(json.dumps(evidence), encoding="utf-8")
+    uv_count_before = len(uv_calls(harness))
+
+    resumed = run_reproduce(harness["env"], "-Profile", SMOKE, "-Resume")
+    assert resumed.returncode == 0, resumed.stdout + resumed.stderr
+    assert len(uv_calls(harness)) == uv_count_before + 2
+    repaired = load_json(environment_lock)
+    manifest = load_json(harness["root"] / "locks" / "manifest.json")
+    assert repaired["selected_source_id"] == "pypi"
+    assert repaired["selected_lock_sha256"] == manifest["locks"]["pypi"]["sha256"]
+    assert repaired["normalized_graph_sha256"] == manifest["normalized_graph_sha256"]
+    assert next(stage for stage in read_state(harness)["stages"] if stage["id"] == "environment.python")["status"] == "passed"

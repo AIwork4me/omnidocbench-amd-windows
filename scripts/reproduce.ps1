@@ -461,6 +461,106 @@ function Invoke-ReproUv {
     return (Invoke-ReproNative -FilePath $uvPath -Arguments $Arguments)
 }
 
+function Assert-EnvironmentLockEvidence {
+    param(
+        [string] $EvidencePath,
+        [string] $ManifestPath,
+        [string] $RepoRoot
+    )
+
+    if (-not (Test-Path -LiteralPath $EvidencePath -PathType Leaf)) {
+        throw "environment lock evidence is missing: $EvidencePath"
+    }
+    $evidence = Read-StrictJsonFile -Path $EvidencePath -Label "environment lock evidence"
+    Assert-ExactJsonKeys $evidence @(
+        "schema_version", "selected_source_id", "selected_index_url",
+        "selected_lock_path", "selected_lock_sha256", "normalized_graph_sha256",
+        "pyproject_sha256", "uv_version", "completed_at", "failed_candidates"
+    ) "environment lock evidence"
+    if ($evidence.schema_version -isnot [int] -or $evidence.schema_version -ne 1) {
+        throw "environment lock evidence schema_version must be the integer 1"
+    }
+
+    $manifest = Read-StrictJsonFile -Path $ManifestPath -Label "uv lock manifest"
+    $manifestRecords = @(Read-UvLockManifest -Path $ManifestPath -RepoRoot $RepoRoot)
+    if ($evidence.selected_source_id -isnot [string]) {
+        throw "environment lock selected_source_id must be a string"
+    }
+    $selectedRecords = @($manifestRecords | Where-Object { $_.source_id -ceq $evidence.selected_source_id })
+    if ($selectedRecords.Count -ne 1) {
+        throw "environment lock selected_source_id is absent from the lock catalog"
+    }
+    $selected = $selectedRecords[0]
+    Assert-LowercaseSha256 $evidence.selected_lock_sha256 "environment lock selected_lock_sha256"
+    Assert-LowercaseSha256 $evidence.normalized_graph_sha256 "environment lock normalized_graph_sha256"
+    Assert-LowercaseSha256 $evidence.pyproject_sha256 "environment lock pyproject_sha256"
+    if ($evidence.selected_index_url -isnot [string] -or $evidence.selected_index_url -cne $selected.index_url -or
+        $evidence.selected_lock_path -isnot [string] -or $evidence.selected_lock_path -cne $selected.path -or
+        $evidence.selected_lock_sha256 -cne $selected.sha256) {
+        throw "environment lock selected source metadata differs from the lock catalog"
+    }
+    if ($evidence.normalized_graph_sha256 -cne $manifest.normalized_graph_sha256) {
+        throw "environment lock normalized graph differs from the lock manifest"
+    }
+    $pyprojectPath = Join-Path $RepoRoot "pyproject.toml"
+    $pyprojectSha256 = (Get-FileHash -LiteralPath $pyprojectPath -Algorithm SHA256 -ErrorAction Stop).Hash.ToLowerInvariant()
+    if ($evidence.pyproject_sha256 -cne $pyprojectSha256) {
+        throw "environment lock pyproject hash differs from the repository"
+    }
+    if ($evidence.uv_version -isnot [string] -or $evidence.uv_version -cne "uv 0.11.16") {
+        throw "environment lock uv_version must be exactly uv 0.11.16"
+    }
+    $completedAt = [DateTime]::MinValue
+    $dateStyles = [Globalization.DateTimeStyles]::AssumeUniversal -bor [Globalization.DateTimeStyles]::AdjustToUniversal
+    if ($evidence.completed_at -isnot [string] -or -not [DateTime]::TryParseExact(
+        $evidence.completed_at, "yyyy-MM-ddTHH:mm:ss.fffffffZ",
+        [Globalization.CultureInfo]::InvariantCulture, $dateStyles, [ref]$completedAt
+    )) {
+        throw "environment lock completed_at must be a canonical UTC timestamp"
+    }
+    if ($evidence.failed_candidates -isnot [Array]) {
+        throw "environment lock failed_candidates must be an array"
+    }
+
+    $priorityById = @{}
+    foreach ($source in $script:UvSourceSpecs) { $priorityById[$source.id] = [int]$source.priority }
+    $selectedPriority = [int]$priorityById[$evidence.selected_source_id]
+    $lastPriority = -1
+    $seenFailedIds = @()
+    foreach ($failed in @($evidence.failed_candidates)) {
+        Assert-ExactJsonKeys $failed @(
+            "source_id", "index_url", "lock_path", "lock_sha256",
+            "exit_code", "error"
+        ) "environment lock failed candidate"
+        if ($failed.source_id -isnot [string] -or $seenFailedIds -ccontains $failed.source_id) {
+            throw "environment lock failed candidate source IDs must be unique strings"
+        }
+        $failedRecords = @($manifestRecords | Where-Object { $_.source_id -ceq $failed.source_id })
+        if ($failedRecords.Count -ne 1) {
+            throw "environment lock failed candidate is absent from the lock catalog"
+        }
+        $failedRecord = $failedRecords[0]
+        $failedPriority = [int]$priorityById[$failed.source_id]
+        if ($failedPriority -le $lastPriority -or $failedPriority -ge $selectedPriority) {
+            throw "environment lock failed candidates must precede the selected source in priority order"
+        }
+        Assert-LowercaseSha256 $failed.lock_sha256 "environment lock failed candidate lock_sha256"
+        if ($failed.index_url -isnot [string] -or $failed.index_url -cne $failedRecord.index_url -or
+            $failed.lock_path -isnot [string] -or $failed.lock_path -cne $failedRecord.path -or
+            $failed.lock_sha256 -cne $failedRecord.sha256) {
+            throw "environment lock failed candidate metadata differs from the lock catalog"
+        }
+        if ($failed.exit_code -isnot [int] -or $failed.exit_code -eq 0) {
+            throw "environment lock failed candidate exit_code must be a non-zero integer"
+        }
+        if ($failed.error -isnot [string] -or [string]::IsNullOrWhiteSpace($failed.error)) {
+            throw "environment lock failed candidate error must be a non-empty string"
+        }
+        $seenFailedIds += $failed.source_id
+        $lastPriority = $failedPriority
+    }
+}
+
 if ($ForceInference -and -not $DryRun) {
     # Scoped cleanup: ONLY this profile's owned artifacts (all paths defined
     # in the artifact-path block above). The shared locked dataset manifest
@@ -493,7 +593,7 @@ if ($ForceInference -and -not $DryRun) {
         $fingerprintEvidenceFile, $predictionTreeFile, $predictionTreePreFile,
         $predictionSummaryFile, $backendProofFile, $metricsSummaryFile,
         $artifactHashesFile, $profileResolvedFile, $reportFile, $hardwareFile,
-        $windowsProvenanceFile, $environmentLockFile
+        $windowsProvenanceFile
     )) {
         if (Test-Path -LiteralPath $ownedFile) {
             Write-Host "FORCE INFERENCE: removing $ownedFile" -ForegroundColor Yellow
@@ -518,6 +618,9 @@ Invoke-Stage -Id "environment.mirrors" -Name "Network mirrors" {
 } -Command "scripts\detect-mirrors.ps1"
 
 Invoke-Stage -Id "environment.python" -Name "Python environment" {
+    if (Test-Path -LiteralPath $environmentLockFile) {
+        Remove-Item -LiteralPath $environmentLockFile -Force -ErrorAction Stop
+    }
     if (-not $script:TestHooksDir -and -not (Get-Command uv -ErrorAction SilentlyContinue)) { throw "uv not found; install astral-sh.uv with winget" }
     $processEnvironment = [Environment]::GetEnvironmentVariables([EnvironmentVariableTarget]::Process)
     $linkModeWasPresent = $processEnvironment.Contains("UV_LINK_MODE")
@@ -554,7 +657,11 @@ Invoke-Stage -Id "environment.python" -Name "Python environment" {
             Remove-Item -LiteralPath "Env:UV_LINK_MODE" -ErrorAction SilentlyContinue
         }
     }
-} -Command "uv --no-config python install 3.11; strict uv sync fallback pypi -> tuna -> aliyun from mirrors.json and fixed lock catalog"
+} -Command "uv --no-config python install 3.11; strict uv sync fallback pypi -> tuna -> aliyun from mirrors.json and fixed lock catalog" -ResumeGuard {
+    $script:ReproLastExit = 0
+    Assert-EnvironmentLockEvidence -EvidencePath $environmentLockFile `
+        -ManifestPath $uvLockManifestPath -RepoRoot $rootDir
+}
 
 Invoke-Stage -Id "environment.wsl" -Name "WSL availability" -AlwaysRun {
     Invoke-ReproExternal -Relative "scripts\wsl-ensure.ps1"
