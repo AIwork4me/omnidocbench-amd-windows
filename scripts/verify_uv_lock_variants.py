@@ -61,7 +61,8 @@ def _artifact(artifact: dict, source: SourceSpec) -> dict:
         raise CatalogError(f"artifact URL is missing for {source.source_id}: {url}")
     parsed = urllib.parse.urlsplit(url)
     relative = urllib.parse.unquote(url[len(source.artifact_url_prefix):]) if url.startswith(source.artifact_url_prefix) else ""
-    relative_parts = PurePosixPath(relative).parts
+    relative_parts = relative.split("/")
+    filename = urllib.parse.unquote(PurePosixPath(parsed.path).name)
     if (
         not url.startswith(source.artifact_url_prefix)
         or parsed.scheme != "https"
@@ -70,10 +71,13 @@ def _artifact(artifact: dict, source: SourceSpec) -> dict:
         or parsed.query
         or parsed.fragment
         or not relative
+        or PurePosixPath(relative).is_absolute()
+        or "\\" in relative
         or any(part in ("", ".", "..") for part in relative_parts)
+        or "/" in filename
+        or "\\" in filename
     ):
         raise CatalogError(f"artifact URL is outside artifact_url_prefix for {source.source_id}: {url}")
-    filename = urllib.parse.unquote(PurePosixPath(parsed.path).name)
     if not filename:
         raise CatalogError(f"artifact URL has no filename for {source.source_id}: {url}")
     normalized = copy.deepcopy(artifact)

@@ -88,6 +88,46 @@ def test_unsafe_artifact_url_within_prefix_is_rejected(tmp_path, suffix):
         verifier.build_manifest(root)
 
 
+@pytest.mark.parametrize(
+    "suffix",
+    [
+        "%2Fetc%2Fdemo.whl",
+        "nested%5Cdemo.whl",
+        "/etc/demo.whl",
+        "nested//demo.whl",
+        "/nested/demo.whl",
+    ],
+    ids=["encoded-slash", "encoded-backslash", "decoded-absolute", "repeated-separator", "leading-separator"],
+)
+def test_decoded_unsafe_artifact_relative_location_is_rejected(tmp_path, suffix):
+    root = write_three_lock_catalog(tmp_path)
+    path = root / "uv.lock"
+    path.write_text(
+        path.read_text(encoding="utf-8").replace(
+            "https://files.pythonhosted.org/packages/demo-1.0.tar.gz",
+            "https://files.pythonhosted.org/packages/" + suffix,
+        ),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(verifier.CatalogError, match="artifact_url_prefix"):
+        verifier.build_manifest(root)
+
+
+def test_valid_nested_mirror_artifact_path_is_accepted(tmp_path):
+    root = write_three_lock_catalog(tmp_path)
+    for spec in verifier.SOURCE_SPECS:
+        path = root / spec.path
+        path.write_text(
+            path.read_text(encoding="utf-8").replace(
+                spec.artifact_url_prefix, spec.artifact_url_prefix + "nested/path/"
+            ),
+            encoding="utf-8",
+        )
+
+    assert verifier.build_manifest(root)["normalized_graph_sha256"]
+
+
 @pytest.mark.parametrize("source_id", ["pypi", "tuna", "aliyun"])
 def test_each_declared_origin_normalizes_to_the_same_registry_graph(tmp_path, source_id):
     root = write_three_lock_catalog(tmp_path)
