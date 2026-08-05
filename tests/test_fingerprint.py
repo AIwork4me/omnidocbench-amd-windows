@@ -21,6 +21,7 @@ CONFIG = REPO_ROOT / "eval-infra" / "01-omnidocbench" / "configs" / "v16-cpu-smo
 
 
 def provisioning_spec(root: Path) -> dict:
+    lock_manifest = json.loads((root / "locks" / "manifest.json").read_text(encoding="utf-8"))
     return {
         "profile_sha256": {"file": "scripts/profiles/cpu-smoke-10.profile.json"},
         "upstream_lock_sha256": {"file": "upstream-lock.json"},
@@ -28,6 +29,7 @@ def provisioning_spec(root: Path) -> dict:
         "windows_scoring_config_sha256": {"file": "eval-infra/01-omnidocbench/configs/v16-cpu-smoke-10.yaml"},
         "wsl_cdm_config_sha256": {"file": "eval-infra/01-omnidocbench/configs/v16-cdm-cpu-smoke-10.yaml"},
         "uv_lock_sha256": {"file": "uv.lock"},
+        "uv_normalized_graph_sha256": {"string": lock_manifest["normalized_graph_sha256"]},
         "repo_commit": {"git": "."},
         "repo_tree_sha256": {"repo_tree": "."},
     }
@@ -83,9 +85,15 @@ def fingerprint_env(tmp_path):
     lock = root / "upstream-lock.json"
     lock.write_text(json.dumps({"schema_version": 1, "verified_at": "x"}), encoding="utf-8")
     (root / "uv.lock").write_text("uv lock bytes\n", encoding="utf-8")
+    (root / "locks").mkdir()
+    (root / "locks" / "manifest.json").write_text(json.dumps({
+        "schema_version": 1,
+        "normalized_graph_sha256": "1" * 64,
+        "locks": {},
+    }), encoding="utf-8")
     # The pipeline checkout must never be tracked by the root repo (nested
     # .git internals would otherwise appear in `git diff --binary HEAD`).
-    (root / ".gitignore").write_text("fp.json\noutputs/\n", encoding="utf-8")
+    (root / ".gitignore").write_text("fp.json\noutputs/\nmirrors.json\n", encoding="utf-8")
     spec = root / "provisioning.spec.json"
     spec.write_text(json.dumps(provisioning_spec(root)), encoding="utf-8")
     subprocess.run(["git", "-C", str(root), "init", "-q"], check=True, capture_output=True)
@@ -120,6 +128,7 @@ def _run(root, *args):
 
 def _write_provisioning(root, out: Path):
     spec = root / "provisioning.spec.json"
+    spec.write_text(json.dumps(provisioning_spec(root)), encoding="utf-8")
     return _run(
         root, "--phase", "provisioning", "--inputs", str(spec), "--out", str(out)
     )
@@ -127,6 +136,7 @@ def _write_provisioning(root, out: Path):
 
 def _check_provisioning(root, out: Path):
     spec = root / "provisioning.spec.json"
+    spec.write_text(json.dumps(provisioning_spec(root)), encoding="utf-8")
     return _run(
         root, "--phase", "provisioning", "--inputs", str(spec), "--check", str(out)
     )
@@ -145,6 +155,7 @@ def test_fingerprint_contains_phase_and_sha(fingerprint_env):
         "windows_scoring_config_sha256",
         "wsl_cdm_config_sha256",
         "uv_lock_sha256",
+        "uv_normalized_graph_sha256",
         "repo_commit",
         "repo_tree_sha256",
     ):
@@ -192,6 +203,31 @@ def test_check_fails_when_uv_lock_changes(fingerprint_env):
     result = _check_provisioning(fingerprint_env, fingerprint_env / "fp.json")
     assert result.returncode != 0
     assert "uv_lock_sha256" in result.stdout + result.stderr
+
+
+def test_provisioning_is_stable_when_only_mirror_selection_changes(fingerprint_env):
+    _write_provisioning(fingerprint_env, fingerprint_env / "fp.json")
+    (fingerprint_env / "mirrors.json").write_text(json.dumps({
+        "schema_version": 1,
+        "network_status": "degraded",
+        "uv_indexes": [{"id": "aliyun", "reachable": True}],
+    }), encoding="utf-8")
+    environment_lock = fingerprint_env / "outputs" / "reproduction" / "smoke" / "environment-lock.json"
+    environment_lock.parent.mkdir(parents=True)
+    environment_lock.write_text(json.dumps({"selected_source_id": "aliyun"}), encoding="utf-8")
+    result = _check_provisioning(fingerprint_env, fingerprint_env / "fp.json")
+    assert result.returncode == 0, result.stdout + result.stderr
+
+
+def test_check_fails_when_normalized_graph_digest_changes(fingerprint_env):
+    _write_provisioning(fingerprint_env, fingerprint_env / "fp.json")
+    manifest = fingerprint_env / "locks" / "manifest.json"
+    document = json.loads(manifest.read_text(encoding="utf-8"))
+    document["normalized_graph_sha256"] = "2" * 64
+    manifest.write_text(json.dumps(document), encoding="utf-8")
+    result = _check_provisioning(fingerprint_env, fingerprint_env / "fp.json")
+    assert result.returncode != 0
+    assert "uv_normalized_graph_sha256" in result.stdout + result.stderr
 
 
 def test_provisioning_is_insensitive_to_pipeline_checkout(fingerprint_env):

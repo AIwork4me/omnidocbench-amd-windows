@@ -93,6 +93,7 @@ $rootDir = if ($env:REPRO_ROOT) { $env:REPRO_ROOT } else { $script:RealRepoRoot 
 $script:TestHooksDir = $env:REPRO_TEST_HOOKS
 . (Join-Path $script:RealRepoRoot "scripts\repro-profiles.ps1")
 . (Join-Path $script:RealRepoRoot "scripts\repro-evidence.ps1")
+. (Join-Path $script:RealRepoRoot "scripts\uv-lock-support.ps1")
 
 if ($ListProfiles) {
     try {
@@ -177,6 +178,9 @@ $fingerprintEvidenceFile = Join-Path $evidenceDir "fingerprint.evidence.json"
 $fingerprintProvisioningSpec = Join-Path $evidenceDir "fingerprint.provisioning.spec.json"
 $fingerprintInferenceSpec = Join-Path $evidenceDir "fingerprint.inference.spec.json"
 $fingerprintScoringSpec = Join-Path $evidenceDir "fingerprint.scoring.spec.json"
+$uvLockManifestPath = Join-Path $rootDir "locks\manifest.json"
+$mirrorsJsonPath = Join-Path $rootDir "mirrors.json"
+$environmentLockFile = Join-Path $evidenceDir "environment-lock.json"
 $profileResolvedFile = Join-Path $evidenceDir "profile.resolved.json"
 $reportFile = Join-Path $evidenceDir "report.md"
 $artifactHashesFile = Join-Path $evidenceDir "artifact-hashes.json"
@@ -489,7 +493,7 @@ if ($ForceInference -and -not $DryRun) {
         $fingerprintEvidenceFile, $predictionTreeFile, $predictionTreePreFile,
         $predictionSummaryFile, $backendProofFile, $metricsSummaryFile,
         $artifactHashesFile, $profileResolvedFile, $reportFile, $hardwareFile,
-        $windowsProvenanceFile
+        $windowsProvenanceFile, $environmentLockFile
     )) {
         if (Test-Path -LiteralPath $ownedFile) {
             Write-Host "FORCE INFERENCE: removing $ownedFile" -ForegroundColor Yellow
@@ -508,40 +512,49 @@ if (-not $Resume -and -not $DryRun) {
 }
 Save-State
 
+Invoke-Stage -Id "environment.mirrors" -Name "Network mirrors" {
+    Invoke-ReproExternal -Relative "scripts\detect-mirrors.ps1"
+    Assert-LastExit "detect-mirrors.ps1"
+} -Command "scripts\detect-mirrors.ps1"
+
 Invoke-Stage -Id "environment.python" -Name "Python environment" {
     if (-not $script:TestHooksDir -and -not (Get-Command uv -ErrorAction SilentlyContinue)) { throw "uv not found; install astral-sh.uv with winget" }
-    # mirrors.env (written by detect-mirrors.ps1) is the repo's network
-    # contract; its PYPI_INDEX wins over any global UV_INDEX_URL so locked
-    # syncs do not silently use a broken or different index.
-    $mirrorsFile = Join-Path $rootDir "mirrors.env"
-    if (Test-Path -LiteralPath $mirrorsFile -PathType Leaf) {
-        foreach ($line in Get-Content -LiteralPath $mirrorsFile) {
-            if ($line -match "^PYPI_INDEX=(.*)$") {
-                $env:UV_INDEX_URL = $matches[1].Trim()
-                break
-            }
-        }
-    }
-    $previousLinkMode = $env:UV_LINK_MODE
+    $processEnvironment = [Environment]::GetEnvironmentVariables([EnvironmentVariableTarget]::Process)
+    $linkModeWasPresent = $processEnvironment.Contains("UV_LINK_MODE")
+    $previousLinkMode = $(if ($linkModeWasPresent) { [string]$processEnvironment["UV_LINK_MODE"] } else { $null })
     try {
         # OneDrive/Cloud Files rejects hardlinks from uv's local cache with
         # Windows error 396. Copy mode is deterministic and works everywhere.
         $env:UV_LINK_MODE = "copy"
         # NB: PowerShell 5.1 binds only the FIRST positional value to a
         # [string[]] parameter, so every array argument must use -Arguments.
-        Invoke-ReproUv -Arguments @("python", "install", "3.11")
+        $uvRunner = {
+            param([string[]] $UvArguments)
+            Invoke-ReproUv -Arguments $UvArguments | Out-Host
+            return [int]$script:ReproLastExit
+        }
+        $verifierRunner = {
+            param([string] $CatalogRoot, [string] $ManifestPath)
+            Invoke-ReproPython -Relative "scripts\verify_uv_lock_variants.py" -Arguments @("--root", $CatalogRoot, "--manifest", $ManifestPath) | Out-Host
+            return [int]$script:ReproLastExit
+        }
+        Invoke-ReproUv -Arguments @("--no-config", "python", "install", "3.11") | Out-Host
         Assert-LastExit "uv python install"
-        Invoke-ReproUv -Arguments @("sync", "--locked", "--all-groups")
-        Assert-LastExit "uv sync"
+        Invoke-UvCatalogSync -RepoRoot $rootDir -ManifestPath $uvLockManifestPath `
+            -MirrorsPath $mirrorsJsonPath -VenvPath (Join-Path $rootDir ".venv") `
+            -EvidencePath $environmentLockFile -UvRunner $uvRunner `
+            -VerifierRunner $verifierRunner | Out-Null
     } finally {
-        $env:UV_LINK_MODE = $previousLinkMode
+        if ($linkModeWasPresent) {
+            $env:UV_LINK_MODE = $previousLinkMode
+            if ($previousLinkMode -ceq "") {
+                Restore-UvProcessEnvironmentVariable -Name "UV_LINK_MODE" -Present $true -Value ""
+            }
+        } else {
+            Remove-Item -LiteralPath "Env:UV_LINK_MODE" -ErrorAction SilentlyContinue
+        }
     }
-} -Command "uv python install 3.11; uv sync --locked --all-groups (PYPI_INDEX from mirrors.env)"
-
-Invoke-Stage -Id "environment.mirrors" -Name "Network mirrors" {
-    Invoke-ReproExternal -Relative "scripts\detect-mirrors.ps1"
-    Assert-LastExit "detect-mirrors.ps1"
-} -Command "scripts\detect-mirrors.ps1"
+} -Command "uv --no-config python install 3.11; strict uv sync fallback pypi -> tuna -> aliyun from mirrors.json and fixed lock catalog"
 
 Invoke-Stage -Id "environment.wsl" -Name "WSL availability" -AlwaysRun {
     Invoke-ReproExternal -Relative "scripts\wsl-ensure.ps1"
@@ -584,6 +597,8 @@ Invoke-Stage -Id "dataset.upstream_locks" -Name "Upstream locks" {
 # already-modified file are still detected on resume.
 # ---------------------------------------------------------------------------
 Invoke-Stage -Id "inputs.fingerprint" -Name "Provisioning fingerprint" -AlwaysRun {
+    $lockManifest = Read-StrictJsonFile -Path $uvLockManifestPath -Label "uv lock manifest"
+    [void](Read-UvLockManifest -Path $uvLockManifestPath -RepoRoot $rootDir)
     $spec = [ordered]@{
         profile_sha256 = @{ file = $profile.ProfilePath }
         upstream_lock_sha256 = @{ file = (Join-Path $rootDir "upstream-lock.json") }
@@ -591,6 +606,7 @@ Invoke-Stage -Id "inputs.fingerprint" -Name "Provisioning fingerprint" -AlwaysRu
         windows_scoring_config_sha256 = @{ file = $profile.ConfigWindowsAbs }
         wsl_cdm_config_sha256 = @{ file = $profile.ConfigWslAbs }
         uv_lock_sha256 = @{ file = (Join-Path $rootDir "uv.lock") }
+        uv_normalized_graph_sha256 = @{ string = $lockManifest.normalized_graph_sha256 }
         repo_commit = @{ git = "." }
         repo_tree_sha256 = @{ repo_tree = "." }
     }

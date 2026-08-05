@@ -23,6 +23,7 @@ DEFAULT_BEHAVIOR = {
     "dataset_pages": 10,
     "empty_gt_stems": [],
     "pipeline_deps_fail": False,
+    "uv_fail_source_ids": [],
     "save_name": "fake_model_quick_match",
     "adapter": {
         "exit_code": 0,
@@ -342,6 +343,93 @@ exit 0
 
 _FAKE_VERIFY_DATASET_TREE = "import sys\nsys.exit(0)\n"
 
+_FAKE_DETECT_MIRRORS = r"""
+param()
+$root = $env:REPRO_ROOT
+$document = [ordered]@{
+    schema_version = 1
+    network_status = "ok"
+    uv_indexes = @(
+        [ordered]@{ id = "pypi"; url = "https://pypi.org/simple"; priority = 0; reachable = $true },
+        [ordered]@{ id = "tuna"; url = "https://pypi.tuna.tsinghua.edu.cn/simple"; priority = 1; reachable = $true },
+        [ordered]@{ id = "aliyun"; url = "https://mirrors.aliyun.com/pypi/simple"; priority = 2; reachable = $true }
+    )
+}
+$utf8 = New-Object System.Text.UTF8Encoding($false)
+[IO.File]::WriteAllText((Join-Path $root "mirrors.json"), (($document | ConvertTo-Json -Depth 5) + [Environment]::NewLine), $utf8)
+# Deliberately stale legacy contract: strict uv selection must use mirrors.json.
+[IO.File]::WriteAllText((Join-Path $root "mirrors.env"), "PYPI_INDEX=https://stale.invalid/simple`nNETWORK_STATUS=ok`n", $utf8)
+exit 0
+"""
+
+_FAKE_UV = r"""
+param([Parameter(Position = 0, ValueFromRemainingArguments = $true)] [string[]] $UvArguments)
+$controlled = @(
+    "UV_INDEX", "UV_DEFAULT_INDEX", "UV_INDEX_URL", "UV_EXTRA_INDEX_URL",
+    "UV_INDEX_STRATEGY", "UV_NO_INDEX", "UV_FIND_LINKS", "UV_CONFIG_FILE",
+    "UV_NO_CONFIG", "UV_PROJECT_ENVIRONMENT"
+)
+$processEnvironment = [Environment]::GetEnvironmentVariables([EnvironmentVariableTarget]::Process)
+$snapshot = [ordered]@{}
+foreach ($name in $controlled) {
+    $present = $processEnvironment.Contains($name)
+    $snapshot[$name] = [ordered]@{
+        present = $present
+        value = $(if ($present) { [string]$processEnvironment[$name] } else { $null })
+    }
+}
+$record = [ordered]@{ argv = @($UvArguments); environment = $snapshot }
+Add-Content -LiteralPath (Join-Path $env:REPRO_TEST_HOOKS "uv.log.jsonl") -Encoding UTF8 -Value ($record | ConvertTo-Json -Depth 6 -Compress)
+
+$defaultIndex = $null
+for ($index = 0; $index -lt $UvArguments.Count - 1; $index += 1) {
+    if ($UvArguments[$index] -ceq "--default-index") {
+        $defaultIndex = $UvArguments[$index + 1]
+        break
+    }
+}
+if ($null -ne $defaultIndex) {
+    $sourceId = switch -CaseSensitive ($defaultIndex) {
+        "https://pypi.org/simple" { "pypi"; break }
+        "https://pypi.tuna.tsinghua.edu.cn/simple" { "tuna"; break }
+        "https://mirrors.aliyun.com/pypi/simple" { "aliyun"; break }
+        default { "unknown" }
+    }
+    $behavior = Get-Content -Raw -Encoding UTF8 (Join-Path $env:REPRO_TEST_HOOKS "behavior.json") | ConvertFrom-Json
+    if (@($behavior.uv_fail_source_ids) -contains $sourceId) {
+        $code = @{ pypi = 41; tuna = 42; aliyun = 43 }[$sourceId]
+        Write-Host "FAKE uv failure for $sourceId"
+        exit $code
+    }
+}
+exit 0
+"""
+
+_FAKE_WSL_ENSURE = r"""
+param()
+$names = @(
+    "UV_INDEX", "UV_DEFAULT_INDEX", "UV_INDEX_URL", "UV_EXTRA_INDEX_URL",
+    "UV_INDEX_STRATEGY", "UV_NO_INDEX", "UV_FIND_LINKS", "UV_CONFIG_FILE",
+    "UV_NO_CONFIG", "UV_PROJECT_ENVIRONMENT", "UV_LINK_MODE"
+)
+$processEnvironment = [Environment]::GetEnvironmentVariables([EnvironmentVariableTarget]::Process)
+$snapshot = [ordered]@{}
+foreach ($name in $names) {
+    $present = $processEnvironment.Contains($name)
+    $snapshot[$name] = [ordered]@{
+        present = $present
+        value = $(if ($present) { [string]$processEnvironment[$name] } else { $null })
+    }
+}
+$utf8 = New-Object System.Text.UTF8Encoding($false)
+[IO.File]::WriteAllText(
+    (Join-Path $env:REPRO_TEST_HOOKS "environment.after.json"),
+    ($snapshot | ConvertTo-Json -Depth 4),
+    $utf8
+)
+exit 0
+"""
+
 
 def build_harness(
     tmp_path: Path,
@@ -357,7 +445,7 @@ def build_harness(
     # --- fake root git repo ------------------------------------------------
     root.mkdir(parents=True)
     (root / ".gitignore").write_text(
-        "fp.json\noutputs/\npredictions/\nmirrors.env\n.env.local\nlogs/\n"
+        "fp.json\noutputs/\npredictions/\nmirrors.env\nmirrors.json\n.env.local\nlogs/\n"
         "eval-infra/01-omnidocbench/data/\n"
         "eval-infra/01-omnidocbench/OmniDocBench/\n",
         encoding="utf-8",
@@ -422,6 +510,11 @@ def build_harness(
     )
     shutil.copy2(REPO_ROOT / "upstream-lock.json", root / "upstream-lock.json")
     shutil.copy2(REPO_ROOT / "uv.lock", root / "uv.lock")
+    shutil.copy2(REPO_ROOT / "pyproject.toml", root / "pyproject.toml")
+    (root / "locks").mkdir()
+    shutil.copy2(REPO_ROOT / "locks" / "uv.tuna.lock", root / "locks" / "uv.tuna.lock")
+    shutil.copy2(REPO_ROOT / "locks" / "uv.aliyun.lock", root / "locks" / "uv.aliyun.lock")
+    shutil.copy2(REPO_ROOT / "locks" / "manifest.json", root / "locks" / "manifest.json")
 
     # The fake adapter declares its full lifecycle through the same manifest
     # contract real adapters use. Written BEFORE the seed commit so the fake
@@ -475,8 +568,6 @@ def build_harness(
         encoding="utf-8",
     )
     for rel in (
-        "scripts/wsl-ensure.ps1",
-        "scripts/detect-mirrors.ps1",
         "scripts/preflight.ps1",
         "scripts/seed-locked-inputs.ps1",
         "scripts/verify-upstream-lock.ps1",
@@ -494,8 +585,10 @@ def build_harness(
     _write(hooks / "eval-infra/03-scoring/verify.ps1", _FAKE_VERIFY_PS1)
     _write(hooks / "scripts/full-verify.ps1", _FAKE_FULL_VERIFY)
     _write(hooks / "scripts/verify_dataset_tree.py", _FAKE_VERIFY_DATASET_TREE)
+    _write(hooks / "scripts/detect-mirrors.ps1", _FAKE_DETECT_MIRRORS)
+    _write(hooks / "scripts/wsl-ensure.ps1", _FAKE_WSL_ENSURE)
     _write(hooks / "wsl.ps1", _WSL_SHIM)
-    _write(hooks / "uv.ps1", "exit 0\n")
+    _write(hooks / "uv.ps1", _FAKE_UV)
 
     env = {
         "REPRO_ROOT": str(root),

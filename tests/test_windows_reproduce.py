@@ -123,6 +123,10 @@ def test_orchestrator_is_fail_closed_and_keeps_smoke_artifact_bindings():
     assert "Move-Item -LiteralPath $temp -Destination $stateFile -Force" in text
     assert '$env:UV_LINK_MODE = "copy"' in text
     assert "$env:UV_LINK_MODE = $previousLinkMode" in text
+    assert 'scripts\\uv-lock-support.ps1' in text
+    assert '@("--no-config", "python", "install", "3.11")' in text
+    assert "Invoke-UvCatalogSync" in text
+    assert "PYPI_INDEX" not in text.split('Invoke-Stage -Id "environment.python"', 1)[1].split('Invoke-Stage -Id "environment.wsl"', 1)[0]
     assert "trap {" in text
     assert '$state.status = "interrupted"' in text
     assert "$state.resume_command" in text
@@ -245,8 +249,8 @@ def test_orchestrator_dry_run_parses_and_records_ordered_stages(tmp_path: Path):
     assert parse.returncode == 0, parse.stdout + parse.stderr
     text = SCRIPT.read_text(encoding="utf-8")
     stage_ids = [
-        "environment.python",
         "environment.mirrors",
+        "environment.python",
         "environment.wsl",
         "profile.preflight",
         "inputs.seed",
@@ -265,6 +269,28 @@ def test_orchestrator_dry_run_parses_and_records_ordered_stages(tmp_path: Path):
     ]
     positions = [text.index(f'Invoke-Stage -Id "{stage_id}"') for stage_id in stage_ids]
     assert positions == sorted(positions)
+    python_block = text.split('Invoke-Stage -Id "environment.python"', 1)[1].split('Invoke-Stage -Id "environment.wsl"', 1)[0]
+    assert "strict" in python_block.lower()
+    assert "pypi" in python_block and "tuna" in python_block and "aliyun" in python_block
+
+
+def test_uv_environment_lock_is_the_only_profile_owned_uv_purge_artifact():
+    text = SCRIPT.read_text(encoding="utf-8")
+    block = text.split("if ($ForceInference -and -not $DryRun) {", 1)[1].split("Remove-StageRecords -Ids $purgeIds", 1)[0]
+    assert "$environmentLockFile" in block
+    assert "$uvLockManifestPath" not in block
+    assert "$mirrorsJsonPath" not in block
+    assert "uv.tuna.lock" not in block
+    assert "uv.aliyun.lock" not in block
+
+
+def test_provisioning_fingerprint_binds_only_canonical_lock_and_normalized_graph():
+    text = SCRIPT.read_text(encoding="utf-8")
+    block = text.split('Invoke-Stage -Id "inputs.fingerprint"', 1)[1].split('} -Command "compute_fingerprint.py --phase provisioning', 1)[0]
+    assert 'uv_lock_sha256 = @{ file = (Join-Path $rootDir "uv.lock") }' in block
+    assert 'uv_normalized_graph_sha256 = @{ string = $lockManifest.normalized_graph_sha256 }' in block
+    for forbidden in ("selected_source_id", "selected_index_url", "selected_lock_sha256"):
+        assert forbidden not in block
 
 
 def test_always_run_stages_are_the_cheap_safety_gates():

@@ -61,6 +61,13 @@ def load_json(path: Path) -> dict:
     return json.loads(path.read_text(encoding="utf-8"))
 
 
+def uv_calls(harness: dict) -> list[dict]:
+    log = harness["hooks"] / "uv.log.jsonl"
+    if not log.is_file():
+        return []
+    return [json.loads(line) for line in log.read_text(encoding="utf-8-sig").splitlines()]
+
+
 def evidence_dir(harness: dict) -> Path:
     return harness["root"] / "outputs" / "reproduction" / harness["profile"]["name"]
 
@@ -97,7 +104,7 @@ def test_01_clean_fresh_run_passes(harness):
     assert state["status"] == "passed"
     stage_ids = [s["id"] for s in state["stages"]]
     for expected in (
-        "environment.python", "environment.mirrors", "environment.wsl",
+        "environment.mirrors", "environment.python", "environment.wsl",
         "profile.preflight", "dataset.setup", "dataset.upstream_locks",
         "inputs.fingerprint", "cdm.wsl_environment", "inference.server",
         "inference.layout", "inference.pipeline_deps", "inference.input_locks",
@@ -107,6 +114,7 @@ def test_01_clean_fresh_run_passes(harness):
     ):
         assert expected in stage_ids, f"stage {expected} missing from state"
     order = [s["id"] for s in state["stages"]]
+    assert order.index("environment.mirrors") < order.index("environment.python") < order.index("environment.wsl")
     assert order.index("inference.run") < order.index("inference.prediction_check") < order.index("scoring.windows") < order.index("evidence.pack")
     # Both platforms scored exactly once.
     assert score_marker_count(harness["hooks"]) == 2
@@ -368,3 +376,93 @@ def test_15_failure_persists_stage_error_and_exit_code(harness):
     # The failed stage is not in the resume-able set.
     result = run_reproduce(harness["env"], "-Profile", SMOKE, "-DryRun", "-Resume")
     assert result.returncode == 0
+
+
+CONTROLLED_UV_ENV = {
+    "UV_INDEX", "UV_DEFAULT_INDEX", "UV_INDEX_URL", "UV_EXTRA_INDEX_URL",
+    "UV_INDEX_STRATEGY", "UV_NO_INDEX", "UV_FIND_LINKS", "UV_CONFIG_FILE",
+    "UV_NO_CONFIG", "UV_PROJECT_ENVIRONMENT",
+}
+
+
+def test_16_strict_uv_fallback_uses_catalog_and_writes_provenance(harness):
+    root_lock_before = (harness["root"] / "uv.lock").read_bytes()
+    root_status_before = subprocess.run(
+        ["git", "-C", str(harness["root"]), "status", "--porcelain=v1", "--untracked-files=all"],
+        capture_output=True, text=True, check=True,
+    ).stdout
+    set_behavior(harness["hooks"], {"uv_fail_source_ids": ["pypi", "tuna"]})
+
+    env = dict(harness["env"])
+    env.update({"UV_INDEX": "", "UV_INDEX_URL": "https://ambient.invalid/simple", "UV_LINK_MODE": ""})
+    result = run_reproduce(env, "-Profile", SMOKE)
+    assert result.returncode == 0, result.stdout + result.stderr
+
+    calls = uv_calls(harness)
+    assert calls[0]["argv"] == ["--no-config", "python", "install", "3.11"]
+    sync_calls = calls[1:]
+    assert [call["argv"][-3] for call in sync_calls] == [
+        "https://pypi.org/simple",
+        "https://pypi.tuna.tsinghua.edu.cn/simple",
+        "https://mirrors.aliyun.com/pypi/simple",
+    ]
+    for call in calls:
+        assert set(call["environment"]) == CONTROLLED_UV_ENV
+    for call in sync_calls:
+        assert call["argv"][:4] == ["sync", "--locked", "--all-groups", "--no-config"]
+        assert call["argv"][-2:] == ["--index-strategy", "first-index"]
+        assert Path(call["argv"][5]).is_absolute()
+        assert call["environment"]["UV_PROJECT_ENVIRONMENT"] == {
+            "present": True, "value": str((harness["root"] / ".venv").resolve())
+        }
+        for name in CONTROLLED_UV_ENV - {"UV_PROJECT_ENVIRONMENT"}:
+            assert call["environment"][name] == {"present": False, "value": None}
+    assert "stale.invalid" not in json.dumps(sync_calls)
+
+    evidence = load_json(evidence_dir(harness) / "environment-lock.json")
+    manifest = load_json(harness["root"] / "locks" / "manifest.json")
+    assert evidence["selected_source_id"] == "aliyun"
+    assert evidence["selected_index_url"] == "https://mirrors.aliyun.com/pypi/simple"
+    assert evidence["selected_lock_path"] == "locks/uv.aliyun.lock"
+    assert evidence["selected_lock_sha256"] == manifest["locks"]["aliyun"]["sha256"]
+    assert evidence["normalized_graph_sha256"] == manifest["normalized_graph_sha256"]
+    assert [(item["source_id"], item["exit_code"]) for item in evidence["failed_candidates"]] == [
+        ("pypi", 41), ("tuna", 42)
+    ]
+
+    state = read_state(harness)
+    stage_ids = [stage["id"] for stage in state["stages"]]
+    assert stage_ids.index("environment.mirrors") < stage_ids.index("environment.python") < stage_ids.index("environment.wsl")
+    assert stage_ids.index("environment.python") < stage_ids.index("inputs.fingerprint")
+    assert (evidence_dir(harness) / "environment-lock.json").stat().st_mtime_ns <= (
+        evidence_dir(harness) / "fingerprint.provisioning.json"
+    ).stat().st_mtime_ns
+
+    restored = load_json(harness["hooks"] / "environment.after.json")
+    assert restored["UV_INDEX"] == {"present": True, "value": ""}
+    assert restored["UV_INDEX_URL"] == {"present": True, "value": "https://ambient.invalid/simple"}
+    assert restored["UV_LINK_MODE"] == {"present": True, "value": ""}
+    assert (harness["root"] / "uv.lock").read_bytes() == root_lock_before
+    root_status_after = subprocess.run(
+        ["git", "-C", str(harness["root"]), "status", "--porcelain=v1", "--untracked-files=all"],
+        capture_output=True, text=True, check=True,
+    ).stdout
+    assert root_status_after == root_status_before
+
+
+def test_17_uv_failure_state_resumes_from_environment_python(harness):
+    set_behavior(harness["hooks"], {"uv_fail_source_ids": ["pypi", "tuna", "aliyun"]})
+    failed = run_reproduce(harness["env"], "-Profile", SMOKE)
+    assert failed.returncode != 0
+    state = read_state(harness)
+    python_stage = next(stage for stage in state["stages"] if stage["id"] == "environment.python")
+    assert python_stage["status"] == "failed"
+    assert python_stage["error"] == "uv sync failed for all reachable sources: pypi=41, tuna=42, aliyun=43"
+    assert not (evidence_dir(harness) / "environment-lock.json").exists()
+    assert "inputs.fingerprint" not in [stage["id"] for stage in state["stages"]]
+
+    set_behavior(harness["hooks"], {"uv_fail_source_ids": []})
+    resumed = run_reproduce(harness["env"], "-Profile", SMOKE, "-Resume")
+    assert resumed.returncode == 0, resumed.stdout + resumed.stderr
+    assert read_state(harness)["status"] == "passed"
+    assert load_json(evidence_dir(harness) / "environment-lock.json")["selected_source_id"] == "pypi"
