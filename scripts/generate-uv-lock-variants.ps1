@@ -257,23 +257,11 @@ try {
     [void] $failureMessages.Add("root lock immutability: $($_.Exception.Message)")
 }
 
-# Backups remain available through every postcondition. Cleanup is itself part
-# of the transaction; stop at its first failure so rollback retains originals.
-if ($failureMessages.Count -eq 0) {
-    foreach ($artifact in $backupArtifacts) {
-        try {
-            if (Test-Path -LiteralPath $artifact) {
-                Remove-Item -LiteralPath $artifact -Force
-            }
-        } catch {
-            [void] $failureMessages.Add("replacement backup cleanup: $($_.Exception.Message)")
-            break
-        }
-    }
-}
-
+# The catalog is not committed until every pre-commit postcondition above has
+# passed. Before this point, every failure uses the complete backup set.
 if ($failureMessages.Count -ne 0) {
     # Roll back every target independently and report every rollback failure.
+    $rollbackFailed = $false
     for ($i = $replacements.Count - 1; $i -ge 0; $i--) {
         $item = $replacements[$i]
         try {
@@ -291,12 +279,13 @@ if ($failureMessages.Count -ne 0) {
                 Remove-Item -LiteralPath $item.destination -Force
             }
         } catch {
+            $rollbackFailed = $true
             [void] $failureMessages.Add("catalog rollback for $($item.destination): $($_.Exception.Message)")
         }
     }
 
-    # Best-effort artifact cleanup never stops cleanup of later paths.
-    foreach ($artifact in @($stagedArtifacts) + @($backupArtifacts)) {
+    # Staged artifacts are never recovery material and are always best-effort.
+    foreach ($artifact in $stagedArtifacts) {
         try {
             if (Test-Path -LiteralPath $artifact) {
                 Remove-Item -LiteralPath $artifact -Force
@@ -306,7 +295,55 @@ if ($failureMessages.Count -ne 0) {
         }
     }
 
+    if ($rollbackFailed) {
+        $preserved = @(
+            $backupArtifacts | Where-Object { Test-Path -LiteralPath $_ -PathType Leaf }
+        )
+        if ($preserved.Count -ne 0) {
+            [void] $failureMessages.Add("recovery backups preserved after rollback failure: $($preserved -join ', ')")
+        }
+    } else {
+        # Once rollback is complete, backups are redundant. Cleanup remains
+        # best-effort and each path is attempted once.
+        foreach ($artifact in $backupArtifacts) {
+            try {
+                if (Test-Path -LiteralPath $artifact) {
+                    Remove-Item -LiteralPath $artifact -Force
+                }
+            } catch {
+                [void] $failureMessages.Add("post-rollback backup cleanup for ${artifact}: $($_.Exception.Message)")
+            }
+        }
+    }
+
     throw ("uv lock catalog generation failed:`n - " + ($failureMessages -join "`n - "))
+}
+
+# Commit point: replacements, environment restoration, temporary cleanup, and
+# root immutability have all succeeded. Backup disposal can no longer trigger
+# rollback, because partial disposal makes rollback ambiguous. Cleanup errors
+# remain explicit and failed backup paths are preserved for manual recovery.
+$postCommitCleanupMessages = New-Object System.Collections.Generic.List[string]
+$preservedPostCommitBackups = @()
+foreach ($artifact in $backupArtifacts) {
+    try {
+        if (Test-Path -LiteralPath $artifact) {
+            Remove-Item -LiteralPath $artifact -Force
+        }
+    } catch {
+        $preservedPostCommitBackups += $artifact
+        [void] $postCommitCleanupMessages.Add("backup cleanup for ${artifact}: $($_.Exception.Message)")
+    }
+}
+
+if ($postCommitCleanupMessages.Count -ne 0) {
+    $preserved = @(
+        $preservedPostCommitBackups | Where-Object { Test-Path -LiteralPath $_ -PathType Leaf }
+    )
+    if ($preserved.Count -ne 0) {
+        [void] $postCommitCleanupMessages.Add("recovery backups preserved: $($preserved -join ', ')")
+    }
+    throw ("uv lock catalog committed but post-commit cleanup failed:`n - " + ($postCommitCleanupMessages -join "`n - "))
 }
 
 Write-Host "Generated and verified uv lock catalog in $catalogDestination"

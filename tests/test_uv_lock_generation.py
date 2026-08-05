@@ -268,6 +268,7 @@ $global:FaultLog = {_ps_quote(fault_log)}
 $global:EvidencePath = {_ps_quote(evidence_path)}
 $global:RootLockPath = [IO.Path]::GetFullPath({_ps_quote(root / "uv.lock")})
 $global:ArtifactFailed = $false
+$global:BackupCleanupCount = 0
 $global:TempFailed = $false
 $global:RootMutated = $false
 $global:Controlled = @({controlled})
@@ -301,6 +302,13 @@ function Remove-Item {{
     [CmdletBinding()]
     param([string] $LiteralPath, [switch] $Force, [switch] $Recurse)
     $leaf = [IO.Path]::GetFileName($LiteralPath)
+    if ($global:Fault -eq "second_backup_cleanup" -and $LiteralPath -like "*.omnidocbench-backup-*") {{
+        $global:BackupCleanupCount += 1
+        Write-FaultEvent "backup-cleanup-$($global:BackupCleanupCount):$leaf"
+        if ($global:BackupCleanupCount -eq 2) {{
+            throw "injected second backup cleanup failure"
+        }}
+    }}
     if ($Recurse -and $leaf.StartsWith("omnidocbench-uv-generate-")) {{
         Write-FaultEvent "temp-cleanup-attempt"
         if ($global:Fault -eq "temp_cleanup" -and -not $global:TempFailed) {{
@@ -656,3 +664,42 @@ def test_failure_rolls_back_new_catalog_when_destinations_did_not_exist(tmp_path
     assert not (root / "locks" / "uv.tuna.lock").exists()
     assert not (root / "locks" / "uv.aliyun.lock").exists()
     assert not (root / "locks" / "manifest.json").exists()
+
+
+def test_second_backup_cleanup_failure_keeps_committed_catalog_and_recovery_backup(tmp_path):
+    root, fake_uv = _make_test_repository(tmp_path, existing_catalog=True)
+    before = _catalog_bytes(root)
+
+    result, evidence, events = _run_generator_with_fault(
+        root, fake_uv, _environment(root, tmp_path), tmp_path, "second_backup_cleanup"
+    )
+
+    assert result.returncode != 0
+    assert evidence["environment_restored"] is True
+    assert "post-commit cleanup" in result.stderr
+    assert "catalog rollback" not in result.stderr
+    assert _catalog_bytes(root) != before
+
+    verify = subprocess.run(
+        [
+            sys.executable,
+            str(root / "scripts" / VERIFIER.name),
+            "--root",
+            str(root),
+            "--manifest",
+            str(root / "locks" / "manifest.json"),
+        ],
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+    assert verify.returncode == 0, verify.stdout + verify.stderr
+
+    remaining_backups = sorted((root / "locks").glob(".*.omnidocbench-backup-*"))
+    assert [path.name.split(".omnidocbench-backup-", 1)[0] for path in remaining_backups] == [
+        ".uv.aliyun.lock"
+    ]
+    assert remaining_backups[0].read_bytes() == before["uv.aliyun.lock"]
+    assert any(event.startswith("backup-cleanup-1:.uv.tuna.lock") for event in events)
+    assert any(event.startswith("backup-cleanup-2:.uv.aliyun.lock") for event in events)
+    assert any(event.startswith("backup-cleanup-3:.manifest.json") for event in events)
