@@ -86,13 +86,25 @@ def _artifact(artifact: dict, source: SourceSpec) -> dict:
     return normalized
 
 
+def _normalize_registry_sources(value: object, source: SourceSpec) -> object:
+    if isinstance(value, dict):
+        if "registry" in value:
+            if value != {"registry": source.index_url}:
+                raise CatalogError(
+                    f"registry annotation must exactly match {source.source_id}: {value}"
+                )
+            return {"registry": "<registry>"}
+        return {key: _normalize_registry_sources(item, source) for key, item in value.items()}
+    if isinstance(value, list):
+        return [_normalize_registry_sources(item, source) for item in value]
+    return value
+
+
 def normalize_lock(lock: dict, source: SourceSpec) -> dict:
     normalized = copy.deepcopy(lock)
     for package in normalized.get("package", []):
         package_source = package.get("source", {})
         if "registry" in package_source:
-            if package_source != {"registry": source.index_url}:
-                raise CatalogError(f"registry mismatch for {package.get('name')}: {package_source}")
             sdist = package.get("sdist")
             wheels = package.get("wheels", [])
             if sdist is not None and not isinstance(sdist, dict):
@@ -101,19 +113,74 @@ def normalize_lock(lock: dict, source: SourceSpec) -> dict:
                 raise CatalogError(f"wheels must be an array for {package.get('name')}")
             if sdist is None and not wheels:
                 raise CatalogError(f"registry package has no artifacts: {package.get('name')}")
-            package["source"] = {"registry": "<registry>"}
             if sdist is not None:
                 package["sdist"] = _artifact(sdist, source)
             if "wheels" in package:
                 package["wheels"] = [_artifact(wheel, source) for wheel in wheels]
-    return normalized
+    return _normalize_registry_sources(normalized, source)
+
+
+def _iter_artifacts(graph: dict):
+    for package in graph.get("package", []):
+        name = package.get("name")
+        version = package.get("version")
+        sdist = package.get("sdist")
+        if sdist is not None:
+            yield (name, version, "sdist", sdist.get("url"), sdist.get("hash")), sdist
+        for wheel in package.get("wheels", []):
+            yield (name, version, "wheel", wheel.get("url"), wheel.get("hash")), wheel
+
+
+def _canonical_artifact_sizes(
+    graph: dict,
+) -> dict[tuple[str, str, str, str, str], int]:
+    sizes = {}
+    for key, artifact in _iter_artifacts(graph):
+        size = artifact.get("size")
+        if isinstance(size, bool) or not isinstance(size, int) or size < 0:
+            raise CatalogError(f"canonical artifact size is missing or invalid: {key}")
+        if key in sizes:
+            raise CatalogError(f"duplicate canonical artifact identity: {key}")
+        sizes[key] = size
+    return sizes
+
+
+def _project_canonical_sizes(
+    graph: dict,
+    canonical_sizes: dict[tuple[str, str, str, str, str], int],
+    source: SourceSpec,
+) -> dict:
+    projected = copy.deepcopy(graph)
+    seen = set()
+    for key, artifact in _iter_artifacts(projected):
+        if key not in canonical_sizes:
+            raise CatalogError(f"mirror artifact is absent from canonical lock: {key}")
+        declared = artifact.get("size")
+        canonical = canonical_sizes[key]
+        if declared is None:
+            artifact["size"] = canonical
+        elif (
+            isinstance(declared, bool)
+            or not isinstance(declared, int)
+            or declared < 0
+            or declared != canonical
+        ):
+            raise CatalogError(f"mirror artifact size differs for {source.source_id}: {key}")
+        seen.add(key)
+    if seen != set(canonical_sizes):
+        raise CatalogError(f"mirror artifact set differs for {source.source_id}")
+    return projected
 
 
 def normalized_graph_sha256(root: Path) -> str:
-    graphs = [normalize_lock(load_lock(root / spec.path), spec) for spec in SOURCE_SPECS]
-    baseline = _canonical_json(graphs[0])
-    for spec, graph in zip(SOURCE_SPECS[1:], graphs[1:]):
-        if _canonical_json(graph) != baseline:
+    canonical_source = SOURCE_SPECS[0]
+    canonical_graph = normalize_lock(load_lock(root / canonical_source.path), canonical_source)
+    canonical_sizes = _canonical_artifact_sizes(canonical_graph)
+    baseline = _canonical_json(canonical_graph)
+    for spec in SOURCE_SPECS[1:]:
+        graph = normalize_lock(load_lock(root / spec.path), spec)
+        projected = _project_canonical_sizes(graph, canonical_sizes, spec)
+        if _canonical_json(projected) != baseline:
             raise CatalogError(f"normalized dependency graph differs for {spec.source_id}")
     return hashlib.sha256(baseline).hexdigest()
 
