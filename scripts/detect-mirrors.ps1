@@ -1,7 +1,7 @@
 <#
 .SYNOPSIS
 Detects available mirrors for OmniDocBench setup (mirror-aware).
-Outputs mirrors.env with source URLs for all downstream scripts.
+Outputs mirrors.env for legacy consumers and ordered mirrors.json uv candidates.
 #>
 $ErrorActionPreference = "Stop"
 # NOTE: Join-Path is nested (rather than the PS 7+ 3-arg form) so this runs on
@@ -10,33 +10,98 @@ $rootDir = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
 $resolvedEnvFile = Join-Path $rootDir "mirrors.env"
 $resolvedJsonFile = Join-Path $rootDir "mirrors.json"
 
-$hasTestHooks = -not [string]::IsNullOrWhiteSpace($env:REPRO_TEST_HOOKS)
-$hasProbeFixture = -not [string]::IsNullOrWhiteSpace($env:MIRROR_PROBE_RESULTS_JSON)
+function Test-ProcessEnvironmentVariable($name) {
+    $processEnvironment = [Environment]::GetEnvironmentVariables(
+        [EnvironmentVariableTarget]::Process
+    )
+    return $processEnvironment.Contains($name)
+}
+
+$expectedProbeUrls = @(
+    "https://huggingface.co/api/datasets/opendatalab/OmniDocBench",
+    "https://modelscope.cn/api/v1/datasets/OpenDataLab/OmniDocBench",
+    "https://github.com/opendatalab/OmniDocBench",
+    "https://ghproxy.net/https://github.com",
+    "https://ghfast.top/https://github.com",
+    "https://mirrors.ustc.edu.cn/CTAN/systems/texlive/tlnet",
+    "https://mirrors.tuna.tsinghua.edu.cn/CTAN/systems/texlive/tlnet",
+    "https://mirror.ctan.org/systems/texlive/tlnet",
+    "https://pypi.org/simple",
+    "https://pypi.tuna.tsinghua.edu.cn/simple",
+    "https://mirrors.aliyun.com/pypi/simple"
+)
+
+$hasTestHooks = Test-ProcessEnvironmentVariable "REPRO_TEST_HOOKS"
+$hasProbeFixture = Test-ProcessEnvironmentVariable "MIRROR_PROBE_RESULTS_JSON"
+$hasPublishFailure = Test-ProcessEnvironmentVariable "MIRROR_PUBLISH_FAIL_BEFORE"
 if ($hasTestHooks -ne $hasProbeFixture) {
     Write-Host "ERROR: fixture injection requires both REPRO_TEST_HOOKS and MIRROR_PROBE_RESULTS_JSON." -ForegroundColor Red
     exit 1
 }
+if ($hasPublishFailure -and -not ($hasTestHooks -and $hasProbeFixture)) {
+    Write-Host "ERROR: MIRROR_PUBLISH_FAIL_BEFORE requires REPRO_TEST_HOOKS and MIRROR_PROBE_RESULTS_JSON." -ForegroundColor Red
+    exit 1
+}
 
 $script:ProbeResults = $null
+$script:PublishFailBefore = $null
 if ($hasTestHooks -and $hasProbeFixture) {
     try {
         $fixtureText = Get-Content -LiteralPath $env:MIRROR_PROBE_RESULTS_JSON -Raw -Encoding UTF8
         $script:ProbeResults = $fixtureText | ConvertFrom-Json -ErrorAction Stop
+        if ($null -eq $script:ProbeResults) {
+            throw "fixture root must be a JSON object"
+        }
+
+        $actualProbeUrls = @(
+            $script:ProbeResults.PSObject.Properties | ForEach-Object { $_.Name }
+        )
+        foreach ($expectedUrl in $expectedProbeUrls) {
+            if ($actualProbeUrls -cnotcontains $expectedUrl) {
+                throw "fixture is missing exact canonical URL key: $expectedUrl"
+            }
+        }
+        foreach ($actualUrl in $actualProbeUrls) {
+            if ($expectedProbeUrls -cnotcontains $actualUrl) {
+                throw "fixture contains unexpected or case-variant URL key: $actualUrl"
+            }
+        }
+        if ($actualProbeUrls.Count -ne $expectedProbeUrls.Count) {
+            throw "fixture URL key count must be exactly $($expectedProbeUrls.Count)"
+        }
+        foreach ($expectedUrl in $expectedProbeUrls) {
+            $exactProperty = @(
+                $script:ProbeResults.PSObject.Properties |
+                    Where-Object { $_.Name -ceq $expectedUrl }
+            )[0]
+            if ($exactProperty.Value -isnot [bool]) {
+                throw "fixture value must be System.Boolean for: $expectedUrl"
+            }
+        }
     } catch {
         Write-Host "ERROR: MIRROR_PROBE_RESULTS_JSON is malformed or unreadable: $($_.Exception.Message)" -ForegroundColor Red
         exit 1
+    }
+
+    if ($hasPublishFailure) {
+        $publishFailureValue = [Environment]::GetEnvironmentVariable(
+            "MIRROR_PUBLISH_FAIL_BEFORE",
+            [EnvironmentVariableTarget]::Process
+        )
+        if (@("mirrors.env", "mirrors.json") -cnotcontains $publishFailureValue) {
+            Write-Host "ERROR: MIRROR_PUBLISH_FAIL_BEFORE must be exactly mirrors.env or mirrors.json." -ForegroundColor Red
+            exit 1
+        }
+        $script:PublishFailBefore = $publishFailureValue
     }
 }
 
 function Test-Url($url, $timeoutSec = 8) {
     if ($null -ne $script:ProbeResults) {
-        $probeProperty = $script:ProbeResults.PSObject.Properties[$url]
-        if ($null -eq $probeProperty) {
-            throw "MIRROR_PROBE_RESULTS_JSON is missing probe URL: $url"
-        }
-        if ($probeProperty.Value -isnot [bool]) {
-            throw "MIRROR_PROBE_RESULTS_JSON value must be boolean for: $url"
-        }
+        $probeProperty = @(
+            $script:ProbeResults.PSObject.Properties |
+                Where-Object { $_.Name -ceq $url }
+        )[0]
         return [bool]$probeProperty.Value
     }
     try {
@@ -45,18 +110,25 @@ function Test-Url($url, $timeoutSec = 8) {
     } catch { return $false }
 }
 
-function Write-Utf8NoBomAtomic($path, $content) {
+function New-StagedUtf8File($path, $content, $validationKind) {
     $directory = [System.IO.Path]::GetDirectoryName($path)
     $leaf = [System.IO.Path]::GetFileName($path)
     $tempPath = Join-Path $directory ("{0}.tmp.{1}" -f $leaf, [guid]::NewGuid().ToString("N"))
     $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
     try {
         [System.IO.File]::WriteAllText($tempPath, $content, $utf8NoBom)
-        Move-Item -LiteralPath $tempPath -Destination $path -Force
-    } finally {
+        $roundTrip = [System.IO.File]::ReadAllText($tempPath, $utf8NoBom)
+        if ($validationKind -eq "json") {
+            [void]($roundTrip | ConvertFrom-Json -ErrorAction Stop)
+        } elseif ($roundTrip -cne $content) {
+            throw "staged mirrors.env did not round-trip as UTF-8"
+        }
+        return $tempPath
+    } catch {
         if (Test-Path -LiteralPath $tempPath) {
             Remove-Item -LiteralPath $tempPath -Force
         }
+        throw
     }
 }
 
@@ -66,35 +138,109 @@ function Write-Utf8NoBomAtomic($path, $content) {
 # distinguish "detect-mirrors never ran" from "ran but some sources were down"
 # via the NETWORK_STATUS key, instead of cascading "mirrors.env not found"
 # warnings that obscure the real (network) problem.
-function Write-MirrorsEnv($status) {
+function Get-MirrorsEnvContent($status) {
     $out = New-Object System.Collections.Generic.List[string]
     foreach ($l in $lines) { $out.Add($l) }
     $out.Add("NETWORK_STATUS=$status")
-    $content = ($out -join [Environment]::NewLine) + [Environment]::NewLine
-    Write-Utf8NoBomAtomic $resolvedEnvFile $content
-    Write-Host "mirrors.env written to $resolvedEnvFile (status: $status)" -ForegroundColor Green
+    return ($out -join [Environment]::NewLine) + [Environment]::NewLine
 }
 
-function Write-MirrorsJson($status, $uvIndexes) {
+function Get-MirrorsJsonContent($status, $uvIndexes) {
     $document = [ordered]@{
         schema_version = 1
         network_status = $status
         uv_indexes = $uvIndexes
     }
-    $json = $document | ConvertTo-Json -Depth 5
-    $directory = [System.IO.Path]::GetDirectoryName($resolvedJsonFile)
-    $leaf = [System.IO.Path]::GetFileName($resolvedJsonFile)
-    $tempPath = Join-Path $directory ("{0}.tmp.{1}" -f $leaf, [guid]::NewGuid().ToString("N"))
-    $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
+    return ($document | ConvertTo-Json -Depth 5) + [Environment]::NewLine
+}
+
+function Invoke-PublishFailureIfRequested($targetName) {
+    if ($null -ne $script:PublishFailBefore -and $script:PublishFailBefore -ceq $targetName) {
+        throw "Injected mirror contract publish failure before $targetName"
+    }
+}
+
+function Publish-MirrorsContracts($envContent, $jsonContent) {
+    $envStage = $null
+    $jsonStage = $null
+    $envBackup = $null
+    $jsonBackup = $null
+    $envExisted = Test-Path -LiteralPath $resolvedEnvFile
+    $jsonExisted = Test-Path -LiteralPath $resolvedJsonFile
+    $envPublished = $false
+    $jsonPublished = $false
+
     try {
-        [System.IO.File]::WriteAllText($tempPath, $json + [Environment]::NewLine, $utf8NoBom)
-        [void](Get-Content -LiteralPath $tempPath -Raw -Encoding UTF8 | ConvertFrom-Json -ErrorAction Stop)
-        Move-Item -LiteralPath $tempPath -Destination $resolvedJsonFile -Force
+        # Both contracts must be fully staged and validated before either
+        # destination is replaced.
+        $envStage = New-StagedUtf8File $resolvedEnvFile $envContent "env"
+        $jsonStage = New-StagedUtf8File $resolvedJsonFile $jsonContent "json"
+
+        if ($envExisted) {
+            $envBackup = Join-Path $rootDir ("mirrors.env.backup.{0}" -f [guid]::NewGuid().ToString("N"))
+            Copy-Item -LiteralPath $resolvedEnvFile -Destination $envBackup -Force
+        }
+        if ($jsonExisted) {
+            $jsonBackup = Join-Path $rootDir ("mirrors.json.backup.{0}" -f [guid]::NewGuid().ToString("N"))
+            Copy-Item -LiteralPath $resolvedJsonFile -Destination $jsonBackup -Force
+        }
+
+        Invoke-PublishFailureIfRequested "mirrors.env"
+        Move-Item -LiteralPath $envStage -Destination $resolvedEnvFile -Force
+        $envStage = $null
+        $envPublished = $true
+
+        Invoke-PublishFailureIfRequested "mirrors.json"
+        Move-Item -LiteralPath $jsonStage -Destination $resolvedJsonFile -Force
+        $jsonStage = $null
+        $jsonPublished = $true
+    } catch {
+        $publishError = $_
+        $rollbackErrors = New-Object System.Collections.Generic.List[string]
+
+        if ($jsonPublished) {
+            try {
+                if ($jsonExisted) {
+                    Move-Item -LiteralPath $jsonBackup -Destination $resolvedJsonFile -Force
+                    $jsonBackup = $null
+                } elseif (Test-Path -LiteralPath $resolvedJsonFile) {
+                    Remove-Item -LiteralPath $resolvedJsonFile -Force
+                }
+            } catch {
+                $rollbackErrors.Add("mirrors.json: $($_.Exception.Message)")
+            }
+        }
+        if ($envPublished) {
+            try {
+                if ($envExisted) {
+                    Move-Item -LiteralPath $envBackup -Destination $resolvedEnvFile -Force
+                    $envBackup = $null
+                } elseif (Test-Path -LiteralPath $resolvedEnvFile) {
+                    Remove-Item -LiteralPath $resolvedEnvFile -Force
+                }
+            } catch {
+                $rollbackErrors.Add("mirrors.env: $($_.Exception.Message)")
+            }
+        }
+
+        if ($rollbackErrors.Count -gt 0) {
+            throw "Mirror contract publish failed: $($publishError.Exception.Message); rollback failed: $($rollbackErrors -join '; ')"
+        }
+        throw $publishError
     } finally {
-        if (Test-Path -LiteralPath $tempPath) {
-            Remove-Item -LiteralPath $tempPath -Force
+        foreach ($workFile in @($envStage, $jsonStage, $envBackup, $jsonBackup)) {
+            if ($null -ne $workFile -and (Test-Path -LiteralPath $workFile)) {
+                Remove-Item -LiteralPath $workFile -Force
+            }
         }
     }
+}
+
+function Write-MirrorsContracts($status, $uvIndexes) {
+    $envContent = Get-MirrorsEnvContent $status
+    $jsonContent = Get-MirrorsJsonContent $status $uvIndexes
+    Publish-MirrorsContracts $envContent $jsonContent
+    Write-Host "mirrors.env written to $resolvedEnvFile (status: $status)" -ForegroundColor Green
     Write-Host "mirrors.json written to $resolvedJsonFile (status: $status)" -ForegroundColor Green
 }
 
@@ -216,8 +362,7 @@ if ($pypi) {
 $lines += "UBUNTU_ROOTFS=https://mirrors.ustc.edu.cn/ubuntu-cdimage/ubuntu-base/releases/22.04/release/ubuntu-base-22.04.5-base-amd64.tar.gz"
 
 $status = if ($datasetOffline) { "offline" } elseif ($degraded) { "degraded" } else { "ok" }
-Write-MirrorsEnv $status
-Write-MirrorsJson $status $uvIndexes
+Write-MirrorsContracts $status $uvIndexes
 Write-Host "Sources: $($lines[1]) | $($lines | Select-String 'GITHUB_BASE') | $($lines | Select-String 'CTAN_MIRROR')"
 if ($datasetOffline) {
     exit 1
