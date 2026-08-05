@@ -39,6 +39,7 @@ class CatalogError(ValueError):
 _MANIFEST_KEYS = ("schema_version", "normalized_graph_sha256", "locks")
 _LOCK_KEYS = ("path", "index_url", "artifact_url_prefix", "sha256")
 _SHA256_RE = re.compile(r"[0-9a-f]{64}\Z")
+_ARTIFACT_SHA256_RE = re.compile(r"sha256:([0-9a-fA-F]{64})\Z")
 
 
 def load_lock(path: Path) -> dict:
@@ -126,9 +127,26 @@ def _iter_artifacts(graph: dict):
         version = package.get("version")
         sdist = package.get("sdist")
         if sdist is not None:
-            yield (name, version, "sdist", sdist.get("url"), sdist.get("hash")), sdist
+            yield _artifact_identity(name, version, "sdist", sdist), sdist
         for wheel in package.get("wheels", []):
-            yield (name, version, "wheel", wheel.get("url"), wheel.get("hash")), wheel
+            yield _artifact_identity(name, version, "wheel", wheel), wheel
+
+
+def _artifact_identity(name: object, version: object, role: str, artifact: dict):
+    artifact_hash = artifact.get("hash")
+    match = (
+        _ARTIFACT_SHA256_RE.fullmatch(artifact_hash)
+        if isinstance(artifact_hash, str)
+        else None
+    )
+    if match is None:
+        context = (name, version, role, artifact.get("url"))
+        raise CatalogError(
+            f"artifact hash must be sha256:<64 hex> for {context}: {artifact_hash!r}"
+        )
+    normalized_hash = f"sha256:{match.group(1).lower()}"
+    artifact["hash"] = normalized_hash
+    return (name, version, role, artifact.get("url"), normalized_hash)
 
 
 def _canonical_artifact_sizes(

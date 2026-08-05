@@ -115,6 +115,15 @@ def change_one_artifact_size(path: Path, size: object) -> None:
     path.write_text(text, encoding="utf-8")
 
 
+def change_one_artifact_hash(path: Path, toml_value: str | None) -> None:
+    replacement = "" if toml_value is None else f", hash = {toml_value}"
+    text, count = re.subn(
+        r', hash = "[^"]*"', replacement, path.read_text(encoding="utf-8"), count=1
+    )
+    assert count == 1
+    path.write_text(text, encoding="utf-8")
+
+
 def mutate_artifact_url(root: Path, source_id: str, replacement: str) -> None:
     spec = next(spec for spec in verifier.SOURCE_SPECS if spec.source_id == source_id)
     path = root / spec.path
@@ -300,6 +309,46 @@ def test_wrong_declared_mirror_size_is_rejected(tmp_path):
 
     with pytest.raises(verifier.CatalogError, match="mirror artifact size"):
         verifier.build_manifest(root)
+
+
+@pytest.mark.parametrize(
+    ("toml_value", "description"),
+    [
+        (None, "missing"),
+        ("true", "non-string"),
+        ('"md5:abc"', "wrong algorithm"),
+        ('"sha256:abc"', "short digest"),
+        ('"sha256:' + "g" * 64 + '"', "non-hex digest"),
+    ],
+    ids=["missing", "non-string", "wrong-algorithm", "short-digest", "non-hex-digest"],
+)
+@pytest.mark.parametrize(
+    "relative_path", ["uv.lock", "locks/uv.tuna.lock"], ids=["canonical", "mirror"]
+)
+def test_invalid_artifact_hash_is_rejected(tmp_path, relative_path, toml_value, description):
+    root = write_three_lock_catalog(tmp_path)
+    change_one_artifact_hash(root / relative_path, toml_value)
+
+    with pytest.raises(verifier.CatalogError, match="artifact hash"):
+        verifier.build_manifest(root)
+
+
+def test_matching_wrong_algorithm_artifact_hashes_are_rejected(tmp_path):
+    root = write_three_lock_catalog(tmp_path)
+    for spec in verifier.SOURCE_SPECS:
+        change_one_artifact_hash(root / spec.path, '"md5:abc"')
+
+    with pytest.raises(verifier.CatalogError, match="artifact hash"):
+        verifier.build_manifest(root)
+
+
+def test_uppercase_sha256_artifact_hash_normalizes_across_sources(tmp_path):
+    root = write_three_lock_catalog(tmp_path)
+    change_one_artifact_hash(root / "uv.lock", '"sha256:' + "1A" * 32 + '"')
+    for spec in verifier.SOURCE_SPECS[1:]:
+        change_one_artifact_hash(root / spec.path, '"sha256:' + "1a" * 32 + '"')
+
+    assert len(verifier.normalized_graph_sha256(root)) == 64
 
 
 def test_equal_declared_mirror_size_is_accepted(tmp_path):
