@@ -1,0 +1,24 @@
+{
+  "schema_version": 1,
+  "normalized_graph_sha256": "9c46c65e32179cfa7d12e68069e7e059049844367145f14465e52b087065ec04",
+  "locks": {
+    "pypi": {
+      "path": "uv.lock",
+      "index_url": "https://pypi.org/simple",
+      "artifact_url_prefix": "https://files.pythonhosted.org/packages/",
+      "sha256": "fe5f1629d84ba55de5ae909df2a8fba817085843598090db27be5eb111077f02"
+    },
+    "tuna": {
+      "path": "locks/uv.tuna.lock",
+      "index_url": "https://pypi.tuna.tsinghua.edu.cn/simple",
+      "artifact_url_prefix": "https://pypi.tuna.tsinghua.edu.cn/packages/",
+      "sha256": "0559fb692f6d01499ad003754072ebaeee3d624301ef2d03a530959709633264"
+    },
+    "aliyun": {
+      "path": "locks/uv.aliyun.lock",
+      "index_url": "https://mirrors.aliyun.com/pypi/simple",
+      "artifact_url_prefix": "https://mirrors.aliyun.com/pypi/packages/",
+      "sha256": "724495ec1804cc8a4554bfd41cd95e0886a5c08b0f1a87dc36b3ac13511da0a7"
+    }
+  }
+}
