@@ -146,8 +146,11 @@ git clone https://github.com/AIwork4me/omnidocbench-amd-windows
 cd omnidocbench-amd-windows
 ```
 
-Every orchestrated run probes the network before synchronizing Python and
-tries the fixed uv sources in this order:
+The profile command is the authoritative dependency bootstrap. Its
+`environment.mirrors` stage runs `scripts\detect-mirrors.ps1`; only the next
+`environment.python` stage consumes `mirrors.json` and `locks\manifest.json`
+by calling the real `Invoke-UvCatalogSync` helper. It tries the fixed uv
+sources in this order:
 
 1. `pypi` — `https://pypi.org/simple`
 2. `tuna` — `https://pypi.tuna.tsinghua.edu.cn/simple`
@@ -243,19 +246,27 @@ The seed source and destination are both fully lock-verified; predictions,
 scores, environments, checkouts, and `.env.local` are never copied.
 
 <details>
-<summary><strong>Manual phase-by-phase setup</strong></summary>
+<summary><strong>Phase-by-phase command reference</strong></summary>
 
 <br>
 
-Each `setup.*` is idempotent; run the matching `verify.*` after each. **All
-commands assume the repo root as CWD.**
+This is a reference for inspecting or rerunning downstream stages, not a
+second mirror-aware dependency bootstrap. Install uv, then use a profile
+command: `reproduce.ps1` runs `environment.mirrors` before
+`environment.python`, where `Invoke-UvCatalogSync` consumes `mirrors.json`
+and `locks\manifest.json` and creates `.venv`. A standalone root `uv sync`
+does not consume that candidate/lock catalog. Each later `setup.*` remains
+idempotent; run its matching `verify.*`. **All commands assume the repo root
+as CWD.**
 
 ```powershell
-# Step 0: reproducible local Python + network + WSL
-powershell -ExecutionPolicy Bypass -File scripts\detect-mirrors.ps1
+# Step 0: authoritative environment bootstrap + WSL
 winget install --id astral-sh.uv -e
-uv python install 3.11
-uv sync --locked --all-groups
+powershell -ExecutionPolicy Bypass -File scripts\reproduce.ps1 `
+  -Profile cpu-smoke-10
+# The profile's environment.python stage owns the strict dependency sync.
+# The remaining commands are stage references, not follow-on requirements
+# after a successful profile run.
 powershell -ExecutionPolicy Bypass -File scripts\wsl-ensure.ps1
 # Official Windows HIP binaries omit Radeon 860M/gfx1152, so select CPU there.
 $gpuNames = @(Get-CimInstance Win32_VideoController | ForEach-Object Name)

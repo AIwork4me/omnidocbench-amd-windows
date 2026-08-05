@@ -115,21 +115,46 @@ graph equivalence for the complete catalog:
 .\.venv\Scripts\python.exe scripts\verify_uv_lock_variants.py --root . --manifest locks\manifest.json
 ```
 
-Then check a selected lock against its exact source from an external temporary
-project. This example checks the Tuna lock; use the corresponding lock and
-exact URL for PyPI or Aliyun:
+Then check every matching lock/source pair from an external temporary project.
+Run the check in a child PowerShell process so it can clear every uv index and
+configuration variable without changing the parent shell. Each iteration
+copies `pyproject.toml` plus the matching tracked lock into the temporary
+project; it never replaces the repository-root `uv.lock`:
 
 ```powershell
-$checkRoot = Join-Path ([IO.Path]::GetTempPath()) ("omnidocbench-uv-check-" + [guid]::NewGuid().ToString("N"))
-New-Item -ItemType Directory -Path $checkRoot | Out-Null
-Copy-Item pyproject.toml (Join-Path $checkRoot "pyproject.toml")
-Copy-Item locks\uv.tuna.lock (Join-Path $checkRoot "uv.lock")
-uv lock --check --no-config --project $checkRoot --default-index "https://pypi.tuna.tsinghua.edu.cn/simple"
-Remove-Item -LiteralPath $checkRoot -Recurse -Force
+powershell -NoProfile -ExecutionPolicy Bypass -Command {
+    $controlledUvEnvironment = @(
+        "UV_INDEX", "UV_DEFAULT_INDEX", "UV_INDEX_URL", "UV_EXTRA_INDEX_URL",
+        "UV_INDEX_STRATEGY", "UV_NO_INDEX", "UV_FIND_LINKS", "UV_CONFIG_FILE",
+        "UV_NO_CONFIG", "UV_PROJECT_ENVIRONMENT"
+    )
+    foreach ($name in $controlledUvEnvironment) {
+        Remove-Item -LiteralPath "Env:$name" -ErrorAction SilentlyContinue
+    }
+    $sources = @(
+        [pscustomobject]@{ id = "pypi"; lock = "uv.lock"; url = "https://pypi.org/simple" },
+        [pscustomobject]@{ id = "tuna"; lock = "locks\uv.tuna.lock"; url = "https://pypi.tuna.tsinghua.edu.cn/simple" },
+        [pscustomobject]@{ id = "aliyun"; lock = "locks\uv.aliyun.lock"; url = "https://mirrors.aliyun.com/pypi/simple" }
+    )
+    foreach ($source in $sources) {
+        $checkRoot = Join-Path ([IO.Path]::GetTempPath()) ("omnidocbench-uv-check-" + [guid]::NewGuid().ToString("N"))
+        try {
+            New-Item -ItemType Directory -Path $checkRoot | Out-Null
+            Copy-Item -LiteralPath "pyproject.toml" -Destination (Join-Path $checkRoot "pyproject.toml")
+            Copy-Item -LiteralPath $source.lock -Destination (Join-Path $checkRoot "uv.lock")
+            & uv lock --check --no-config --project $checkRoot --default-index $source.url
+            if ($LASTEXITCODE -ne 0) { throw "uv lock check failed for $($source.id)" }
+        } finally {
+            if (Test-Path -LiteralPath $checkRoot) {
+                Remove-Item -LiteralPath $checkRoot -Recurse -Force
+            }
+        }
+    }
+}
 ```
 
-Both commands must exit 0. The tracked files remain untouched, and the
-matching-source check must not rewrite the temporary `uv.lock`.
+The catalog verifier and all three child-process checks must exit 0. The
+tracked files and the parent process environment remain untouched.
 
 ---
 

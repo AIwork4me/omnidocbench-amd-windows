@@ -111,25 +111,33 @@ catalog. When bulk dataset/GGUF/layout bytes already exist in another
 checkout, add `-SeedFrom <path> -SkipCdmSetup`. The orchestrator verifies
 source and destination locks and still creates fresh predictions and scores.
 
+The selected profile command above owns the full flow. The numbered sections
+below document its stage boundaries and diagnostic commands; do not rerun them
+after a successful profile. In particular, `environment.mirrors` runs the
+detector, then `environment.python` calls `Invoke-UvCatalogSync` with
+`mirrors.json` and `locks\manifest.json`. A standalone root sync is not the
+catalog fallback path.
+
 ### Step 0 — environment + network + WSL  (Windows)
 
 ```powershell
-# 0a. Probe reachable mirrors before the orchestrated Python sync.
+# 0a. Install uv before running the selected profile command above.
+winget install --id astral-sh.uv -e
+
+# 0b. environment.mirrors (run by reproduce.ps1) publishes the contracts.
 powershell -ExecutionPolicy Bypass -File scripts\detect-mirrors.ps1
 #   On failure → ⚠️ 4 / docs/pitfalls.md#network
 
-# 0b. Install the supported Python through uv and sync the locked local venv.
-winget install --id astral-sh.uv -e
-uv python install 3.11
-uv sync --locked --all-groups
+# 0c. environment.python (run by reproduce.ps1) installs Python 3.11 and
+# invokes Invoke-UvCatalogSync; do not replace it with a bare root uv sync.
 
-# 0c. Guarantee a WSL Ubuntu 22.04 distro exists (handles Store-blocked case).
+# 0d. environment.wsl guarantees an Ubuntu 22.04 distro exists.
 powershell -ExecutionPolicy Bypass -File scripts\wsl-ensure.ps1
 wsl -d Ubuntu2204 -- echo OK
 #   If "missing kernel component" or distro won't start → ⚠️ 1 (reboot)
 #   If wsl --install hangs/fails → docs/pitfalls.md#wsl
 
-# 0d. Select inference backend, then fail fast on selected-path prerequisites.
+# 0e. Select inference backend, then fail fast on selected-path prerequisites.
 # Official Windows HIP releases omit Radeon 860M/gfx1152; use CPU there.
 $gpuNames = @(Get-CimInstance Win32_VideoController | ForEach-Object Name)
 $useCpu = ($gpuNames -match 'Radeon.*860M') -or -not ($gpuNames -match 'AMD|Radeon')
