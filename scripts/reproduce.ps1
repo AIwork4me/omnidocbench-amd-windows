@@ -280,6 +280,31 @@ function Set-StageRecord {
     if (-not $found) { $state.stages += $Record }
 }
 
+function Invalidate-StageRecordForRerun {
+    param([string] $Id, [string] $Reason)
+
+    $found = $false
+    for ($i = 0; $i -lt $state.stages.Count; $i++) {
+        if ($state.stages[$i].id -eq $Id) {
+            # Preserve the canonical execution slot. Set-StageRecord replaces
+            # this record in place when the rerun passes or fails.
+            $state.stages[$i].status = "invalidated"
+            $state.stages[$i].exit_code = 1
+            $state.stages[$i].error = "resume guard invalidated stage before rerun: $Reason"
+            $found = $true
+            break
+        }
+    }
+    if (-not $found) {
+        throw "cannot invalidate missing stage record for rerun: $Id"
+    }
+    $script:completedStageIds = @(
+        $state.stages | Where-Object { $_.status -eq "passed" } | ForEach-Object { $_.id }
+    )
+    Write-Host "INVALIDATED stage in place for rerun: $Id" -ForegroundColor Yellow
+    Save-State
+}
+
 function Remove-StageRecords {
     param([string[]] $Ids)
     $removed = @($state.stages | Where-Object { $Ids -contains $_.id })
@@ -317,16 +342,25 @@ function Invoke-Stage {
     if ($resumeSkip -and $null -ne $ResumeGuard) {
         Write-Host "RESUME: re-validating $Id provenance before reuse" -ForegroundColor Yellow
         $guardExit = 0
+        $guardError = ""
         try {
             & $ResumeGuard
-            if ($script:ReproLastExit -ne 0) { $guardExit = $script:ReproLastExit }
+            if ($script:ReproLastExit -ne 0) {
+                $guardExit = $script:ReproLastExit
+                $guardError = "resume guard exited $guardExit"
+            }
         } catch {
             $guardExit = 1
-            Write-Host "RESUME GUARD ERROR: $($_.Exception.Message)" -ForegroundColor Red
+            $guardError = $_.Exception.Message
+            Write-Host "RESUME GUARD ERROR: $guardError" -ForegroundColor Red
         }
         if ($guardExit -ne 0) {
             Write-Host "RESUME: provenance mismatch - invalidating $Id and re-running" -ForegroundColor Yellow
-            Remove-StageRecords -Ids (@($Id) + @($ResumeGuardPurges) | Where-Object { $_ })
+            Invalidate-StageRecordForRerun -Id $Id -Reason $guardError
+            $purgeIds = @($ResumeGuardPurges | Where-Object { $_ })
+            if ($purgeIds.Count -gt 0) {
+                Remove-StageRecords -Ids $purgeIds
+            }
             $resumeSkip = $false
         }
     }

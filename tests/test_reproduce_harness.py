@@ -516,6 +516,7 @@ def test_19_fresh_failed_sync_invalidates_environment_lock_from_prior_failed_run
 def test_20_resume_revalidates_environment_lock_before_reusing_python_stage(harness, tamper):
     first = run_reproduce(harness["env"], "-Profile", SMOKE)
     assert first.returncode == 0, first.stdout + first.stderr
+    canonical_stage_ids = [stage["id"] for stage in read_state(harness)["stages"]]
     environment_lock = evidence_dir(harness) / "environment-lock.json"
     if tamper == "missing":
         environment_lock.unlink()
@@ -533,4 +534,21 @@ def test_20_resume_revalidates_environment_lock_before_reusing_python_stage(harn
     assert repaired["selected_source_id"] == "pypi"
     assert repaired["selected_lock_sha256"] == manifest["locks"]["pypi"]["sha256"]
     assert repaired["normalized_graph_sha256"] == manifest["normalized_graph_sha256"]
-    assert next(stage for stage in read_state(harness)["stages"] if stage["id"] == "environment.python")["status"] == "passed"
+    final_state = read_state(harness)
+    assert next(stage for stage in final_state["stages"] if stage["id"] == "environment.python")["status"] == "passed"
+    final_stage_ids = [stage["id"] for stage in final_state["stages"]]
+    assert final_stage_ids == canonical_stage_ids
+    assert len(final_stage_ids) == len(set(final_stage_ids))
+    assert final_stage_ids.index("environment.mirrors") < final_stage_ids.index("environment.python") < final_stage_ids.index("environment.wsl")
+    assert final_stage_ids[-1] != "environment.python"
+
+    report = (evidence_dir(harness) / "report.md").read_text(encoding="utf-8")
+    stage_section = report.split("## Stages", 1)[1].split("## ", 1)[0]
+    report_stage_ids = [
+        line[2:].split(" [", 1)[0]
+        for line in stage_section.splitlines()
+        if line.startswith("- ")
+    ]
+    assert report_stage_ids == canonical_stage_ids
+    for stage_id in canonical_stage_ids:
+        assert report_stage_ids.count(stage_id) == 1
