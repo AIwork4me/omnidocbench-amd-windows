@@ -6,7 +6,7 @@
       "path": "uv.lock",
       "index_url": "https://pypi.org/simple",
       "artifact_url_prefix": "https://files.pythonhosted.org/packages/",
-      "sha256": "fe5f1629d84ba55de5ae909df2a8fba817085843598090db27be5eb111077f02"
+      "sha256": "6f9faa472f67435117811d640e2985dbfcc80dedaff6ee51e8188e8408e08353"
     },
     "tuna": {
       "path": "locks/uv.tuna.lock",

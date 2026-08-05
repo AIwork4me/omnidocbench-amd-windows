@@ -53,6 +53,38 @@ function Remove-OwnedTemporaryDirectory {
     Remove-Item -LiteralPath $resolvedPath -Recurse -Force
 }
 
+function Set-PresentEnvironmentVariable {
+    param(
+        [Parameter(Mandatory = $true)] [string] $Name,
+        [AllowEmptyString()] [string] $Value
+    )
+
+    if (
+        $Value.Length -eq 0 -and
+        [System.Environment]::OSVersion.Platform -eq [System.PlatformID]::Win32NT
+    ) {
+        $nativeType = [System.Management.Automation.PSTypeName] "OmniDocBenchNativeEnvironment"
+        if ($null -eq $nativeType.Type) {
+            Add-Type -TypeDefinition @'
+using System.Runtime.InteropServices;
+
+public static class OmniDocBenchNativeEnvironment
+{
+    [DllImport("kernel32.dll", EntryPoint = "SetEnvironmentVariableW",
+        CharSet = CharSet.Unicode, SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    public static extern bool SetEnvironmentVariable(string name, string value);
+}
+'@
+        }
+        if (-not [OmniDocBenchNativeEnvironment]::SetEnvironmentVariable($Name, [string]::Empty)) {
+            throw "failed to restore empty process environment variable: $Name"
+        }
+        return
+    }
+    Set-Item -LiteralPath "Env:$Name" -Value $Value
+}
+
 $RepoRoot = (Resolve-Path -LiteralPath $RepoRoot).Path
 $canonicalProjectPath = Join-Path $RepoRoot "pyproject.toml"
 $canonicalLockPath = Join-Path $RepoRoot "uv.lock"
@@ -97,7 +129,10 @@ $sources = @(
 )
 
 $tempRoot = Join-Path ([System.IO.Path]::GetTempPath()) ("omnidocbench-uv-generate-" + [guid]::NewGuid().ToString("N"))
-$replacementArtifacts = @()
+$stagedArtifacts = @()
+$backupArtifacts = @()
+$replacements = @()
+$failureMessages = New-Object System.Collections.Generic.List[string]
 
 try {
     foreach ($name in $controlledUvEnvironment) {
@@ -146,14 +181,12 @@ try {
         [ordered]@{ name = "uv.aliyun.lock"; source = (Join-Path $catalogLocks "uv.aliyun.lock") },
         [ordered]@{ name = "manifest.json"; source = (Join-Path $catalogLocks "manifest.json") }
     )
-    $replacements = @()
     foreach ($spec in $replacementSpecs) {
         $destination = Join-Path $catalogDestination $spec.name
         $staged = Join-Path $catalogDestination ("." + $spec.name + ".omnidocbench-stage-" + $replacementId)
         $backup = Join-Path $catalogDestination ("." + $spec.name + ".omnidocbench-backup-" + $replacementId)
         Copy-Item -LiteralPath $spec.source -Destination $staged
-        $replacementArtifacts += $staged
-        $replacementArtifacts += $backup
+        $stagedArtifacts += $staged
         $existed = Test-Path -LiteralPath $destination -PathType Leaf
         $originalHash = $null
         if ($existed) {
@@ -165,42 +198,115 @@ try {
             existed = $existed
             backup = $backup
             sha256 = $originalHash
+            replaced = $false
         }
     }
 
+    foreach ($item in $replacements) {
+        if ($item.existed) {
+            Copy-Item -LiteralPath $item.destination -Destination $item.backup
+            $backupArtifacts += $item.backup
+        }
+    }
+    foreach ($item in $replacements) {
+        Move-Item -LiteralPath $item.staged -Destination $item.destination -Force
+        $item.replaced = $true
+    }
+} catch {
+    [void] $failureMessages.Add("main operation: $($_.Exception.Message)")
+}
+
+# Staged files are no longer needed after replacement. A cleanup failure is
+# recorded, but cannot prevent environment restoration or later invariants.
+foreach ($artifact in $stagedArtifacts) {
     try {
-        foreach ($item in $replacements) {
-            if ($item.existed) { Copy-Item -LiteralPath $item.destination -Destination $item.backup }
-            Move-Item -LiteralPath $item.staged -Destination $item.destination -Force
-        }
-    } catch {
-        for ($i = $replacements.Count - 1; $i -ge 0; $i--) {
-            $item = $replacements[$i]
-            if ($item.existed -and (Test-Path -LiteralPath $item.backup)) {
-                Copy-Item -LiteralPath $item.backup -Destination $item.destination -Force
-            } elseif (-not $item.existed -and (Test-Path -LiteralPath $item.destination)) {
-                Remove-Item -LiteralPath $item.destination -Force
-            }
-        }
-        throw
-    }
-
-    Write-Host "Generated and verified uv lock catalog in $catalogDestination"
-} finally {
-    foreach ($artifact in $replacementArtifacts) {
         if (Test-Path -LiteralPath $artifact) {
             Remove-Item -LiteralPath $artifact -Force
         }
+    } catch {
+        [void] $failureMessages.Add("staged replacement cleanup: $($_.Exception.Message)")
     }
-    foreach ($name in $controlledUvEnvironment) {
+}
+
+# Restore every controlled variable independently. Windows PowerShell's Env:
+# provider deletes empty values, so the native API preserves present-with-empty.
+foreach ($name in $controlledUvEnvironment) {
+    try {
         Remove-Item -LiteralPath "Env:$name" -ErrorAction SilentlyContinue
         if ($savedUvEnvironment[$name].present) {
-            Set-Item -LiteralPath "Env:$name" -Value $savedUvEnvironment[$name].value
+            Set-PresentEnvironmentVariable -Name $name -Value $savedUvEnvironment[$name].value
         }
+    } catch {
+        [void] $failureMessages.Add("environment restore for ${name}: $($_.Exception.Message)")
     }
+}
+
+# Temp cleanup and root immutability are separate finalizers: both always run.
+try {
     Remove-OwnedTemporaryDirectory -Path $tempRoot
+} catch {
+    [void] $failureMessages.Add("temporary directory cleanup: $($_.Exception.Message)")
+}
+
+try {
     $finalCanonicalLockHash = (Get-FileHash -LiteralPath $canonicalLockPath -Algorithm SHA256).Hash.ToLowerInvariant()
     if ($finalCanonicalLockHash -cne $canonicalLockHash) {
         throw "canonical uv.lock changed during lock variant generation"
     }
+} catch {
+    [void] $failureMessages.Add("root lock immutability: $($_.Exception.Message)")
 }
+
+# Backups remain available through every postcondition. Cleanup is itself part
+# of the transaction; stop at its first failure so rollback retains originals.
+if ($failureMessages.Count -eq 0) {
+    foreach ($artifact in $backupArtifacts) {
+        try {
+            if (Test-Path -LiteralPath $artifact) {
+                Remove-Item -LiteralPath $artifact -Force
+            }
+        } catch {
+            [void] $failureMessages.Add("replacement backup cleanup: $($_.Exception.Message)")
+            break
+        }
+    }
+}
+
+if ($failureMessages.Count -ne 0) {
+    # Roll back every target independently and report every rollback failure.
+    for ($i = $replacements.Count - 1; $i -ge 0; $i--) {
+        $item = $replacements[$i]
+        try {
+            if ($item.existed) {
+                if (Test-Path -LiteralPath $item.backup -PathType Leaf) {
+                    Copy-Item -LiteralPath $item.backup -Destination $item.destination -Force
+                    $restoredHash = (Get-FileHash -LiteralPath $item.destination -Algorithm SHA256).Hash.ToLowerInvariant()
+                    if ($restoredHash -cne $item.sha256) {
+                        throw "restored catalog hash differs: $($item.destination)"
+                    }
+                } elseif ($item.replaced) {
+                    throw "rollback backup is missing: $($item.backup)"
+                }
+            } elseif (Test-Path -LiteralPath $item.destination) {
+                Remove-Item -LiteralPath $item.destination -Force
+            }
+        } catch {
+            [void] $failureMessages.Add("catalog rollback for $($item.destination): $($_.Exception.Message)")
+        }
+    }
+
+    # Best-effort artifact cleanup never stops cleanup of later paths.
+    foreach ($artifact in @($stagedArtifacts) + @($backupArtifacts)) {
+        try {
+            if (Test-Path -LiteralPath $artifact) {
+                Remove-Item -LiteralPath $artifact -Force
+            }
+        } catch {
+            [void] $failureMessages.Add("post-rollback artifact cleanup for ${artifact}: $($_.Exception.Message)")
+        }
+    }
+
+    throw ("uv lock catalog generation failed:`n - " + ($failureMessages -join "`n - "))
+}
+
+Write-Host "Generated and verified uv lock catalog in $catalogDestination"

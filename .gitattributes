@@ -1,3 +1,6 @@
 *.sh text eol=lf
 mirrors.env text eol=lf
 eval-infra/02-cdm-environment/requirements.lock.txt text eol=lf
+/uv.lock text eol=lf
+/locks/*.lock text eol=lf
+/locks/manifest.json text eol=lf

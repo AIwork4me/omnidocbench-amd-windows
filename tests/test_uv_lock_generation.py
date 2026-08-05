@@ -16,6 +16,7 @@ import pytest
 REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
 GENERATOR = REPOSITORY_ROOT / "scripts" / "generate-uv-lock-variants.ps1"
 VERIFIER = REPOSITORY_ROOT / "scripts" / "verify_uv_lock_variants.py"
+GITATTRIBUTES = REPOSITORY_ROOT / ".gitattributes"
 
 SOURCES = {
     "pypi": ("https://pypi.org/simple", "https://files.pythonhosted.org/packages/"),
@@ -210,12 +211,18 @@ def _run_generator(
         def quote(value: object) -> str:
             return "'" + str(value).replace("'", "''") + "'"
 
-        invocation = " ".join(["&", quote(root / "scripts" / GENERATOR.name), *map(quote, arguments)])
-        script = rf'''$script:blockedDestination = [IO.Path]::GetFullPath({quote(fail_replacement_for)})
+        formatted_arguments = [
+            argument if position % 2 == 0 else quote(argument)
+            for position, argument in enumerate(arguments)
+        ]
+        invocation = " ".join(
+            ["&", quote(root / "scripts" / GENERATOR.name), *formatted_arguments]
+        )
+        script = rf'''$global:blockedDestination = [IO.Path]::GetFullPath({quote(fail_replacement_for)})
 function Move-Item {{
     [CmdletBinding()]
     param([string] $LiteralPath, [string] $Destination, [switch] $Force)
-    if ([IO.Path]::GetFullPath($Destination) -eq $script:blockedDestination) {{
+    if ([IO.Path]::GetFullPath($Destination) -eq $global:blockedDestination) {{
         throw "injected replacement failure"
     }}
     Microsoft.PowerShell.Management\Move-Item @PSBoundParameters
@@ -226,8 +233,213 @@ try {{ {invocation} }} catch {{ Write-Error $_; exit 1 }}
     return subprocess.run(command, text=True, capture_output=True, check=False, env=environment)
 
 
+def _ps_quote(value: object) -> str:
+    return "'" + str(value).replace("'", "''") + "'"
+
+
+def _run_generator_with_fault(
+    root: Path,
+    fake_uv: Path,
+    environment: dict[str, str],
+    tmp_path: Path,
+    fault: str,
+) -> tuple[subprocess.CompletedProcess[str], dict, list[str]]:
+    fault_log = tmp_path / f"{fault}-events.log"
+    evidence_path = tmp_path / f"{fault}-evidence.json"
+    arguments = [
+        "-RepoRoot",
+        str(root),
+        "-UvExecutable",
+        str(fake_uv),
+        "-PythonExecutable",
+        sys.executable,
+    ]
+    formatted_arguments = [
+        argument if position % 2 == 0 else _ps_quote(argument)
+        for position, argument in enumerate(arguments)
+    ]
+    invocation = " ".join(
+        ["&", _ps_quote(root / "scripts" / GENERATOR.name), *formatted_arguments]
+    )
+    controlled = ",".join(_ps_quote(name) for name in CONTROLLED_UV_ENVIRONMENT)
+    script = rf'''
+$global:Fault = {_ps_quote(fault)}
+$global:FaultLog = {_ps_quote(fault_log)}
+$global:EvidencePath = {_ps_quote(evidence_path)}
+$global:RootLockPath = [IO.Path]::GetFullPath({_ps_quote(root / "uv.lock")})
+$global:ArtifactFailed = $false
+$global:TempFailed = $false
+$global:RootMutated = $false
+$global:Controlled = @({controlled})
+
+function Write-FaultEvent([string] $Value) {{
+    [IO.File]::AppendAllText($global:FaultLog, $Value + [Environment]::NewLine)
+}}
+
+function Get-EnvironmentSnapshot {{
+    $snapshot = [ordered]@{{}}
+    foreach ($name in $global:Controlled) {{
+        $item = Get-Item -LiteralPath "Env:$name" -ErrorAction SilentlyContinue
+        $snapshot[$name] = [ordered]@{{
+            present = ($null -ne $item)
+            value = $(if ($null -eq $item) {{ $null }} else {{ [string] $item.Value }})
+        }}
+    }}
+    return $snapshot
+}}
+
+function Get-FileHash {{
+    [CmdletBinding()]
+    param([string] $LiteralPath, [string] $Algorithm)
+    if ([IO.Path]::GetFullPath($LiteralPath) -eq $global:RootLockPath) {{
+        Write-FaultEvent "root-hash-check"
+    }}
+    Microsoft.PowerShell.Utility\Get-FileHash @PSBoundParameters
+}}
+
+function Remove-Item {{
+    [CmdletBinding()]
+    param([string] $LiteralPath, [switch] $Force, [switch] $Recurse)
+    $leaf = [IO.Path]::GetFileName($LiteralPath)
+    if ($Recurse -and $leaf.StartsWith("omnidocbench-uv-generate-")) {{
+        Write-FaultEvent "temp-cleanup-attempt"
+        if ($global:Fault -eq "temp_cleanup" -and -not $global:TempFailed) {{
+            $global:TempFailed = $true
+            [IO.File]::AppendAllText($global:RootLockPath, "# mutation during temp cleanup failure`n")
+            throw "injected temp cleanup failure"
+        }}
+    }}
+    if (
+        $global:Fault -eq "artifact_cleanup" -and
+        $LiteralPath -like "*.omnidocbench-stage-*" -and
+        -not $global:ArtifactFailed
+    ) {{
+        $global:ArtifactFailed = $true
+        Write-FaultEvent "artifact-cleanup-failure"
+        [IO.File]::AppendAllText($global:RootLockPath, "# mutation during artifact cleanup failure`n")
+        throw "injected replacement artifact cleanup failure"
+    }}
+    Microsoft.PowerShell.Management\Remove-Item @PSBoundParameters
+}}
+
+function Move-Item {{
+    [CmdletBinding()]
+    param([string] $LiteralPath, [string] $Destination, [switch] $Force)
+    if ($global:Fault -eq "artifact_cleanup") {{
+        Microsoft.PowerShell.Management\Copy-Item @PSBoundParameters
+    }} else {{
+        Microsoft.PowerShell.Management\Move-Item @PSBoundParameters
+    }}
+    if (
+        $global:Fault -eq "root_mutation" -and
+        -not $global:RootMutated -and
+        [IO.Path]::GetFileName($Destination) -eq "manifest.json"
+    ) {{
+        $global:RootMutated = $true
+        [IO.File]::AppendAllText($global:RootLockPath, "# injected root mutation`n")
+        Write-FaultEvent "root-lock-mutated"
+    }}
+}}
+
+$beforeEnvironment = Get-EnvironmentSnapshot
+$caught = $null
+try {{
+    {invocation}
+}} catch {{
+    $caught = $_
+}}
+$afterEnvironment = Get-EnvironmentSnapshot
+$beforeJson = ConvertTo-Json $beforeEnvironment -Compress -Depth 5
+$afterJson = ConvertTo-Json $afterEnvironment -Compress -Depth 5
+$evidence = [ordered]@{{
+    environment_restored = ($beforeJson -ceq $afterJson)
+    before_environment = $beforeEnvironment
+    after_environment = $afterEnvironment
+    caught = ($null -ne $caught)
+    error = $(if ($null -eq $caught) {{ $null }} else {{ [string] $caught.Exception.Message }})
+}}
+[IO.File]::WriteAllText($global:EvidencePath, (ConvertTo-Json $evidence -Compress), (New-Object System.Text.UTF8Encoding($false)))
+if ($null -ne $caught) {{
+    Write-Error $caught
+    exit 1
+}}
+exit 0
+'''
+    result = subprocess.run(
+        ["powershell", "-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", script],
+        text=True,
+        capture_output=True,
+        check=False,
+        env=environment,
+    )
+    evidence = json.loads(evidence_path.read_text(encoding="utf-8"))
+    events = fault_log.read_text(encoding="utf-8").splitlines() if fault_log.exists() else []
+    return result, evidence, events
+
+
 def _sha256(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def _run_git(*arguments: str, cwd: Path) -> subprocess.CompletedProcess[str]:
+    return subprocess.run(
+        ["git", *arguments], cwd=cwd, text=True, capture_output=True, check=False
+    )
+
+
+def test_catalog_raw_hashes_survive_autocrlf_clean_checkout(tmp_path):
+    source = tmp_path / "source"
+    source.mkdir()
+    paths = (
+        Path("uv.lock"),
+        Path("locks/uv.tuna.lock"),
+        Path("locks/uv.aliyun.lock"),
+        Path("locks/manifest.json"),
+        Path("scripts/verify_uv_lock_variants.py"),
+    )
+    for relative in paths:
+        destination = source / relative
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(REPOSITORY_ROOT / relative, destination)
+    if GITATTRIBUTES.exists():
+        shutil.copy2(GITATTRIBUTES, source / GITATTRIBUTES.name)
+
+    assert _run_git("init", "-q", cwd=source).returncode == 0
+    assert _run_git("config", "core.autocrlf", "true", cwd=source).returncode == 0
+    assert _run_git("config", "user.name", "UV Lock Test", cwd=source).returncode == 0
+    assert _run_git("config", "user.email", "uv-lock@example.invalid", cwd=source).returncode == 0
+    add = _run_git("add", ".", cwd=source)
+    assert add.returncode == 0, add.stderr
+    commit = _run_git("commit", "-q", "-m", "fixture", cwd=source)
+    assert commit.returncode == 0, commit.stderr
+
+    checkout = tmp_path / "checkout"
+    clone = subprocess.run(
+        ["git", "clone", "-q", "-c", "core.autocrlf=true", str(source), str(checkout)],
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+    assert clone.returncode == 0, clone.stderr
+
+    catalog_inputs = paths[:4]
+    assert {relative: _sha256(source / relative) for relative in catalog_inputs} == {
+        relative: _sha256(checkout / relative) for relative in catalog_inputs
+    }
+    result = subprocess.run(
+        [
+            sys.executable,
+            str(checkout / "scripts" / VERIFIER.name),
+            "--root",
+            str(checkout),
+            "--manifest",
+            str(checkout / "locks" / "manifest.json"),
+        ],
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
 
 
 def test_generator_uses_exact_isolated_uv_commands_and_preserves_canonical_lock(tmp_path):
@@ -382,3 +594,65 @@ def test_atomic_replacement_failure_rolls_back_every_catalog_file(tmp_path):
     assert "injected replacement failure" in result.stderr
     assert _catalog_bytes(root) == before
     assert _sha256(root / "uv.lock") == canonical_hash
+
+
+def test_artifact_cleanup_failure_still_finalizes_and_rolls_back_catalog(tmp_path):
+    root, fake_uv = _make_test_repository(tmp_path, existing_catalog=True)
+    before = _catalog_bytes(root)
+
+    result, evidence, events = _run_generator_with_fault(
+        root, fake_uv, _environment(root, tmp_path), tmp_path, "artifact_cleanup"
+    )
+
+    assert result.returncode != 0
+    assert "injected replacement artifact cleanup failure" in result.stderr
+    assert evidence["environment_restored"] is True
+    assert "temp-cleanup-attempt" in events
+    assert "canonical uv.lock changed during lock variant generation" in result.stderr
+    assert _catalog_bytes(root) == before
+
+
+def test_temp_cleanup_failure_still_checks_root_and_rolls_back_catalog(tmp_path):
+    root, fake_uv = _make_test_repository(tmp_path, existing_catalog=True)
+    before = _catalog_bytes(root)
+
+    result, evidence, events = _run_generator_with_fault(
+        root, fake_uv, _environment(root, tmp_path), tmp_path, "temp_cleanup"
+    )
+
+    assert result.returncode != 0
+    assert "injected temp cleanup failure" in result.stderr
+    assert evidence["environment_restored"] is True
+    assert "temp-cleanup-attempt" in events
+    assert "canonical uv.lock changed during lock variant generation" in result.stderr
+    assert _catalog_bytes(root) == before
+
+
+def test_root_lock_mutation_after_replacement_rolls_back_catalog(tmp_path):
+    root, fake_uv = _make_test_repository(tmp_path, existing_catalog=True)
+    before = _catalog_bytes(root)
+
+    result, evidence, events = _run_generator_with_fault(
+        root, fake_uv, _environment(root, tmp_path), tmp_path, "root_mutation"
+    )
+
+    assert result.returncode != 0
+    assert "canonical uv.lock changed during lock variant generation" in result.stderr
+    assert evidence["environment_restored"] is True
+    assert "root-lock-mutated" in events
+    assert _catalog_bytes(root) == before
+
+
+def test_failure_rolls_back_new_catalog_when_destinations_did_not_exist(tmp_path):
+    root, fake_uv = _make_test_repository(tmp_path)
+
+    result, evidence, events = _run_generator_with_fault(
+        root, fake_uv, _environment(root, tmp_path), tmp_path, "temp_cleanup"
+    )
+
+    assert result.returncode != 0
+    assert evidence["environment_restored"] is True
+    assert "canonical uv.lock changed during lock variant generation" in result.stderr
+    assert not (root / "locks" / "uv.tuna.lock").exists()
+    assert not (root / "locks" / "uv.aliyun.lock").exists()
+    assert not (root / "locks" / "manifest.json").exists()
