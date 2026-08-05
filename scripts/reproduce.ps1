@@ -191,6 +191,65 @@ $hardwareFile = Join-Path $evidenceDir "hardware.json"
 $downstreamScoringStageIds = @(
     "scoring.windows", "scoring.wsl_cdm", "verification.final", "evidence.pack"
 )
+# Single source of truth for the persisted execution order. A profile may omit
+# conditional stages (currently inputs.seed), but every stored subset must
+# retain this order so schema-v2 states remain deterministic across resume.
+$canonicalStageIds = @(
+    "environment.mirrors",
+    "environment.python",
+    "environment.wsl",
+    "profile.preflight",
+    "inputs.seed",
+    "dataset.setup",
+    "dataset.upstream_locks",
+    "inputs.fingerprint",
+    "cdm.wsl_environment",
+    "inference.server",
+    "inference.backend_proof",
+    "inference.layout",
+    "inference.pipeline_deps",
+    "inference.input_locks",
+    "inference.fingerprint",
+    "inference.run",
+    "inference.prediction_check",
+    "scoring.fingerprint",
+    "scoring.windows",
+    "scoring.wsl_cdm",
+    "verification.final",
+    "evidence.pack"
+)
+
+function Normalize-StageRecords {
+    param([AllowNull()][object[]] $Records)
+
+    $recordsById = @{}
+    $seenIds = @()
+    foreach ($record in @($Records)) {
+        if ($null -eq $record) {
+            throw "state.json stage compatibility error: null stage record. Cannot safely resume; preserve the incompatible state for diagnosis, then start a fresh run with a new evidence directory."
+        }
+        $id = [string]$record.id
+        if ([string]::IsNullOrWhiteSpace($id)) {
+            throw "state.json stage compatibility error: stage record has no id. Cannot safely resume; preserve the incompatible state for diagnosis, then start a fresh run with a new evidence directory."
+        }
+        if (-not ($canonicalStageIds -ccontains $id)) {
+            throw "state.json stage compatibility error: unknown stage id '$id'. This reproduce.ps1 cannot safely map it to the current canonical stage order; preserve the incompatible state for diagnosis, then start a fresh run with a new evidence directory."
+        }
+        if ($seenIds -ccontains $id) {
+            throw "state.json stage compatibility error: duplicate stage id '$id'. Duplicate records are ambiguous and cannot be resumed safely; preserve the incompatible state for diagnosis, then start a fresh run with a new evidence directory."
+        }
+        $seenIds += $id
+        $recordsById[$id] = $record
+    }
+
+    $orderedRecords = @()
+    foreach ($id in $canonicalStageIds) {
+        if ($recordsById.ContainsKey($id)) {
+            $orderedRecords += ,$recordsById[$id]
+        }
+    }
+    return $orderedRecords
+}
 
 Write-Host ""
 Write-Host "=== Reproduction profile: $($profile.name) ($($profile.run_kind), $($profile.variant) backend) ===" -ForegroundColor Cyan
@@ -224,13 +283,15 @@ if ($Resume -and (Test-Path -LiteralPath $stateFile)) {
     if ([int]$previousState.schema_version -ne 2) {
         throw "state.json schema v$($previousState.schema_version) is not compatible with this reproduce.ps1. Start a fresh run (remove or rename $stateFile) -- old phase-name resume keys cannot be mapped safely."
     }
-    $completedStageIds = @($previousState.stages | Where-Object { $_.status -eq "passed" } | ForEach-Object { $_.id })
+    $previousStages = @(Normalize-StageRecords -Records @($previousState.stages))
+    $completedStageIds = @($previousStages | Where-Object { $_.status -eq "passed" } | ForEach-Object { $_.id })
     $state.started_at = $previousState.started_at
-    $state.stages = @($previousState.stages)
+    $state.stages = $previousStages
     $state.resumed_at = (Get-Date).ToUniversalTime().ToString("o")
 }
 
 function Save-State {
+    $state.stages = @(Normalize-StageRecords -Records @($state.stages))
     New-Item -ItemType Directory -Force -Path $evidenceDir | Out-Null
     $temp = "$stateFile.tmp.$PID"
     $lastError = $null
@@ -257,14 +318,15 @@ function Save-State {
 }
 
 trap {
+    $trappedError = $_
     if ($state.status -eq "running") {
         $state.status = "interrupted"
         $state.interrupted_at = (Get-Date).ToUniversalTime().ToString("o")
-        $state.interruption_reason = $_.Exception.Message
+        $state.interruption_reason = $trappedError.Exception.Message
         $state.resume_command = "powershell -ExecutionPolicy Bypass -File scripts\reproduce.ps1 -Profile $RunProfile -Resume"
         try { Save-State } catch { }
     }
-    throw
+    throw $trappedError
 }
 
 function Assert-LastExit([string] $Label) {
@@ -278,6 +340,7 @@ function Set-StageRecord {
         if ($state.stages[$i].id -eq $Record.id) { $state.stages[$i] = $Record; $found = $true; break }
     }
     if (-not $found) { $state.stages += $Record }
+    $state.stages = @(Normalize-StageRecords -Records @($state.stages))
 }
 
 function Invalidate-StageRecordForRerun {
@@ -1136,7 +1199,6 @@ Invoke-Stage -Id "evidence.pack" -Name "Evidence pack" -AlwaysRun {
             save_name = $saveName
             resolved_server_port = $serverPort
         }
-        Write-Report -EvidenceDir $evidenceDir -State $state -Profile $profile -Fingerprint $fingerprint -ResumeCommand "powershell -ExecutionPolicy Bypass -File scripts\reproduce.ps1 -Profile $RunProfile -Resume" -ServerPort $serverPort -PredictionTreeHash (Get-JsonField -Path $predictionTreeFile -Field "prediction_tree_sha256") | Out-Null
         Save-State
     }
 } -Command "evidence pack -> outputs\reproduction\$RunProfile" -AfterSave {
@@ -1144,6 +1206,9 @@ Invoke-Stage -Id "evidence.pack" -Name "Evidence pack" -AlwaysRun {
     # saved, so these hashes bind the TRUE final artifacts (report.md and the
     # final state.json with this stage's record).
     if (-not $DryRun) {
+        # Render from the just-saved terminal state so report.md and state.json
+        # expose the same canonical subset before either artifact is hashed.
+        Write-Report -EvidenceDir $evidenceDir -State $state -Profile $profile -Fingerprint $fingerprint -ResumeCommand "powershell -ExecutionPolicy Bypass -File scripts\reproduce.ps1 -Profile $RunProfile -Resume" -ServerPort $serverPort -PredictionTreeHash (Get-JsonField -Path $predictionTreeFile -Field "prediction_tree_sha256") | Out-Null
         Write-ArtifactHashes -EvidenceDir $evidenceDir -Profile $profile -PipelineCheckout $pipelineCheckout -EnvFile $adapterEnvFile -EnvironmentLockFile $environmentLockFile -ServerPort $serverPort -PredictionTreeFile $predictionTreeFile -PredictionSummaryFile $predictionSummaryFile -BackendProofFile $backendProofFile -WindowsResult $windowsResult -WindowsProvenanceFile $windowsProvenanceFile -WslResult (Get-WslResultPath -SaveName $saveName) -WslProvenanceFile (Get-WslResultPath -SaveName $saveName -FileSuffix "_metric_result.provenance.json") -StateFile $stateFile -ReportFile $reportFile -ProfileResolvedFile $profileResolvedFile | Out-Null
         $wslResult = Get-WslResultPath -SaveName $saveName
         $spec = [ordered]@{

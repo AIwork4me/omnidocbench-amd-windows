@@ -25,6 +25,29 @@ REPRODUCE = REPO_ROOT / "scripts" / "reproduce.ps1"
 
 SMOKE = "harness-smoke"
 FULL = "harness-full"
+EXPECTED_SMOKE_STAGE_ORDER = [
+    "environment.mirrors",
+    "environment.python",
+    "environment.wsl",
+    "profile.preflight",
+    "dataset.setup",
+    "dataset.upstream_locks",
+    "inputs.fingerprint",
+    "cdm.wsl_environment",
+    "inference.server",
+    "inference.backend_proof",
+    "inference.layout",
+    "inference.pipeline_deps",
+    "inference.input_locks",
+    "inference.fingerprint",
+    "inference.run",
+    "inference.prediction_check",
+    "scoring.fingerprint",
+    "scoring.windows",
+    "scoring.wsl_cdm",
+    "verification.final",
+    "evidence.pack",
+]
 
 
 @pytest.fixture()
@@ -76,6 +99,16 @@ def read_state(harness: dict) -> dict:
     return load_json(state_path(harness))
 
 
+def report_stage_ids(harness: dict) -> list[str]:
+    report = (evidence_dir(harness) / "report.md").read_text(encoding="utf-8")
+    stage_section = report.split("## Stages", 1)[1].split("## ", 1)[0]
+    return [
+        line[2:].split(" [", 1)[0]
+        for line in stage_section.splitlines()
+        if line.startswith("- ")
+    ]
+
+
 # --- 1. clean fresh run -----------------------------------------------------
 def test_01_clean_fresh_run_passes(harness):
     result = run_reproduce(harness["env"], "-Profile", SMOKE)
@@ -114,8 +147,11 @@ def test_01_clean_fresh_run_passes(harness):
     ):
         assert expected in stage_ids, f"stage {expected} missing from state"
     order = [s["id"] for s in state["stages"]]
+    assert order == EXPECTED_SMOKE_STAGE_ORDER
+    assert len(order) == len(set(order))
     assert order.index("environment.mirrors") < order.index("environment.python") < order.index("environment.wsl")
     assert order.index("inference.run") < order.index("inference.prediction_check") < order.index("scoring.windows") < order.index("evidence.pack")
+    assert report_stage_ids(harness) == order
     # Both platforms scored exactly once.
     assert score_marker_count(harness["hooks"]) == 2
     summary = load_json(evidence_dir(harness) / "prediction-summary.json")
@@ -542,13 +578,89 @@ def test_20_resume_revalidates_environment_lock_before_reusing_python_stage(harn
     assert final_stage_ids.index("environment.mirrors") < final_stage_ids.index("environment.python") < final_stage_ids.index("environment.wsl")
     assert final_stage_ids[-1] != "environment.python"
 
-    report = (evidence_dir(harness) / "report.md").read_text(encoding="utf-8")
-    stage_section = report.split("## Stages", 1)[1].split("## ", 1)[0]
-    report_stage_ids = [
-        line[2:].split(" [", 1)[0]
-        for line in stage_section.splitlines()
-        if line.startswith("- ")
-    ]
-    assert report_stage_ids == canonical_stage_ids
+    reported_stage_ids = report_stage_ids(harness)
+    assert reported_stage_ids == canonical_stage_ids
     for stage_id in canonical_stage_ids:
-        assert report_stage_ids.count(stage_id) == 1
+        assert reported_stage_ids.count(stage_id) == 1
+
+
+@pytest.mark.parametrize("legacy_shape", ["python_before_mirrors", "mirrors_absent"])
+def test_21_resume_normalizes_schema_v2_legacy_stage_order(harness, legacy_shape):
+    first = run_reproduce(harness["env"], "-Profile", SMOKE)
+    assert first.returncode == 0, first.stdout + first.stderr
+    canonical_state = read_state(harness)
+    canonical_ids = [stage["id"] for stage in canonical_state["stages"]]
+    assert canonical_ids == EXPECTED_SMOKE_STAGE_ORDER
+
+    legacy_stages = list(canonical_state["stages"])
+    mirrors_index = canonical_ids.index("environment.mirrors")
+    python_index = canonical_ids.index("environment.python")
+    python_record = dict(legacy_stages[python_index])
+    python_record["legacy_diagnostic"] = "preserve this schema-v2 record"
+    legacy_stages[python_index] = python_record
+    if legacy_shape == "python_before_mirrors":
+        legacy_stages[mirrors_index], legacy_stages[python_index] = (
+            legacy_stages[python_index], legacy_stages[mirrors_index]
+        )
+        expected_ids = EXPECTED_SMOKE_STAGE_ORDER
+    else:
+        legacy_stages.pop(mirrors_index)
+        expected_ids = EXPECTED_SMOKE_STAGE_ORDER
+
+    legacy_state = dict(canonical_state)
+    legacy_state["stages"] = legacy_stages
+    state_path(harness).write_text(json.dumps(legacy_state, indent=2), encoding="utf-8")
+
+    resumed = run_reproduce(harness["env"], "-Profile", SMOKE, "-Resume")
+    assert resumed.returncode == 0, resumed.stdout + resumed.stderr
+    final_state = read_state(harness)
+    final_ids = [stage["id"] for stage in final_state["stages"]]
+    assert final_ids == expected_ids
+    assert len(final_ids) == len(set(final_ids))
+    assert final_ids.index("environment.mirrors") < final_ids.index("environment.python")
+    final_python = next(stage for stage in final_state["stages"] if stage["id"] == "environment.python")
+    assert final_python == python_record
+    assert report_stage_ids(harness) == final_ids
+
+
+@pytest.mark.parametrize(
+    ("invalid_shape", "expected_diagnostic"),
+    [
+        ("duplicate", "duplicate stage id 'environment.python'"),
+        ("unknown", "unknown stage id 'legacy.retired_stage'"),
+    ],
+)
+def test_22_resume_rejects_incompatible_schema_v2_stage_ids(
+    harness, invalid_shape, expected_diagnostic
+):
+    first = run_reproduce(harness["env"], "-Profile", SMOKE)
+    assert first.returncode == 0, first.stdout + first.stderr
+    incompatible_state = read_state(harness)
+    if invalid_shape == "duplicate":
+        python_record = next(
+            stage for stage in incompatible_state["stages"]
+            if stage["id"] == "environment.python"
+        )
+        incompatible_state["stages"].append(dict(python_record))
+    else:
+        incompatible_state["stages"].append({
+            "id": "legacy.retired_stage",
+            "name": "Retired legacy stage",
+            "status": "passed",
+            "diagnostic": "must not be silently discarded",
+        })
+    state_path(harness).write_text(
+        json.dumps(incompatible_state, indent=2), encoding="utf-8"
+    )
+
+    resumed = run_reproduce(harness["env"], "-Profile", SMOKE, "-Resume")
+    output = resumed.stdout + resumed.stderr
+    assert resumed.returncode != 0, output
+    assert "state.json stage compatibility error" in output
+    assert expected_diagnostic in output
+    persisted = read_state(harness)
+    persisted_ids = [stage["id"] for stage in persisted["stages"]]
+    if invalid_shape == "duplicate":
+        assert persisted_ids.count("environment.python") == 2
+    else:
+        assert "legacy.retired_stage" in persisted_ids

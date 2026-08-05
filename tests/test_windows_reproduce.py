@@ -351,15 +351,15 @@ def test_force_inference_purge_is_scoped():
 def test_evidence_pack_stage_writes_all_files():
     text = SCRIPT.read_text(encoding="utf-8")
     block = text.split('Invoke-Stage -Id "evidence.pack"', 1)[1].split("-Command", 1)[0]
-    # Write-ProfileResolved / Write-HardwareJson / Write-MetricsSummary /
-    # Write-Report run inside the stage action.
-    for name in ("Write-ProfileResolved", "Write-HardwareJson", "Write-MetricsSummary", "Write-Report"):
+    # Non-terminal evidence is generated inside the stage action.
+    for name in ("Write-ProfileResolved", "Write-HardwareJson", "Write-MetricsSummary"):
         assert name in block, f"{name} missing from evidence.pack"
-    # The final artifact hashing runs in the -AfterSave hook, AFTER state.json
-    # holds the evidence.pack record (hashing earlier bound a stale state).
+    # The report and final artifact hashing run in the -AfterSave hook, AFTER
+    # state.json holds the evidence.pack record (earlier work bound stale state).
     after_save = text.split("-AfterSave {", 1)[1].split("if (-not $DryRun) {", 1)[1].split("-Command", 1)[0]
-    for name in ("Write-ArtifactHashes", "compute_fingerprint.py", "fingerprint.evidence.spec.json"):
+    for name in ("Write-Report", "Write-ArtifactHashes", "compute_fingerprint.py", "fingerprint.evidence.spec.json"):
         assert name in after_save, f"{name} missing from evidence.pack -AfterSave"
+    assert after_save.index("Write-Report") < after_save.index("Write-ArtifactHashes")
 
 
 def test_entrypoint_docs_make_ten_page_profile_canonical():
