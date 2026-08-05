@@ -369,6 +369,7 @@ function Write-ArtifactHashes {
         $Profile,
         [string] $PipelineCheckout,
         [string] $EnvFile,
+        [string] $EnvironmentLockFile = "",
         [string] $ServerPort = "",
         [string] $PredictionTreeFile = "",
         [string] $PredictionSummaryFile = "",
@@ -381,10 +382,17 @@ function Write-ArtifactHashes {
         [string] $ReportFile = "",
         [string] $ProfileResolvedFile = ""
     )
+    if (
+        [string]::IsNullOrWhiteSpace($EnvironmentLockFile) -or
+        -not (Test-Path -LiteralPath $EnvironmentLockFile -PathType Leaf)
+    ) {
+        throw "required environment-lock evidence is missing: $EnvironmentLockFile"
+    }
     $hashes = [ordered]@{}
     $hashes.profile_file = Get-FileSha256 $Profile.ProfilePath
     $hashes.profile_resolved = Get-FileSha256 $ProfileResolvedFile
     $hashes.upstream_lock = Get-FileSha256 (Join-Path $script:ReproRoot "upstream-lock.json")
+    $hashes.environment_lock = Get-FileSha256 $EnvironmentLockFile
     $hashes.prediction_manifest = Get-FileSha256 $Profile.ManifestAbs
     $hashes.windows_scoring_config = Get-FileSha256 $Profile.ConfigWindowsAbs
     $hashes.wsl_cdm_config = Get-FileSha256 $Profile.ConfigWslAbs

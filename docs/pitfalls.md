@@ -17,6 +17,7 @@ relevant entry first.
 ## Table of contents
 
 - [Network](#network) — GitHub / HuggingFace / CTAN / Microsoft Store blocked
+- [uv lock and mirror mismatch](#uv-lock-mirror-mismatch) — strict sync says the lockfile needs to be updated
 - [WSL install](#wsl) — `wsl --install` hangs or fails
 - [WSL distro wrong name](#distro-name) — `wsl -d Ubuntu2204` fails, but a distro exists under a different name
 - [Python version](#python-version) — OmniDocBench needs Python < 3.12
@@ -73,6 +74,62 @@ non-empty `GITHUB_BASE=`, `HF_OR_MS=`, `CTAN_MIRROR=`, `PYPI_INDEX=`,
 **If you skip it.** The very first `git clone` or `huggingface-cli download`
 in setup hangs forever or fails opaquely. `detect-mirrors.ps1` exists
 specifically to front-load this.
+
+---
+
+<a id="uv-lock-mirror-mismatch"></a>
+## #uv-lock-mirror-mismatch — strict uv sync says the lockfile needs updating
+
+**Symptom.** `uv sync --locked --all-groups` reports that the `lockfile needs
+to be updated`, often only when a mirror index or inherited `UV_INDEX*`
+environment variable is present. Retrying without `--locked` appears to get
+past the error but silently changes the resolved environment.
+
+**Root cause.** A uv lock is single-source: its registry and artifact URLs are
+part of the locked resolution. The canonical `uv.lock`,
+`locks/uv.tuna.lock`, and `locks/uv.aliyun.lock` contain the same normalized
+dependency graph but bind it to PyPI, Tsinghua Tuna, and Aliyun respectively.
+Using one source's index with another source's lock is a real mismatch, so
+`--locked` correctly refuses to update it.
+
+**Fix.** For ordinary setup or source fallback, run the detector and the
+profile orchestrator. It clears inherited uv index settings, selects the first
+reachable source in the fixed `pypi` → `tuna` → `aliyun` order, and runs
+`uv sync --locked --all-groups` with that source's tracked lock:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts\detect-mirrors.ps1
+powershell -ExecutionPolicy Bypass -File scripts\reproduce.ps1 -Profile cpu-smoke-10
+```
+
+Do not edit a tracked lock, run an unlocked sync, or substitute `--frozen`.
+Daily mirror fallback must not regenerate the catalog. Only when dependency
+inputs were intentionally changed should a maintainer update the canonical
+lock and then run `scripts\generate-uv-lock-variants.ps1`; review and commit
+the canonical lock, both mirror locks, and `locks/manifest.json` together.
+
+**Verify.** First validate schema, hashes, source metadata, and normalized
+graph equivalence for the complete catalog:
+
+```powershell
+.\.venv\Scripts\python.exe scripts\verify_uv_lock_variants.py --root . --manifest locks\manifest.json
+```
+
+Then check a selected lock against its exact source from an external temporary
+project. This example checks the Tuna lock; use the corresponding lock and
+exact URL for PyPI or Aliyun:
+
+```powershell
+$checkRoot = Join-Path ([IO.Path]::GetTempPath()) ("omnidocbench-uv-check-" + [guid]::NewGuid().ToString("N"))
+New-Item -ItemType Directory -Path $checkRoot | Out-Null
+Copy-Item pyproject.toml (Join-Path $checkRoot "pyproject.toml")
+Copy-Item locks\uv.tuna.lock (Join-Path $checkRoot "uv.lock")
+uv lock --check --no-config --project $checkRoot --default-index "https://pypi.tuna.tsinghua.edu.cn/simple"
+Remove-Item -LiteralPath $checkRoot -Recurse -Force
+```
+
+Both commands must exit 0. The tracked files remain untouched, and the
+matching-source check must not rewrite the temporary `uv.lock`.
 
 ---
 
@@ -177,6 +234,7 @@ Python 3.11 and synchronizes the same dependency set on every machine:
 
 ```powershell
 winget install --id astral-sh.uv -e
+powershell -ExecutionPolicy Bypass -File scripts\detect-mirrors.ps1
 uv python install 3.11
 uv sync --locked --all-groups
 ```

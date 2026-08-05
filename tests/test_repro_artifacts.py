@@ -8,6 +8,7 @@ the current profile's artifacts while tolerating missing ones.
 from __future__ import annotations
 
 import json
+import hashlib
 import subprocess
 from pathlib import Path
 
@@ -187,3 +188,82 @@ def test_reset_without_prediction_dir_does_not_fail(tmp_path):
     data = ps_json(_reset_script(tmp_path, with_fingerprint=True, with_prediction_dir=False, with_owned_manifest=True, with_scores=True))
     assert data["removed_count"] >= 2
     assert data["foreign_exists"] is True
+
+
+def _artifact_hash_script(tmp_path: Path, environment_lock: Path) -> str:
+    evidence_dir = tmp_path / "evidence"
+    evidence_dir.mkdir(exist_ok=True)
+    required = {
+        "profile": tmp_path / "profile.json",
+        "upstream": tmp_path / "upstream-lock.json",
+        "manifest": tmp_path / "manifest.json",
+        "windows_config": tmp_path / "windows.yaml",
+        "wsl_config": tmp_path / "wsl.yaml",
+    }
+    for path in required.values():
+        path.write_text("{}\n", encoding="utf-8")
+    return r"""
+        . '{evidence}'
+        $script:ReproRoot = '{root}'
+        $profile = [pscustomobject]@{{
+            ProfilePath = '{profile}'
+            ManifestAbs = '{manifest}'
+            ConfigWindowsAbs = '{windows_config}'
+            ConfigWslAbs = '{wsl_config}'
+            PredictionDirAbs = '{predictions}'
+            server_port = '8765'
+        }}
+        New-Item -ItemType Directory -Force -Path '{predictions}' | Out-Null
+        $null = Write-ArtifactHashes -EvidenceDir '{evidence_dir}' `
+            -Profile $profile -PipelineCheckout '{checkout}' -EnvFile '{env_file}' `
+            -EnvironmentLockFile '{environment_lock}'
+        Get-Content -Raw -Encoding UTF8 -LiteralPath '{artifact_hashes}'
+        """.format(
+        evidence=EVIDENCE,
+        root=tmp_path,
+        profile=required["profile"],
+        manifest=required["manifest"],
+        windows_config=required["windows_config"],
+        wsl_config=required["wsl_config"],
+        predictions=tmp_path / "predictions",
+        evidence_dir=evidence_dir,
+        checkout=tmp_path / "checkout",
+        env_file=tmp_path / "adapter.env",
+        environment_lock=environment_lock,
+        artifact_hashes=evidence_dir / "artifact-hashes.json",
+    )
+
+
+def test_artifact_hashes_bind_exact_environment_lock_bytes(tmp_path):
+    environment_lock = tmp_path / "evidence" / "environment-lock.json"
+    environment_lock.parent.mkdir()
+    exact_bytes = (
+        b'{\r\n  "schema_version": 1,\r\n'
+        b'  "selected_source_id": "tuna",\r\n'
+        b'  "note": "exact bytes, not reserialized"\r\n}\r\n'
+    )
+    environment_lock.write_bytes(exact_bytes)
+
+    hashes = ps_json(_artifact_hash_script(tmp_path, environment_lock))
+
+    assert hashes["environment_lock"] == hashlib.sha256(exact_bytes).hexdigest()
+    assert "selected_source_id" not in hashes
+    assert "selected_index_url" not in hashes
+    assert "selected_lock_sha256" not in hashes
+
+
+def test_artifact_hashes_fail_closed_when_environment_lock_is_missing(tmp_path):
+    missing = tmp_path / "evidence" / "environment-lock.json"
+
+    result = run_ps(_artifact_hash_script(tmp_path, missing))
+
+    assert result.returncode != 0
+    assert "environment-lock" in result.stdout + result.stderr
+
+
+def test_reproduce_passes_authoritative_environment_lock_to_artifact_hashes():
+    text = (REPO_ROOT / "scripts" / "reproduce.ps1").read_text(encoding="utf-8")
+    after_save = text.split('Invoke-Stage -Id "evidence.pack"', 1)[1].split(
+        "fingerprint.evidence.spec.json", 1
+    )[0]
+    assert "-EnvironmentLockFile $environmentLockFile" in after_save

@@ -114,14 +114,14 @@ source and destination locks and still creates fresh predictions and scores.
 ### Step 0 — environment + network + WSL  (Windows)
 
 ```powershell
-# 0a. Install the supported Python through uv and sync the locked local venv.
+# 0a. Probe reachable mirrors before the orchestrated Python sync.
+powershell -ExecutionPolicy Bypass -File scripts\detect-mirrors.ps1
+#   On failure → ⚠️ 4 / docs/pitfalls.md#network
+
+# 0b. Install the supported Python through uv and sync the locked local venv.
 winget install --id astral-sh.uv -e
 uv python install 3.11
 uv sync --locked --all-groups
-
-# 0b. Probe reachable mirrors → writes mirrors.env (consumed by everything).
-powershell -ExecutionPolicy Bypass -File scripts\detect-mirrors.ps1
-#   On failure → ⚠️ 4 / docs/pitfalls.md#network
 
 # 0c. Guarantee a WSL Ubuntu 22.04 distro exists (handles Store-blocked case).
 powershell -ExecutionPolicy Bypass -File scripts\wsl-ensure.ps1
@@ -285,6 +285,7 @@ verify that failed. Do not improvise a fix.
 | Symptom | Read |
 |---|---|
 | `git clone` / `huggingface-cli` / download hangs or times out | `docs/pitfalls.md#network` |
+| `uv sync --locked` says the lockfile needs to be updated under a mirror or inherited index | `docs/pitfalls.md#uv-lock-mirror-mismatch` |
 | `wsl --install` hangs, or distro won't start after import | `docs/pitfalls.md#wsl` (reboot first) |
 | `wsl -d Ubuntu2204` fails ("not found") but `wsl -l` shows a distro with a different name | `docs/pitfalls.md#distro-name` (name mismatch) |
 | `AttributeError: ... getargspec` / `distutils` on Python 3.12 | `docs/pitfalls.md#python-version` (use 3.10/3.11) |

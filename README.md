@@ -146,6 +146,20 @@ git clone https://github.com/AIwork4me/omnidocbench-amd-windows
 cd omnidocbench-amd-windows
 ```
 
+Every orchestrated run probes the network before synchronizing Python and
+tries the fixed uv sources in this order:
+
+1. `pypi` — `https://pypi.org/simple`
+2. `tuna` — `https://pypi.tuna.tsinghua.edu.cn/simple`
+3. `aliyun` — `https://mirrors.aliyun.com/pypi/simple`
+
+Each candidate has its own tracked, single-source lock. Every fallback attempt
+runs exactly `uv sync --locked --all-groups` against the matching lock; normal
+source fallback never regenerates or edits any lock. Do not work around a lock
+mismatch with `--frozen`, an unlocked sync, or a hand-edited lock. See
+[`docs/pitfalls.md#uv-lock-mirror-mismatch`](docs/pitfalls.md#uv-lock-mirror-mismatch)
+if a strict sync reports that the lockfile needs to be updated.
+
 ### 快速环境验证 — quick environment verification (CPU)
 
 ```powershell
@@ -238,10 +252,10 @@ commands assume the repo root as CWD.**
 
 ```powershell
 # Step 0: reproducible local Python + network + WSL
+powershell -ExecutionPolicy Bypass -File scripts\detect-mirrors.ps1
 winget install --id astral-sh.uv -e
 uv python install 3.11
 uv sync --locked --all-groups
-powershell -ExecutionPolicy Bypass -File scripts\detect-mirrors.ps1
 powershell -ExecutionPolicy Bypass -File scripts\wsl-ensure.ps1
 # Official Windows HIP binaries omit Radeon 860M/gfx1152, so select CPU there.
 $gpuNames = @(Get-CimInstance Win32_VideoController | ForEach-Object Name)
@@ -382,7 +396,8 @@ adapters/          ← model-specific, one directory per model
   mineru/             validated reference (MinerU 3.4.4 pipeline, ROCm PyTorch + ONNX DirectML)
 
 scripts/           ← cross-cutting tools
-  detect-mirrors.ps1  probe reachable mirrors → mirrors.env
+  detect-mirrors.ps1  probe reachable mirrors → mirrors.env + mirrors.json
+  verify_uv_lock_variants.py  verify the fixed uv lock catalog and graph
   wsl-ensure.ps1      guarantee a WSL Ubuntu 22.04 distro (handles Store-blocked)
   full-verify.ps1     chain every verify in dependency order
 

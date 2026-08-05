@@ -44,3 +44,30 @@ def test_official_local_cdm_value_consistent():
             assert not ("official-local" in line and "97.36" in line), (
                 f"{lang} README still pairs official-local with stale CDM 97.36: {line}"
             )
+
+
+def test_readme_documents_ordered_strict_uv_mirror_fallback():
+    readme = (ROOT / "README.md").read_text(encoding="utf-8")
+    sources = (
+        ("pypi", "https://pypi.org/simple"),
+        ("tuna", "https://pypi.tuna.tsinghua.edu.cn/simple"),
+        ("aliyun", "https://mirrors.aliyun.com/pypi/simple"),
+    )
+    positions = []
+    for source_id, url in sources:
+        marker = f"`{source_id}`"
+        assert marker in readme
+        assert f"`{url}`" in readme
+        positions.append(readme.index(marker))
+    assert positions == sorted(positions), "README must document pypi -> tuna -> aliyun order"
+    assert "uv sync --locked --all-groups" in readme
+    assert "every fallback attempt" in readme.lower()
+    assert "never regenerates" in readme.lower()
+
+
+def test_readme_runs_detector_before_manual_strict_sync():
+    readme = (ROOT / "README.md").read_text(encoding="utf-8")
+    manual = readme.split("Manual phase-by-phase setup", 1)[1].split("# Step 1:", 1)[0]
+    assert manual.index("scripts\\detect-mirrors.ps1") < manual.index(
+        "uv sync --locked --all-groups"
+    )

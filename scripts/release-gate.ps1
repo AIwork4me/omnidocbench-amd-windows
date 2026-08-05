@@ -34,6 +34,26 @@ function Fail([string] $Message) {
     exit 1
 }
 
+$requiredReleaseFiles = @(
+    ".venv\Scripts\python.exe",
+    "scripts\verify_uv_lock_variants.py",
+    "uv.lock",
+    "locks\uv.tuna.lock",
+    "locks\uv.aliyun.lock",
+    "locks\manifest.json"
+)
+foreach ($relativePath in $requiredReleaseFiles) {
+    if (-not (Test-Path -LiteralPath (Join-Path $rootDir $relativePath) -PathType Leaf)) {
+        Fail "required release file is missing: $relativePath"
+    }
+}
+
+# Validate the tracked three-source lock catalog with the already-locked
+# repository interpreter before any release can succeed.
+& $py (Join-Path $rootDir "scripts\verify_uv_lock_variants.py") `
+    --root $rootDir --manifest "locks\manifest.json"
+if ($LASTEXITCODE -ne 0) { Fail "uv lock catalog verification failed" }
+
 $pyproject = (Get-Content -Raw -LiteralPath (Join-Path $rootDir "pyproject.toml")) -replace "`r`n", "`n"
 $versionMatch = [regex]::Match($pyproject, '(?m)^version = "([^"]+)"$')
 if (-not $versionMatch.Success) { Fail "pyproject.toml has no version declaration" }
@@ -95,7 +115,7 @@ if ($WriteArtifacts) {
     if ($LASTEXITCODE -ne 0) { Fail "SBOM generation failed" }
     # SHA256SUMS over the release-critical artifacts
     $hashLines = @()
-    foreach ($rel in @("benchmarks\index.json", "benchmarks\schema.json", "upstream-lock.json", "uv.lock", "pyproject.toml", "CHANGELOG.md")) {
+    foreach ($rel in @("benchmarks\index.json", "benchmarks\schema.json", "upstream-lock.json", "uv.lock", "locks\uv.tuna.lock", "locks\uv.aliyun.lock", "locks\manifest.json", "pyproject.toml", "CHANGELOG.md")) {
         $path = Join-Path $rootDir $rel
         if (Test-Path -LiteralPath $path) {
             $sha = (Get-FileHash -LiteralPath $path -Algorithm SHA256).Hash.ToLowerInvariant()

@@ -1144,7 +1144,7 @@ Invoke-Stage -Id "evidence.pack" -Name "Evidence pack" -AlwaysRun {
     # saved, so these hashes bind the TRUE final artifacts (report.md and the
     # final state.json with this stage's record).
     if (-not $DryRun) {
-        Write-ArtifactHashes -EvidenceDir $evidenceDir -Profile $profile -PipelineCheckout $pipelineCheckout -EnvFile $adapterEnvFile -ServerPort $serverPort -PredictionTreeFile $predictionTreeFile -PredictionSummaryFile $predictionSummaryFile -BackendProofFile $backendProofFile -WindowsResult $windowsResult -WindowsProvenanceFile $windowsProvenanceFile -WslResult (Get-WslResultPath -SaveName $saveName) -WslProvenanceFile (Get-WslResultPath -SaveName $saveName -FileSuffix "_metric_result.provenance.json") -StateFile $stateFile -ReportFile $reportFile -ProfileResolvedFile $profileResolvedFile | Out-Null
+        Write-ArtifactHashes -EvidenceDir $evidenceDir -Profile $profile -PipelineCheckout $pipelineCheckout -EnvFile $adapterEnvFile -EnvironmentLockFile $environmentLockFile -ServerPort $serverPort -PredictionTreeFile $predictionTreeFile -PredictionSummaryFile $predictionSummaryFile -BackendProofFile $backendProofFile -WindowsResult $windowsResult -WindowsProvenanceFile $windowsProvenanceFile -WslResult (Get-WslResultPath -SaveName $saveName) -WslProvenanceFile (Get-WslResultPath -SaveName $saveName -FileSuffix "_metric_result.provenance.json") -StateFile $stateFile -ReportFile $reportFile -ProfileResolvedFile $profileResolvedFile | Out-Null
         $wslResult = Get-WslResultPath -SaveName $saveName
         $spec = [ordered]@{
             strict_prediction_summary_sha256 = @{ file = $predictionSummaryFile }
