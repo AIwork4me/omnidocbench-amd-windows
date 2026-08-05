@@ -29,6 +29,7 @@ PYPI = "https://pypi.org/simple"
 TUNA = "https://pypi.tuna.tsinghua.edu.cn/simple"
 ALIYUN = "https://mirrors.aliyun.com/pypi/simple"
 PUBLISH_FAILURE_ENV = "MIRROR_PUBLISH_FAIL_BEFORE"
+CLEANUP_FAILURE_ENV = "MIRROR_CLEANUP_FAIL_AT"
 
 OLD_ENV = b"# pre-existing contract\r\nNETWORK_STATUS=old\r\n"
 OLD_JSON = b'{"sentinel":"old"}\r\n'
@@ -54,6 +55,15 @@ def all_up_fixture() -> dict[str, bool]:
         TUNA: True,
         ALIYUN: True,
     }
+
+
+def raw_fixture(members: list[tuple[str, str]]) -> str:
+    rendered = [f"  {json.dumps(key)} : {value}" for key, value in members]
+    return "{\n" + ",\n".join(rendered) + "\n}\n"
+
+
+def canonical_raw_members() -> list[tuple[str, str]]:
+    return [(key, "true" if value else "false") for key, value in all_up_fixture().items()]
 
 
 def make_repo(tmp_path: Path) -> Path:
@@ -284,7 +294,7 @@ def test_successive_runs_atomically_replace_both_contracts(tmp_path: Path):
     assert_no_temp_files(root)
 
 
-def test_real_second_target_failure_does_not_leave_half_updated_contracts(
+def test_locked_existing_json_failure_preserves_old_pair_before_publication(
     tmp_path: Path,
 ):
     root = make_repo(tmp_path)
@@ -298,6 +308,68 @@ def test_real_second_target_failure_does_not_leave_half_updated_contracts(
         assert (root / "mirrors.env").read_bytes() == OLD_ENV
 
     assert_old_contracts(root)
+    assert_no_temp_files(root)
+
+
+@pytest.mark.parametrize(
+    "duplicate_values",
+    [("true", "false"), ('"wrong-type"', "true")],
+)
+def test_duplicate_raw_canonical_key_is_rejected_before_json_member_folding(
+    tmp_path: Path, duplicate_values: tuple[str, str]
+):
+    root = make_repo(tmp_path)
+    seed_old_contracts(root)
+    members = canonical_raw_members()
+    members[0] = (HF, duplicate_values[0])
+    members.insert(1, (HF, duplicate_values[1]))
+
+    result = run_detector(root, raw_fixture(members))
+
+    assert result.returncode != 0
+    assert "duplicate" in (result.stdout + result.stderr).lower()
+    assert_old_contracts(root)
+    assert_no_temp_files(root)
+
+
+@pytest.mark.parametrize(
+    "mutate_raw",
+    [
+        lambda raw: raw.replace("https://pypi.org/simple", "https:\\/\\/pypi.org\\/simple"),
+        lambda raw: raw.rstrip() + " trailing-garbage",
+        lambda raw: raw.replace("\n}\n", ",\n}\n"),
+        lambda raw: raw.replace("\n  \"https://modelscope", "\n  \"https://modelscope", 1).replace(
+            " : true,\n  \"https://github.com", " : true\n  \"https://github.com", 1
+        ),
+    ],
+    ids=["escaped-key", "trailing-garbage", "trailing-comma", "missing-comma"],
+)
+def test_raw_fixture_parser_rejects_noncanonical_or_unconsumed_syntax(
+    tmp_path: Path, mutate_raw
+):
+    root = make_repo(tmp_path)
+    seed_old_contracts(root)
+    invalid_raw = mutate_raw(raw_fixture(canonical_raw_members()))
+
+    result = run_detector(root, invalid_raw)
+
+    assert result.returncode != 0
+    assert_old_contracts(root)
+    assert_no_temp_files(root)
+
+
+def test_raw_fixture_parser_allows_whitespace_newlines_and_arbitrary_order(
+    tmp_path: Path,
+):
+    root = make_repo(tmp_path)
+    members = list(reversed(canonical_raw_members()))
+    fixture = " \r\n\t" + raw_fixture(members) + " \t\r\n"
+
+    result = run_detector(root, fixture)
+
+    assert result.returncode == 0, result.stdout + result.stderr
+    document, _ = read_contract(root)
+    assert_uv_contract(document, status="ok", reachable=[True, True, True])
     assert_no_temp_files(root)
 
 
@@ -447,6 +519,86 @@ def test_publish_failure_hook_alone_is_rejected_without_live_probe(tmp_path: Pat
     assert result.returncode != 0
     output = result.stdout + result.stderr
     assert PUBLISH_FAILURE_ENV in output
+    assert "REPRO_TEST_HOOKS" in output
+    assert not (root / "mirrors.env").exists()
+    assert not (root / "mirrors.json").exists()
+
+
+def test_staged_file_cleanup_failure_appends_to_primary_diagnostic(tmp_path: Path):
+    root = make_repo(tmp_path)
+
+    result = run_detector(
+        root,
+        all_up_fixture(),
+        env_overrides={CLEANUP_FAILURE_ENV: "staged-file"},
+    )
+
+    assert result.returncode != 0
+    output = result.stdout + result.stderr
+    assert "Injected staged-file validation failure" in output
+    assert "Injected staged-file cleanup failure" in output
+    assert not (root / "mirrors.env").exists()
+    assert not (root / "mirrors.json").exists()
+    assert_no_temp_files(root)
+
+
+def test_transaction_cleanup_failure_appends_to_publish_primary_diagnostic(
+    tmp_path: Path,
+):
+    root = make_repo(tmp_path)
+    seed_old_contracts(root)
+
+    result = run_detector(
+        root,
+        all_up_fixture(),
+        env_overrides={
+            PUBLISH_FAILURE_ENV: "mirrors.json",
+            CLEANUP_FAILURE_ENV: "transaction",
+        },
+    )
+
+    assert result.returncode != 0
+    output = result.stdout + result.stderr
+    assert "Injected mirror contract publish failure before mirrors.json" in output
+    assert "Injected transaction cleanup failure" in output
+    assert_old_contracts(root)
+    assert_no_temp_files(root)
+
+
+def test_successful_publish_cleanup_failure_is_nonzero_with_coherent_new_pair(
+    tmp_path: Path,
+):
+    root = make_repo(tmp_path)
+    seed_old_contracts(root)
+
+    result = run_detector(
+        root,
+        all_up_fixture(),
+        env_overrides={CLEANUP_FAILURE_ENV: "transaction"},
+    )
+
+    assert result.returncode != 0
+    assert "Injected transaction cleanup failure" in result.stdout + result.stderr
+    document, env_text = read_contract(root)
+    assert_uv_contract(document, status="ok", reachable=[True, True, True])
+    assert "NETWORK_STATUS=ok" in env_text
+    assert_no_temp_files(root)
+
+
+def test_cleanup_failure_hook_alone_is_rejected_without_live_probe(tmp_path: Path):
+    root = make_repo(tmp_path)
+
+    result = run_detector(
+        root,
+        all_up_fixture(),
+        enable_hooks=False,
+        enable_fixture=False,
+        env_overrides={CLEANUP_FAILURE_ENV: "transaction"},
+    )
+
+    assert result.returncode != 0
+    output = result.stdout + result.stderr
+    assert CLEANUP_FAILURE_ENV in output
     assert "REPRO_TEST_HOOKS" in output
     assert not (root / "mirrors.env").exists()
     assert not (root / "mirrors.json").exists()

@@ -31,9 +31,93 @@ $expectedProbeUrls = @(
     "https://mirrors.aliyun.com/pypi/simple"
 )
 
+function Assert-StrictProbeFixtureRaw($fixtureText, $expectedUrls) {
+    $regexOptions = [Text.RegularExpressions.RegexOptions]::CultureInvariant
+    $startRegex = New-Object Text.RegularExpressions.Regex(
+        "\A\s*\{\s*",
+        $regexOptions
+    )
+    $emptyCloseRegex = New-Object Text.RegularExpressions.Regex(
+        "\G\}\s*\z",
+        $regexOptions
+    )
+    $memberRegex = New-Object Text.RegularExpressions.Regex(
+        '\G\s*"(?<key>[^"\\]*)"\s*:\s*(?<value>true|false|null|-?(?:0|[1-9]\d*)(?:\.\d+)?(?:[eE][+-]?\d+)?|"(?:[^"\\]|\\["\\/bfnrt]|\\u[0-9a-fA-F]{4})*")\s*',
+        $regexOptions
+    )
+    $tailRegex = New-Object Text.RegularExpressions.Regex(
+        "\G\s*\z",
+        $regexOptions
+    )
+
+    $startMatch = $startRegex.Match($fixtureText)
+    if (-not $startMatch.Success) {
+        throw "fixture must be one strict flat JSON object"
+    }
+    $cursor = $startMatch.Index + $startMatch.Length
+    $rawKeys = New-Object System.Collections.Generic.List[string]
+    $nonBooleanKeys = New-Object System.Collections.Generic.List[string]
+    $seenKeys = New-Object 'System.Collections.Generic.HashSet[string]' ([StringComparer]::Ordinal)
+
+    $emptyClose = $emptyCloseRegex.Match($fixtureText, $cursor)
+    if (-not $emptyClose.Success) {
+        while ($true) {
+            $memberMatch = $memberRegex.Match($fixtureText, $cursor)
+            if (-not $memberMatch.Success) {
+                throw "fixture contains invalid member syntax, escaped key, or non-boolean value at raw offset $cursor"
+            }
+
+            $rawKey = $memberMatch.Groups["key"].Value
+            if (-not $seenKeys.Add($rawKey)) {
+                throw "fixture contains duplicate raw URL key: $rawKey"
+            }
+            if ($expectedUrls -cnotcontains $rawKey) {
+                throw "fixture contains unexpected or case-variant raw URL key: $rawKey"
+            }
+            $rawKeys.Add($rawKey)
+            $rawValue = $memberMatch.Groups["value"].Value
+            if ($rawValue -cne "true" -and $rawValue -cne "false") {
+                $nonBooleanKeys.Add($rawKey)
+            }
+            $cursor = $memberMatch.Index + $memberMatch.Length
+
+            if ($cursor -ge $fixtureText.Length) {
+                throw "fixture flat object is missing its closing brace"
+            }
+            $separator = $fixtureText[$cursor]
+            if ($separator -eq ',') {
+                $cursor += 1
+                continue
+            }
+            if ($separator -eq '}') {
+                $cursor += 1
+                $tailMatch = $tailRegex.Match($fixtureText, $cursor)
+                if (-not $tailMatch.Success) {
+                    throw "fixture contains trailing content after its flat object"
+                }
+                break
+            }
+            throw "fixture members must be separated by a comma"
+        }
+    }
+
+    foreach ($expectedUrl in $expectedUrls) {
+        if ($rawKeys -cnotcontains $expectedUrl) {
+            throw "fixture is missing exact canonical raw URL key: $expectedUrl"
+        }
+    }
+    if ($rawKeys.Count -ne $expectedUrls.Count) {
+        throw "fixture raw URL member count must be exactly $($expectedUrls.Count)"
+    }
+    if ($nonBooleanKeys.Count -gt 0) {
+        throw "fixture raw values must be JSON true or false for: $($nonBooleanKeys -join ', ')"
+    }
+}
+
 $hasTestHooks = Test-ProcessEnvironmentVariable "REPRO_TEST_HOOKS"
 $hasProbeFixture = Test-ProcessEnvironmentVariable "MIRROR_PROBE_RESULTS_JSON"
 $hasPublishFailure = Test-ProcessEnvironmentVariable "MIRROR_PUBLISH_FAIL_BEFORE"
+$hasCleanupFailure = Test-ProcessEnvironmentVariable "MIRROR_CLEANUP_FAIL_AT"
 if ($hasTestHooks -ne $hasProbeFixture) {
     Write-Host "ERROR: fixture injection requires both REPRO_TEST_HOOKS and MIRROR_PROBE_RESULTS_JSON." -ForegroundColor Red
     exit 1
@@ -42,12 +126,19 @@ if ($hasPublishFailure -and -not ($hasTestHooks -and $hasProbeFixture)) {
     Write-Host "ERROR: MIRROR_PUBLISH_FAIL_BEFORE requires REPRO_TEST_HOOKS and MIRROR_PROBE_RESULTS_JSON." -ForegroundColor Red
     exit 1
 }
+if ($hasCleanupFailure -and -not ($hasTestHooks -and $hasProbeFixture)) {
+    Write-Host "ERROR: MIRROR_CLEANUP_FAIL_AT requires REPRO_TEST_HOOKS and MIRROR_PROBE_RESULTS_JSON." -ForegroundColor Red
+    exit 1
+}
 
 $script:ProbeResults = $null
 $script:PublishFailBefore = $null
+$script:CleanupFailAt = $null
+$script:CleanupFailureConsumed = $false
 if ($hasTestHooks -and $hasProbeFixture) {
     try {
         $fixtureText = Get-Content -LiteralPath $env:MIRROR_PROBE_RESULTS_JSON -Raw -Encoding UTF8
+        Assert-StrictProbeFixtureRaw $fixtureText $expectedProbeUrls
         $script:ProbeResults = $fixtureText | ConvertFrom-Json -ErrorAction Stop
         if ($null -eq $script:ProbeResults) {
             throw "fixture root must be a JSON object"
@@ -94,6 +185,17 @@ if ($hasTestHooks -and $hasProbeFixture) {
         }
         $script:PublishFailBefore = $publishFailureValue
     }
+    if ($hasCleanupFailure) {
+        $cleanupFailureValue = [Environment]::GetEnvironmentVariable(
+            "MIRROR_CLEANUP_FAIL_AT",
+            [EnvironmentVariableTarget]::Process
+        )
+        if (@("staged-file", "transaction") -cnotcontains $cleanupFailureValue) {
+            Write-Host "ERROR: MIRROR_CLEANUP_FAIL_AT must be exactly staged-file or transaction." -ForegroundColor Red
+            exit 1
+        }
+        $script:CleanupFailAt = $cleanupFailureValue
+    }
 }
 
 function Test-Url($url, $timeoutSec = 8) {
@@ -110,11 +212,33 @@ function Test-Url($url, $timeoutSec = 8) {
     } catch { return $false }
 }
 
+function Remove-MirrorWorkFile($path, $cleanupScope, $cleanupErrors) {
+    if ($null -eq $path) {
+        return
+    }
+    try {
+        if (-not (Test-Path -LiteralPath $path -ErrorAction Stop)) {
+            return
+        }
+        Remove-Item -LiteralPath $path -Force -ErrorAction Stop
+        if (
+            -not $script:CleanupFailureConsumed -and
+            $script:CleanupFailAt -ceq $cleanupScope
+        ) {
+            $script:CleanupFailureConsumed = $true
+            throw "Injected $cleanupScope cleanup failure"
+        }
+    } catch {
+        $cleanupErrors.Add("$cleanupScope cleanup: $($_.Exception.Message)")
+    }
+}
+
 function New-StagedUtf8File($path, $content, $validationKind) {
     $directory = [System.IO.Path]::GetDirectoryName($path)
     $leaf = [System.IO.Path]::GetFileName($path)
     $tempPath = Join-Path $directory ("{0}.tmp.{1}" -f $leaf, [guid]::NewGuid().ToString("N"))
     $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
+    $primaryError = $null
     try {
         [System.IO.File]::WriteAllText($tempPath, $content, $utf8NoBom)
         $roundTrip = [System.IO.File]::ReadAllText($tempPath, $utf8NoBom)
@@ -123,13 +247,20 @@ function New-StagedUtf8File($path, $content, $validationKind) {
         } elseif ($roundTrip -cne $content) {
             throw "staged mirrors.env did not round-trip as UTF-8"
         }
+        if ($script:CleanupFailAt -ceq "staged-file") {
+            throw "Injected staged-file validation failure"
+        }
         return $tempPath
     } catch {
-        if (Test-Path -LiteralPath $tempPath) {
-            Remove-Item -LiteralPath $tempPath -Force
-        }
-        throw
+        $primaryError = $_
     }
+
+    $cleanupErrors = New-Object System.Collections.Generic.List[string]
+    Remove-MirrorWorkFile $tempPath "staged-file" $cleanupErrors
+    if ($cleanupErrors.Count -gt 0) {
+        throw "$($primaryError.Exception.Message); cleanup failed: $($cleanupErrors -join '; ')"
+    }
+    throw $primaryError
 }
 
 # Write mirrors.env from whatever $lines we have collected so far. Called both
@@ -169,6 +300,8 @@ function Publish-MirrorsContracts($envContent, $jsonContent) {
     $jsonExisted = Test-Path -LiteralPath $resolvedJsonFile
     $envPublished = $false
     $jsonPublished = $false
+    $primaryError = $null
+    $rollbackErrors = New-Object System.Collections.Generic.List[string]
 
     try {
         # Both contracts must be fully staged and validated before either
@@ -196,7 +329,7 @@ function Publish-MirrorsContracts($envContent, $jsonContent) {
         $jsonPublished = $true
     } catch {
         $publishError = $_
-        $rollbackErrors = New-Object System.Collections.Generic.List[string]
+        $primaryError = $publishError
 
         if ($jsonPublished) {
             try {
@@ -222,17 +355,25 @@ function Publish-MirrorsContracts($envContent, $jsonContent) {
                 $rollbackErrors.Add("mirrors.env: $($_.Exception.Message)")
             }
         }
+    }
 
+    $cleanupErrors = New-Object System.Collections.Generic.List[string]
+    foreach ($workFile in @($envStage, $jsonStage, $envBackup, $jsonBackup)) {
+        Remove-MirrorWorkFile $workFile "transaction" $cleanupErrors
+    }
+
+    if ($null -ne $primaryError) {
+        $errorMessage = $primaryError.Exception.Message
         if ($rollbackErrors.Count -gt 0) {
-            throw "Mirror contract publish failed: $($publishError.Exception.Message); rollback failed: $($rollbackErrors -join '; ')"
+            $errorMessage += "; rollback failed: $($rollbackErrors -join '; ')"
         }
-        throw $publishError
-    } finally {
-        foreach ($workFile in @($envStage, $jsonStage, $envBackup, $jsonBackup)) {
-            if ($null -ne $workFile -and (Test-Path -LiteralPath $workFile)) {
-                Remove-Item -LiteralPath $workFile -Force
-            }
+        if ($cleanupErrors.Count -gt 0) {
+            $errorMessage += "; cleanup failed: $($cleanupErrors -join '; ')"
         }
+        throw $errorMessage
+    }
+    if ($cleanupErrors.Count -gt 0) {
+        throw "Mirror contract cleanup failed: $($cleanupErrors -join '; ')"
     }
 }
 
