@@ -114,8 +114,16 @@ Write-Host "RELEASE GATE OK: $Tag (version $version)" -ForegroundColor Green
 if ($WriteArtifacts) {
     $outDir = Join-Path $rootDir "outputs\release\$Tag"
     New-Item -ItemType Directory -Force -Path $outDir | Out-Null
-    & uv run --directory $rootDir pip install cyclonedx-bom -q
-    & uv run --directory $rootDir cyclonedx-py -e -o (Join-Path $outDir "sbom.cdx.json")
+    # Install the pinned SBOM tool into the locked interpreter's environment.
+    # `uv run pip` can resolve to a PATH interpreter, so target $py explicitly
+    # and fail on a non-zero exit.
+    & uv pip install --python $py "cyclonedx-bom==7.3.1" -q
+    if ($LASTEXITCODE -ne 0) { Fail "cyclonedx-bom install failed" }
+    $cyclonedx = Join-Path (Split-Path $py) "cyclonedx-py.exe"
+    if (-not (Test-Path -LiteralPath $cyclonedx)) { Fail "cyclonedx-py.exe missing after install: $cyclonedx" }
+    # cyclonedx-py v7 CLI: `cyclonedx-py environment -o <file>` (JSON output is
+    # the default; the legacy `-e` flag no longer exists).
+    & $cyclonedx environment -o (Join-Path $outDir "sbom.cdx.json")
     if ($LASTEXITCODE -ne 0) { Fail "SBOM generation failed" }
     # SHA256SUMS over the release-critical artifacts
     $hashLines = @()
