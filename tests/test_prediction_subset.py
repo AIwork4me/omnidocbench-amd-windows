@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import importlib.util
 import json
+import os
 from pathlib import Path
 
 import pytest
@@ -24,6 +25,34 @@ def write_manifest(path: Path, names: list[str]) -> None:
         json.dumps([{"page_info": {"image_path": name}} for name in names]),
         encoding="utf-8",
     )
+
+
+def _write_long_prediction(prediction_dir: Path, stem: str, content: str) -> None:
+    """Create <stem>.md even when the absolute path exceeds Windows MAX_PATH."""
+    target = prediction_dir / f"{stem}.md"
+    value = os.fspath(target)
+    if os.name == "nt" and not value.startswith("\\\\?\\") and len(value) >= 250:
+        value = "\\\\?\\" + os.path.abspath(value)
+    with open(value, "w", encoding="utf-8", newline="") as fh:
+        fh.write(content)
+
+
+def test_long_prediction_paths_are_included(tmp_path: Path):
+    """Regression: >260-char Windows prediction paths must survive the subset."""
+    module = load_module()
+    manifest = tmp_path / "full.json"
+    predictions = tmp_path / "predictions"
+    output = tmp_path / "subset.json"
+    predictions.mkdir()
+    long_stem = "book_en_" + "w" * 180 + "_page_0001"
+    write_manifest(manifest, [f"{long_stem}.png"])
+    _write_long_prediction(predictions, long_stem, "long content\n")
+
+    subset = module.build_subset(manifest, predictions, output)
+
+    assert [page["page_info"]["image_path"] for page in subset] == [
+        f"{long_stem}.png"
+    ]
 
 
 def test_builds_sorted_exact_subset_and_preserves_unicode(tmp_path: Path):

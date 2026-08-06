@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import importlib.util
 import json
+import os
 from pathlib import Path
 import subprocess
 import sys
@@ -50,6 +51,36 @@ def make_fixture(tmp_path: Path, count: int = 2) -> tuple[Path, Path]:
             f"# Page {index}\n中文\n", encoding="utf-8"
         )
     return image_dir, prediction_dir
+
+
+def _write_long_prediction(prediction_dir: Path, stem: str, content: str) -> None:
+    """Create <stem>.md even when the absolute path exceeds Windows MAX_PATH."""
+    target = prediction_dir / f"{stem}.md"
+    value = os.fspath(target)
+    if os.name == "nt" and not value.startswith("\\\\?\\") and len(value) >= 250:
+        value = "\\\\?\\" + os.path.abspath(value)
+    with open(value, "w", encoding="utf-8", newline="") as fh:
+        fh.write(content)
+
+
+def test_long_prediction_paths_are_readable(tmp_path: Path):
+    """Regression: >260-char Windows prediction paths must be read, not missed."""
+    validator = load_validator()
+    prediction_dir = tmp_path / "predictions"
+    prediction_dir.mkdir()
+    long_stem = "book_en_" + "z" * 180 + "_page_0001"
+    _write_long_prediction(prediction_dir, long_stem, "long content\n")
+    manifest = tmp_path / "subset.json"
+    manifest.write_text(
+        json.dumps([{"page_info": {"image_path": f"{long_stem}.png"}}]),
+        encoding="utf-8",
+    )
+
+    failures = validator.validate_predictions(
+        None, prediction_dir, minimum_coverage=1.0, manifest_path=manifest
+    )
+
+    assert failures == []
 
 
 def test_complete_utf8_predictions_pass(tmp_path: Path):

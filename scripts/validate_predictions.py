@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 from pathlib import Path
 import sys
 
@@ -13,6 +14,26 @@ from windows_paths import through_short_repo
 
 IMAGE_EXTENSIONS = {".png", ".jpg", ".jpeg", ".bmp", ".tif", ".tiff", ".webp"}
 REPO_ROOT = Path(__file__).resolve().parents[1]
+
+
+def _accessible(path: Path) -> str:
+    """Return a path Windows APIs can open even past MAX_PATH (260 chars)."""
+    value = os.fspath(path)
+    if os.name != "nt" or not isinstance(value, str) or value.startswith("\\\\?\\"):
+        return value
+    absolute = os.path.abspath(value)
+    if len(absolute) >= 250:
+        return "\\\\?\\" + absolute
+    return value
+
+
+def _is_file(path: Path) -> bool:
+    return os.path.isfile(_accessible(path))
+
+
+def _read_text(path: Path, encoding: str = "utf-8") -> str:
+    with open(_accessible(path), "r", encoding=encoding) as fh:
+        return fh.read()
 
 
 def case_collisions(names: list[str]) -> list[list[str]]:
@@ -35,7 +56,7 @@ def validate_predictions(
     failures: list[str] = []
     if not 0.0 <= minimum_coverage <= 1.0:
         return ["minimum coverage must be between 0 and 1"]
-    if not prediction_dir.is_dir():
+    if not os.path.isdir(_accessible(prediction_dir)):
         return [f"prediction directory not found: {prediction_dir}"]
     if manifest_path is not None:
         try:
@@ -49,7 +70,7 @@ def validate_predictions(
         # empty text-masks only); for those, an empty prediction is correct.
         empty_gt = empty_gt_stems(pages)
     else:
-        if image_dir is None or not image_dir.is_dir():
+        if image_dir is None or not os.path.isdir(_accessible(image_dir)):
             return [f"image directory not found: {image_dir}"]
         images = sorted(
             path for path in image_dir.iterdir() if path.suffix.lower() in IMAGE_EXTENSIONS
@@ -84,7 +105,7 @@ def validate_predictions(
     readable_nonempty = 0
     for markdown_path in markdown_files:
         try:
-            content = markdown_path.read_text(encoding="utf-8")
+            content = _read_text(markdown_path)
         except UnicodeDecodeError as error:
             failures.append(f"prediction is not UTF-8: {markdown_path.name} ({error})")
             continue
@@ -107,20 +128,20 @@ def validate_predictions(
 
     errors_path = prediction_dir / "_errors.log"
     error_entries = 0
-    if errors_path.is_file():
+    if _is_file(errors_path):
         try:
             error_entries = sum(
                 1
-                for line in errors_path.read_text(encoding="utf-8").splitlines()
+                for line in _read_text(errors_path).splitlines()
                 if line.startswith("[")
             )
         except UnicodeDecodeError as error:
             failures.append(f"_errors.log is not UTF-8 ({error})")
 
     stats_path = prediction_dir / "_run_stats.json"
-    if stats_path.is_file():
+    if _is_file(stats_path):
         try:
-            stats = json.loads(stats_path.read_text(encoding="utf-8"))
+            stats = json.loads(_read_text(stats_path))
         except (UnicodeDecodeError, json.JSONDecodeError) as error:
             failures.append(f"_run_stats.json is invalid UTF-8 JSON ({error})")
         else:

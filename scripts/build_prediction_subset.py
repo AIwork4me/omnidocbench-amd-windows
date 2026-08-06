@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 from pathlib import Path
 import sys
 
@@ -11,6 +12,22 @@ from gt_manifest import page_has_empty_gt
 from windows_paths import through_short_repo
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
+
+
+def _accessible(path: Path) -> str:
+    """Return a path Windows APIs can open even past MAX_PATH (260 chars)."""
+    value = os.fspath(path)
+    if os.name != "nt" or not isinstance(value, str) or value.startswith("\\\\?\\"):
+        return value
+    absolute = os.path.abspath(value)
+    if len(absolute) >= 250:
+        return "\\\\?\\" + absolute
+    return value
+
+
+def _read_text(path: Path, encoding: str = "utf-8") -> str:
+    with open(_accessible(path), "r", encoding=encoding) as fh:
+        return fh.read()
 
 
 def build_subset(
@@ -38,7 +55,7 @@ def build_subset(
     prediction_stems: list[str] = []
     for prediction in sorted(prediction_dir.glob("*.md"), key=lambda path: path.name.casefold()):
         try:
-            content = prediction.read_text(encoding="utf-8")
+            content = _read_text(prediction)
         except UnicodeDecodeError as error:
             raise ValueError(f"prediction is not UTF-8: {prediction.name}") from error
         page = page_by_stem.get(prediction.stem)

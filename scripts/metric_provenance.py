@@ -30,16 +30,38 @@ import argparse
 import datetime
 import hashlib
 import json
+import os
 import subprocess
 import sys
 from pathlib import Path
 
 
+def _accessible(path: Path) -> str:
+    """Return a path Windows APIs can open even past MAX_PATH (260 chars)."""
+    value = os.fspath(path)
+    if os.name != "nt" or not isinstance(value, str) or value.startswith("\\\\?\\"):
+        return value
+    absolute = os.path.abspath(value)
+    if len(absolute) >= 250:
+        return "\\\\?\\" + absolute
+    return value
+
+
+def _is_file(path: Path) -> bool:
+    return os.path.isfile(_accessible(path))
+
+
+def _read_text(path: Path, encoding: str = "utf-8") -> str:
+    with open(_accessible(path), "r", encoding=encoding) as fh:
+        return fh.read()
+
+
 def sha256_file(path: Path) -> str | None:
-    if not path.is_file():
+    accessible = _accessible(path)
+    if not os.path.isfile(accessible):
         return None
     digest = hashlib.sha256()
-    with open(path, "rb") as fh:
+    with open(accessible, "rb") as fh:
         for chunk in iter(lambda: fh.read(1 << 20), b""):
             digest.update(chunk)
     return digest.hexdigest()
@@ -57,11 +79,11 @@ def git_commit(root: Path) -> str | None:
 
 
 def tree_sha256(root: Path) -> str | None:
-    if not root.is_dir():
+    if not os.path.isdir(_accessible(root)):
         return None
     parts: list[bytes] = []
     for path in sorted(root.rglob("*")):
-        if not path.is_file():
+        if not _is_file(path):
             continue
         rel = path.relative_to(root).as_posix()
         if any(part in {"__pycache__", ".git", ".venv"} for part in Path(rel).parts):
@@ -69,7 +91,7 @@ def tree_sha256(root: Path) -> str | None:
         digest = sha256_file(path)
         if digest is None:
             continue
-        parts.append(f"{rel}|{path.stat().st_size}|{digest}".encode("utf-8"))
+        parts.append(f"{rel}|{os.stat(_accessible(path)).st_size}|{digest}".encode("utf-8"))
     return hashlib.sha256(b"\x00".join(parts)).hexdigest()
 
 
@@ -145,7 +167,7 @@ def _provenance_kwargs(args: argparse.Namespace, generated_at: str | None) -> di
 
 
 def _handle_write(args: argparse.Namespace) -> int:
-    if not args.result.is_file():
+    if not _is_file(args.result):
         print(f"FAIL: metric result not found: {args.result}", file=sys.stderr)
         return 1
     provenance = build_provenance(args.result, **_provenance_kwargs(args, None))
@@ -159,14 +181,14 @@ def _handle_write(args: argparse.Namespace) -> int:
 
 
 def _handle_verify(args: argparse.Namespace) -> int:
-    if not args.out.is_file():
+    if not _is_file(args.out):
         print(f"FAIL: provenance sidecar missing: {args.out} (scoring must re-run)", file=sys.stderr)
         return 1
-    if not args.result.is_file():
+    if not _is_file(args.result):
         print(f"FAIL: metric result missing: {args.result}", file=sys.stderr)
         return 1
     try:
-        previous = json.loads(args.out.read_text(encoding="utf-8"))
+        previous = json.loads(_read_text(args.out))
     except (OSError, json.JSONDecodeError, UnicodeDecodeError) as error:
         print(f"FAIL: provenance sidecar unreadable: {error}", file=sys.stderr)
         return 1
