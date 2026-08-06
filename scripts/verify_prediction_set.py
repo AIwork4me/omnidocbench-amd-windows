@@ -35,12 +35,39 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import sys
 from pathlib import Path
 
 from gt_manifest import load_empty_gt_stems
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
+
+
+def _accessible(path: Path) -> str:
+    """Return a path Windows APIs can open even past MAX_PATH (260 chars).
+
+    Long manifest stems can push a prediction path past 260 UTF-16 units on
+    Windows; Python's os.stat()/open() then fail with WinError 3 even though
+    directory enumeration still sees the file. The extended-length ``\\?\``
+    prefix restores access. Non-Windows and short paths are unchanged.
+    """
+    value = os.fspath(path)
+    if os.name != "nt" or not isinstance(value, str) or value.startswith("\\\\?\\"):
+        return value
+    absolute = os.path.abspath(value)
+    if len(absolute) >= 250:
+        return "\\\\?\\" + absolute
+    return value
+
+
+def _is_file(path: Path) -> bool:
+    return os.path.isfile(_accessible(path))
+
+
+def _read_text(path: Path, encoding: str = "utf-8") -> str:
+    with open(_accessible(path), "r", encoding=encoding) as fh:
+        return fh.read()
 
 
 def validate_prediction_set(
@@ -56,7 +83,7 @@ def validate_prediction_set(
 ) -> tuple[list[str], dict]:
     failures: list[str] = []
     allowed = allowed_failed_page_stems or set()
-    if not pred_dir.is_dir():
+    if not os.path.isdir(_accessible(pred_dir)):
         return [f"prediction directory not found: {pred_dir}"], {}
     try:
         pages = json.loads(manifest_path.read_text(encoding="utf-8"))
@@ -82,7 +109,13 @@ def validate_prediction_set(
         failures.append(f"manifest contains duplicate image stems: {dup}")
     empty_gt = load_empty_gt_stems(manifest_path)
 
-    markdown_stems = {p.stem for p in pred_dir.glob("*.md") if p.is_file()}
+    # Use scandir's DirEntry data (FindFirstFileW) so >260-char names are still
+    # visible; a Path.is_file() call would stat and fail on those paths.
+    markdown_stems = {
+        Path(entry.name).stem
+        for entry in os.scandir(pred_dir)
+        if entry.is_file() and entry.name.lower().endswith(".md")
+    }
     unexpected = sorted(expected.symmetric_difference(markdown_stems) - expected)
     missing = sorted(expected - markdown_stems)
 
@@ -92,10 +125,10 @@ def validate_prediction_set(
     empty_gt_valid = 0
     for stem in sorted(expected):
         path = pred_dir / f"{stem}.md"
-        if not path.is_file():
+        if not _is_file(path):
             continue
         try:
-            content = path.read_text(encoding="utf-8")
+            content = _read_text(path)
         except (OSError, UnicodeDecodeError):
             invalid.append(f"{stem}.md (not UTF-8)")
             invalid_stems.append(stem)
@@ -194,11 +227,11 @@ def validate_prediction_set(
     selected = None
     if require_selected:
         stats_path = pred_dir / "_run_stats.json"
-        if not stats_path.is_file():
+        if not _is_file(stats_path):
             failures.append(f"_run_stats.json missing in {pred_dir} (required to prove the selected set)")
         else:
             try:
-                stats = json.loads(stats_path.read_text(encoding="utf-8"))
+                stats = json.loads(_read_text(stats_path))
             except (OSError, UnicodeDecodeError, json.JSONDecodeError) as error:
                 failures.append(f"_run_stats.json is invalid: {error}")
             else:

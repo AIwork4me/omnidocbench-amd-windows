@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -40,6 +41,32 @@ def _run(manifest, pred_dir, *extra):
         text=True,
         check=False,
     )
+
+
+def _write_long_prediction(pred_dir: Path, stem: str, content: str) -> None:
+    """Create <stem>.md even when the absolute path exceeds Windows MAX_PATH."""
+    target = pred_dir / f"{stem}.md"
+    value = os.fspath(target)
+    if os.name == "nt" and not value.startswith("\\\\?\\") and len(value) >= 250:
+        value = "\\\\?\\" + os.path.abspath(value)
+    with open(value, "w", encoding="utf-8", newline="") as fh:
+        fh.write(content)
+
+
+def test_long_prediction_paths_are_valid(tmp_path):
+    """Regression: >260-char Windows paths must count as valid predictions."""
+    manifest, pred = _make_dataset(tmp_path, 2)
+    long_stem = "book_en_" + "y" * 180 + "_page_0001"
+    pages = json.loads(manifest.read_text(encoding="utf-8"))
+    pages.append({"page_info": {"image_path": f"some/dir/{long_stem}.png"}})
+    manifest.write_text(json.dumps(pages), encoding="utf-8")
+    _write_long_prediction(pred, long_stem, "long content\n")
+    result = _run(
+        manifest, pred,
+        "--expected-pages", "3", "--min-coverage", "1.0", "--max-failed-pages", "0",
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert "3/3" in result.stdout
 
 
 def test_exact_1651_passes(tmp_path):

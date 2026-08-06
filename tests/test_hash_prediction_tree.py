@@ -41,6 +41,37 @@ def tree_hash(out: Path) -> str:
     return json.loads(out.read_text(encoding="utf-8"))["prediction_tree_sha256"]
 
 
+def _write_long_prediction(pred_dir: Path, stem: str, content: str) -> None:
+    """Create <stem>.md even when the absolute path exceeds Windows MAX_PATH."""
+    target = pred_dir / f"{stem}.md"
+    value = os.fspath(target)
+    if os.name == "nt" and not value.startswith("\\\\?\\") and len(value) >= 250:
+        value = "\\\\?\\" + os.path.abspath(value)
+    with open(value, "w", encoding="utf-8", newline="") as fh:
+        fh.write(content)
+
+
+def test_long_prediction_paths_are_hashed(tmp_path):
+    """Regression: >260-char Windows paths must not make predictions disappear."""
+    pred = tmp_path / "p"
+    pred.mkdir()
+    long_stem = "book_en_" + "x" * 180 + "_page_0001"
+    _write_long_prediction(pred, long_stem, "long content\n")
+    (pred / "p1.md").write_text("hello", encoding="utf-8")
+    manifest = make_manifest(tmp_path, ["p1", long_stem])
+    out = tmp_path / "tree.json"
+    result = _run(
+        "--pred-dir", str(pred), "--manifest", str(manifest), "--out", str(out)
+    )
+    assert result.returncode == 0, result.stderr
+    data = json.loads(out.read_text(encoding="utf-8"))
+    assert data["missing"] == []
+    assert len(data["files"]) == 2
+    entry = next(e for e in data["files"] if e["path"] == f"{long_stem}.md")
+    assert entry["bytes"] == len("long content\n")
+    assert entry["sha256"] == hashlib.sha256(b"long content\n").hexdigest()
+
+
 def test_same_content_same_hash_in_different_dirs(tmp_path):
     pred_a = tmp_path / "a"
     pred_b = tmp_path / "b"

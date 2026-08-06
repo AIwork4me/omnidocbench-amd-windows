@@ -32,15 +32,34 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import os
 import sys
 from pathlib import Path
 
 
+def _accessible(path: Path) -> str:
+    """Return a path Windows APIs can open even past MAX_PATH (260 chars).
+
+    Long manifest stems can push a prediction path past 260 UTF-16 units on
+    Windows; Python's os.stat()/open() then fail with WinError 3 even though
+    directory enumeration still sees the file. The extended-length ``\\?\``
+    prefix restores access. Non-Windows and short paths are unchanged.
+    """
+    value = os.fspath(path)
+    if os.name != "nt" or not isinstance(value, str) or value.startswith("\\\\?\\"):
+        return value
+    absolute = os.path.abspath(value)
+    if len(absolute) >= 250:
+        return "\\\\?\\" + absolute
+    return value
+
+
 def sha256_file(path: Path) -> str | None:
-    if not path.is_file():
+    accessible = _accessible(path)
+    if not os.path.isfile(accessible):
         return None
     digest = hashlib.sha256()
-    with open(path, "rb") as fh:
+    with open(accessible, "rb") as fh:
         for chunk in iter(lambda: fh.read(1 << 20), b""):
             digest.update(chunk)
     return digest.hexdigest()
@@ -79,17 +98,23 @@ def hash_prediction_tree(
     missing: list[str] = []
     for stem in sorted(unique):
         path = pred_dir / f"{stem}.md"
-        if not path.is_file():
-            missing.append(stem)
-            continue
         digest = sha256_file(path)
         if digest is None:
             missing.append(stem)
             continue
-        size = path.stat().st_size
+        size = os.stat(_accessible(path)).st_size
         entries.append({"path": f"{stem}.md", "bytes": size, "sha256": digest})
 
-    markdown_stems = {p.stem for p in pred_dir.glob("*.md") if p.is_file()}
+    # Use scandir's DirEntry data (FindFirstFileW) so >260-char names are still
+    # visible; a Path.is_file() call would stat and fail on those paths.
+    if os.path.isdir(_accessible(pred_dir)):
+        markdown_stems = {
+            Path(entry.name).stem
+            for entry in os.scandir(pred_dir)
+            if entry.is_file() and entry.name.lower().endswith(".md")
+        }
+    else:
+        markdown_stems = set()
     unexpected = sorted(markdown_stems - set(unique))
 
     canonical = json.dumps(
