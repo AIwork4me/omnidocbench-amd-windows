@@ -1206,9 +1206,17 @@ Invoke-Stage -Id "evidence.pack" -Name "Evidence pack" -AlwaysRun {
     # saved, so these hashes bind the TRUE final artifacts (report.md and the
     # final state.json with this stage's record).
     if (-not $DryRun) {
+        # Reload the provisioning fingerprint here: the Action scriptblock's
+        # local $fingerprint is invisible to this AfterSave scriptblock (PS 5.1
+        # invokes scriptblocks in a child scope), so Write-Report would
+        # silently render empty repo-dirty/upstream-lock provenance lines.
+        $reportFingerprint = @{}
+        if (Test-Path -LiteralPath $fingerprintProvisioningFile) {
+            $reportFingerprint = Get-Content -Raw -Encoding UTF8 -LiteralPath $fingerprintProvisioningFile | ConvertFrom-Json
+        }
         # Render from the just-saved terminal state so report.md and state.json
         # expose the same canonical subset before either artifact is hashed.
-        Write-Report -EvidenceDir $evidenceDir -State $state -Profile $profile -Fingerprint $fingerprint -ResumeCommand "powershell -ExecutionPolicy Bypass -File scripts\reproduce.ps1 -Profile $RunProfile -Resume" -ServerPort $serverPort -PredictionTreeHash (Get-JsonField -Path $predictionTreeFile -Field "prediction_tree_sha256") | Out-Null
+        Write-Report -EvidenceDir $evidenceDir -State $state -Profile $profile -Fingerprint $reportFingerprint -ResumeCommand "powershell -ExecutionPolicy Bypass -File scripts\reproduce.ps1 -Profile $RunProfile -Resume" -ServerPort $serverPort -PredictionTreeHash (Get-JsonField -Path $predictionTreeFile -Field "prediction_tree_sha256") | Out-Null
         Write-ArtifactHashes -EvidenceDir $evidenceDir -Profile $profile -PipelineCheckout $pipelineCheckout -EnvFile $adapterEnvFile -EnvironmentLockFile $environmentLockFile -ServerPort $serverPort -PredictionTreeFile $predictionTreeFile -PredictionSummaryFile $predictionSummaryFile -BackendProofFile $backendProofFile -WindowsResult $windowsResult -WindowsProvenanceFile $windowsProvenanceFile -WslResult (Get-WslResultPath -SaveName $saveName) -WslProvenanceFile (Get-WslResultPath -SaveName $saveName -FileSuffix "_metric_result.provenance.json") -StateFile $stateFile -ReportFile $reportFile -ProfileResolvedFile $profileResolvedFile | Out-Null
         $wslResult = Get-WslResultPath -SaveName $saveName
         $spec = [ordered]@{

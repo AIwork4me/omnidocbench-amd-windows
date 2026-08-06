@@ -283,7 +283,7 @@ function Write-Report {
     $lines += ""
     $lines += "- Profile schema: v$($Profile.schema_version) ($($Profile.run_kind), $($Profile.variant) backend)"
     $lines += "- Model: $($Profile.model) ($($Profile.engine) engine)"
-    $lines += "- Repo commit: $($State.repo_commit) (dirty: $($Fingerprint.repo_tree_sha256.dirty))"
+    $lines += "- Repo commit: $($State.repo_commit) (dirty: $($Fingerprint.inputs.repo_tree_sha256.dirty))"
     $lines += "- Upstream lock sha256: $($Fingerprint.inputs.upstream_lock_sha256)"
     $lines += "- Prediction dir: $($Profile.prediction_dir)"
     $lines += "- Manifest: $($Profile.prediction_manifest)"

@@ -152,6 +152,15 @@ def test_01_clean_fresh_run_passes(harness):
     assert order.index("environment.mirrors") < order.index("environment.python") < order.index("environment.wsl")
     assert order.index("inference.run") < order.index("inference.prediction_check") < order.index("scoring.windows") < order.index("evidence.pack")
     assert report_stage_ids(harness) == order
+    # The report must render provisioning-fingerprint provenance from the real
+    # fingerprint file. Moving Write-Report into the -AfterSave scriptblock
+    # previously made the Action-scoped $fingerprint invisible (PS 5.1 child
+    # scope), so these lines silently became empty.
+    fingerprint = load_json(evidence_dir(harness) / "fingerprint.provisioning.json")
+    report = (evidence_dir(harness) / "report.md").read_text(encoding="utf-8")
+    dirty_txt = "True" if fingerprint["inputs"]["repo_tree_sha256"]["dirty"] else "False"
+    assert f"- Repo commit: {state['repo_commit']} (dirty: {dirty_txt})" in report
+    assert f"- Upstream lock sha256: {fingerprint['inputs']['upstream_lock_sha256']}" in report
     # Both platforms scored exactly once.
     assert score_marker_count(harness["hooks"]) == 2
     summary = load_json(evidence_dir(harness) / "prediction-summary.json")
