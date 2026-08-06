@@ -15,6 +15,7 @@
       "cpu_fallback": "cpu-smoke-10",
       "validated_profiles": ["paddleocr-vl-hip-full-1651", "hip-smoke-10"],
       "evidence": [
+        "docs/reproduction-full1651-hip-2026-08-06.md",
         "docs/reproduction-full1651-hip-2026-08-03.md",
         "docs/reproduction-hip-smoke-2026-08-02.md"
       ]

@@ -198,8 +198,10 @@ set is authorized only with sampling evidence:
 and requires content-equivalence (difflib similarity >= 0.95) against the
 stored predictions — PaddleOCR-VL-1.6 GGUF outputs are not byte-reproducible
 across independent runs (glyph-level and table-structure variance), so
-equivalence is content-based. Machine-verified full-set evidence:
-[`docs/reproduction-full1651-hip-2026-08-03.md`](reproduction-full1651-hip-2026-08-03.md).
+equivalence is content-based. Machine-verified full-set evidence (latest
+first):
+[`reproduction-full1651-hip-2026-08-06.md`](reproduction-full1651-hip-2026-08-06.md),
+[`reproduction-full1651-hip-2026-08-03.md`](reproduction-full1651-hip-2026-08-03.md).
 
 Evidence: every run writes `outputs/reproduction/<profile>/` with
 `state.json`, `profile.resolved.json`, `fingerprint.json`, `hardware.json`,

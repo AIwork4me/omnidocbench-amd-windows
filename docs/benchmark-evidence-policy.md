@@ -28,7 +28,8 @@ the release gate.
    - `smoke` — 10-page acceptance evidence only; never quoted as a benchmark.
    - `resumed` — a full run resumed from the repo's own artifacts with
      fingerprint + provenance verification ("validated resumed run"). This is
-     the current status of the 2026-08-03 full-set row.
+      the current status of the 2026-08-06 full-set row (and, earlier, the
+      2026-08-03 row).
    - `clean-room` — a full 1651-page run executed from a fresh checkout of the
      release commit; requires the Release Gate and a committed evidence doc.
    - `independent` — a clean-room run executed by a second machine.

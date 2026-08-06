@@ -371,8 +371,9 @@ The system is fully operational when all criteria for the **selected CDM path** 
    schema, adapter manifests, clean tree, release notes with evidence levels).
    Benchmark rows live in `benchmarks/index.json` (single source of truth;
    README tables are generated) and are labelled `smoke` / `validated resumed`
-   / `clean-room` / `independent` per `docs/benchmark-evidence-policy.md` — the
-   2026-08-03 full-set row is a **validated resumed run**, not clean-room.
+    / `clean-room` / `independent` per `docs/benchmark-evidence-policy.md` — the
+    2026-08-06 full-set row (like the earlier 2026-08-03 row) is a
+    **validated resumed run**, not clean-room.
 
 Reference targets (our validated PaddleOCR-VL-1.6 results on OmniDocBench v1.6):
 
@@ -389,12 +390,14 @@ In raw `metric_result.json`, TEDS/CDM use 0-1 values, so the same threshold is
 A run whose metrics clear these thresholds reproduces our results. See
 [`README.md`](README.md) for the full table vs. the official baseline.
 
-Latest profile-driven full-set evidence (2026-08-03, Ryzen AI MAX+ 395 /
+Latest profile-driven full-set evidence (2026-08-06, Ryzen AI MAX+ 395 /
 Radeon 8060S): `paddleocr-vl-hip-full-1651` passed officially with Windows
-text `0.035386` / RO `0.129539` / TEDS `0.929766` and WSL CDM `0.966490`;
+text `0.035251` / RO `0.129328` / TEDS `0.929792` and WSL CDM `0.965605`;
 1649/1651 usable (2 budgeted peg-native failures, upstream
 PaddlePaddle/PaddleOCR#18248; the dataset's 2 genuinely empty-GT pages accept
 empty predictions per `scripts/gt_manifest.py`). Full record:
+[`docs/reproduction-full1651-hip-2026-08-06.md`](docs/reproduction-full1651-hip-2026-08-06.md).
+An earlier validated-resumed record (2026-08-03) is at
 [`docs/reproduction-full1651-hip-2026-08-03.md`](docs/reproduction-full1651-hip-2026-08-03.md).
 HIP smoke evidence:
 [`docs/reproduction-hip-smoke-2026-08-02.md`](docs/reproduction-hip-smoke-2026-08-02.md).
