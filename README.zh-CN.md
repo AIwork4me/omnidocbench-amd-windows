@@ -165,12 +165,14 @@ HIP 路径（该机型请用 `-Variant cpu`，见上方 Radeon 860M 说明）。
 不能作为 leaderboard 成绩；full 结果必须满足严格证据门槛（见
 [`docs/architecture.md`](docs/architecture.md#reproduction-profiles)）。
 
-已在 Ryzen AI MAX+ 395 / Radeon 8060S 实体机验证（2026-08-03）：全量
+已在 Ryzen AI MAX+ 395 / Radeon 8060S 实体机验证（2026-08-06）：全量
 Profile 官方通过——1651 页选中、1649/1651 可用（0.9988）、2 个预算内的
 peg-native 失败页（上游追踪
 [PaddlePaddle/PaddleOCR#18248](https://github.com/PaddlePaddle/PaddleOCR/issues/18248)）、
-数据集中真正的空 GT 页接受空预测；分数：text 0.035386 / 阅读顺序 0.129539 /
-TEDS 0.929766（Windows），CDM 0.966490（WSL）。完整记录：
+数据集中真正的空 GT 页接受空预测；分数：text 0.035251 / 阅读顺序 0.129328 /
+TEDS 0.929792（Windows），CDM 0.965605（WSL）。完整记录：
+[`docs/reproduction-full1651-hip-2026-08-06.md`](docs/reproduction-full1651-hip-2026-08-06.md)。
+更早的 validated-resumed 记录（2026-08-03）见
 [`docs/reproduction-full1651-hip-2026-08-03.md`](docs/reproduction-full1651-hip-2026-08-03.md)。
 
 `-Resume` 仅用于中断后：它会重新校验输入 fingerprint（profile、锁、
