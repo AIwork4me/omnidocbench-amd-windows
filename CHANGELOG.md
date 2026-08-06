@@ -5,7 +5,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
-## [1.6.1] - 2026-08-04
+## [1.6.1] - 2026-08-06
 
 ### Added
 - Phase-scoped fingerprints for safe resume: provisioning / inference /
@@ -38,6 +38,26 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   the orchestrator runs only the lifecycle stages an adapter declares.
 - `mineru-pipeline-hip-smoke` profile with a documented human-intervention
   gate (Python 3.12 + ROCm torch; never pretends to be unattended).
+
+### Fixed
+- Canonical resumed-state ordering: schema-v2 legacy states are normalized to
+  the current canonical stage subset on resume; duplicate/unknown stage ids
+  fail closed with an actionable compatibility diagnostic; final state and
+  report stage sections always share the same canonical order.
+- Report provenance: `Write-Report` re-loads `fingerprint.provisioning.json`
+  in the evidence-pack `-AfterSave` hook (PS 5.1 scope) and renders the
+  schema-v3 `inputs.repo_tree_sha256.dirty` path correctly.
+- Inference fingerprint no longer self-invalidates: runtime `logs/`
+  directories are excluded from tree fingerprints.
+- Windows MAX_PATH: `verify_prediction_set.py` and `hash_prediction_tree.py`
+  now handle >260-char prediction paths via an extended-length (`\\?\`)
+  access helper and `os.scandir` DirEntry enumeration (regression-tested).
+
+### Benchmarks
+- New full-set row `paddleocr-vl-rocm-full-1651-2026-08-06` (validated
+  resumed): Text ED 0.035251, RO ED 0.129328, Table TEDS 92.9792, Formula
+  CDM 96.5605, coverage 0.998789. Evidence:
+  docs/reproduction-full1651-hip-2026-08-06.md.
 - Benchmark single source of truth: `benchmarks/schema.json`,
   `benchmarks/index.json`, `scripts/validate_benchmark_index.py` and
   `scripts/render_benchmark_tables.py` (README tables generated, CI drift

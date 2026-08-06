@@ -26,6 +26,7 @@ WSL 或重启等人机协作步骤（见 [AGENTS.md](AGENTS.md) 的 ⚠️ 门�
 <!-- benchmark-table:start -->
 | Model | Backend | Run | Coverage | Text Edit-dist ↓ | Reading-order Edit-dist ↓ | Table TEDS ↑ | Formula CDM ↑ | Evidence |
 |---|---|---|---:|---:|---:|---:|---:|---|
+| PaddleOCR-VL-1.6 1.6 | llama.cpp GGUF (ROCm/HIP) | validated resumed | 0.9988 | 0.0353 | 0.1293 | 92.9792 | 96.5605 | [docs/reproduction-full1651-hip-2026-08-06.md](docs/reproduction-full1651-hip-2026-08-06.md) |
 | PaddleOCR-VL-1.6 1.6 | llama.cpp GGUF (ROCm/HIP) | validated resumed | 0.9988 | 0.0354 | 0.1295 | 92.9766 | 96.6490 | [docs/reproduction-full1651-hip-2026-08-03.md](docs/reproduction-full1651-hip-2026-08-03.md) |
 | PaddleOCR-VL-1.6 1.6 | llama.cpp GGUF (ROCm/HIP) | smoke | 1.0000 | 0.0143 | — | 100.0000 | 99.3280 | [docs/reproduction-hip-smoke-2026-08-02.md](docs/reproduction-hip-smoke-2026-08-02.md) |
 | MinerU2.5-Pro-2605-1.2B 2605-1.2B | llama.cpp GGUF (HIP) | validated resumed | — | 0.0373 | 0.1225 | 93.1100 | 97.0100 | [docs/benchmarks/leaderboard-evidence-2026-08-01.md](docs/benchmarks/leaderboard-evidence-2026-08-01.md) |

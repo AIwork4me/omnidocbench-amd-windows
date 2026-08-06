@@ -1,5 +1,50 @@
 [
   {
+    "id": "paddleocr-vl-rocm-full-1651-2026-08-06",
+    "model": "PaddleOCR-VL-1.6",
+    "model_version": "1.6",
+    "adapter": "paddleocr-vl-1.6",
+    "backend": "llama.cpp GGUF (ROCm/HIP)",
+    "device": "AMD Ryzen AI MAX+ 395 / Radeon 8060S",
+    "gfx_architecture": "gfx1151",
+    "driver": null,
+    "dataset_version": "OmniDocBench v1.6 (1651 pages)",
+    "date": "2026-08-06",
+    "page_count": 1651,
+    "prediction_coverage": 0.998789,
+    "failed_pages": 2,
+    "known_failures": 2,
+    "unknown_failures": 0,
+    "scoring_mode": "quick_match",
+    "aggregation_mode": "text_ro_page_avg_teds_pooled_cdm_pooled",
+    "raw_metrics": {
+      "text_edit_dist": 0.035251,
+      "reading_order_edit_dist": 0.129328,
+      "table_teds_pooled": 0.929792,
+      "table_teds_page_avg": 0.940989,
+      "formula_cdm": 0.965605
+    },
+    "display_metrics": {
+      "overall": null,
+      "table_teds": 92.9792,
+      "formula_cdm": 96.5605
+    },
+    "run_type": "resumed",
+    "evidence_level": "validated resumed run on the final orchestrator state (commit dfd8962, 2026-08-06). The two known failures are the allowlisted peg-native upstream pages (PaddlePaddle/PaddleOCR#18248). The run required one failed-stage resume and a machine-local long-path shim, which was replaced by the tracked long-path fix at commit 252a6e2; clean-room status is not claimed.",
+    "repo_commit": "dfd89624c0e7f5f93b91ec1e4f90166da5c60f59",
+    "profile_hash": "f80cbf1a46b1713b9073fc129e075b7d4190dae0a4c38f118ece1c1e14906dc9",
+    "prediction_tree_hash": "17365b4a7bf823605ba8bb6773e16b01a5ac9b8c873fb078d8d893b2756379f8",
+    "result_hashes": {
+      "windows_metric_result": "38d895b6859461deeb8a8b1e2f8547fa87233e6b126ed5759965648012ecf990",
+      "wsl_metric_result": "2c11781fa9c94bd9d053f95e9cbaeb97fcdd4835c13d43228f44e969275d0ba4",
+      "strict_prediction_summary": "229cc7f081a4304a6273d20e0cc8cb1dea70f4901f43e9ce52a15a007f1dbbbc",
+      "state": "4938a91a7b9d027757764371d43425ce30cded2fab021e88779be088dff68a8e",
+      "report": "5741146747897f5ef6a8f92d25a1c2bb45b28831ace27e0941394cac0ae4dfce",
+      "backend_proof": "bde05e546cfc73b3aff1bad0c2726d043ab35c254420b23821895082bda15d3a"
+    },
+    "evidence_document": "docs/reproduction-full1651-hip-2026-08-06.md"
+  },
+  {
     "id": "paddleocr-vl-rocm-full-1651-2026-08-03",
     "model": "PaddleOCR-VL-1.6",
     "model_version": "1.6",
