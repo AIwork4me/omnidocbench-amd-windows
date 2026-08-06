@@ -29,7 +29,7 @@
   ],
   "additionalProperties": false,
   "properties": {
-    "id": { "type": "string", "pattern": "^[a-z0-9-]+$" },
+    "id": { "type": "string", "pattern": "^[a-z0-9.-]+$" },
     "model": { "type": "string" },
     "model_version": { "type": "string" },
     "adapter": { "type": "string" },
@@ -40,10 +40,10 @@
     "dataset_version": { "type": "string" },
     "date": { "type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}$" },
     "page_count": { "type": "integer", "minimum": 1 },
-    "prediction_coverage": { "type": "number", "minimum": 0, "maximum": 1 },
-    "failed_pages": { "type": "integer", "minimum": 0 },
-    "known_failures": { "type": "integer", "minimum": 0 },
-    "unknown_failures": { "type": "integer", "minimum": 0 },
+    "prediction_coverage": { "type": ["number", "null"], "minimum": 0, "maximum": 1 },
+    "failed_pages": { "type": ["integer", "null"], "minimum": 0 },
+    "known_failures": { "type": ["integer", "null"], "minimum": 0 },
+    "unknown_failures": { "type": ["integer", "null"], "minimum": 0 },
     "scoring_mode": { "enum": ["quick_match", "official"] },
     "aggregation_mode": {
       "enum": [
@@ -57,7 +57,7 @@
       "required": ["text_edit_dist", "reading_order_edit_dist"],
       "properties": {
         "text_edit_dist": { "type": "number", "minimum": 0 },
-        "reading_order_edit_dist": { "type": "number", "minimum": 0 },
+        "reading_order_edit_dist": { "type": ["number", "null"], "minimum": 0 },
         "table_teds_pooled": { "type": ["number", "null"], "minimum": 0, "maximum": 1 },
         "table_teds_page_avg": { "type": ["number", "null"], "minimum": 0, "maximum": 1 },
         "formula_cdm": { "type": ["number", "null"], "minimum": 0, "maximum": 1 }
