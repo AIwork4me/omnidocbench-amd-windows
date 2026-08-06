@@ -71,7 +71,11 @@ if ($changelog -notmatch "## \[$version\]") { Fail "CHANGELOG.md has no entry fo
 
 # 3. tests green
 Write-Host "Running the full test suite..." -ForegroundColor Cyan
-& uv run --directory $rootDir pytest -q
+# Use the locked interpreter as a module: `uv run pytest` does not put the
+# repository root on sys.path on Windows (tests import `scripts.*`) and can
+# trigger a network re-sync against a mirror. `python -m pytest` matches how
+# every local verification command in this repo runs the suite.
+& $py -m pytest -q
 if ($LASTEXITCODE -ne 0) { Fail "test suite failed" }
 
 # 4. README tables generated (drift check)
