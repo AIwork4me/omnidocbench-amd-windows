@@ -71,7 +71,12 @@ evidence.
 - `state.json` / `report.md` / `metrics-summary.json` /
   `prediction-summary.json` / `artifact-hashes.json` /
   `fingerprint.{provisioning,inference,scoring,evidence}.json` under
-  `outputs/reproduction/paddleocr-vl-hip-full-1651/`.
+  `outputs/reproduction/paddleocr-vl-hip-full-1651/`. The evidence and the
+  1649 predictions are archived (byte-verified, self-contained) under
+  `outputs/reproduction/paddleocr-vl-hip-full-1651-2026-08-06/` and
+  `predictions/paddleocrvl_hip_full_1651-2026-08-06/` in the main checkout;
+  the archived prediction tree re-verifies to `17365b4a...` and the strict
+  prediction gate passes against the archived copy.
 - Benchmark row: `benchmarks/index.json`
   (`paddleocr-vl-rocm-full-1651-2026-08-06`), label **validated resumed**.
 - Audit: `.superpowers/sdd/full-run-2026-08-06-audit.md` (10-item read-only
