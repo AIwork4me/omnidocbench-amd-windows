@@ -75,7 +75,7 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 
 PHASES = ("provisioning", "inference", "scoring", "evidence")
 SPEC_KINDS = ("file", "git", "tree", "repo_tree", "env", "string")
-TREE_IGNORE = {"__pycache__", ".git", "node_modules", ".venv", ".venv3", "models"}
+TREE_IGNORE = {"__pycache__", ".git", "node_modules", ".venv", ".venv3", "models", "logs"}
 
 
 def sha256_file(path: Path) -> str | None:

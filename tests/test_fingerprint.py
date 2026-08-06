@@ -273,6 +273,55 @@ def test_inference_phase_binds_pipeline_checkout_commit(fingerprint_env):
     assert "pipeline_checkout_commit" in result.stdout + result.stderr
 
 
+def test_inference_tree_hash_ignores_runtime_logs(fingerprint_env):
+    """Regression: the VLM server writes adapters/.../logs/*.log during
+    inference, so the adapter-tree hash must not include runtime logs or the
+    just-written inference fingerprint self-invalidates on the next --check."""
+    spec = fingerprint_env / "inference.spec.json"
+    spec.write_text(json.dumps(inference_spec(fingerprint_env)), encoding="utf-8")
+    result = _run(
+        fingerprint_env, "--phase", "inference", "--inputs", str(spec),
+        "--out", str(fingerprint_env / "fp-inference.json"),
+    )
+    assert result.returncode == 0, result.stderr
+    log_dir = fingerprint_env / "adapters" / "paddleocr-vl-1.6" / "logs"
+    log_dir.mkdir()
+    (log_dir / "llama-server.log").write_text("first boot\n", encoding="utf-8")
+    result = _run(
+        fingerprint_env, "--phase", "inference", "--inputs", str(spec),
+        "--check", str(fingerprint_env / "fp-inference.json"),
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+    (log_dir / "llama-server.log").write_text(
+        "second boot\nmore runtime lines\n", encoding="utf-8"
+    )
+    result = _run(
+        fingerprint_env, "--phase", "inference", "--inputs", str(spec),
+        "--check", str(fingerprint_env / "fp-inference.json"),
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+
+
+def test_inference_tree_hash_still_detects_adapter_code_changes(fingerprint_env):
+    """Control: the log ignore rule must not mask real adapter source edits."""
+    spec = fingerprint_env / "inference.spec.json"
+    spec.write_text(json.dumps(inference_spec(fingerprint_env)), encoding="utf-8")
+    result = _run(
+        fingerprint_env, "--phase", "inference", "--inputs", str(spec),
+        "--out", str(fingerprint_env / "fp-inference.json"),
+    )
+    assert result.returncode == 0, result.stderr
+    (fingerprint_env / "adapters" / "paddleocr-vl-1.6" / "run_adapter.py").write_text(
+        "print('edited adapter')\n", encoding="utf-8"
+    )
+    result = _run(
+        fingerprint_env, "--phase", "inference", "--inputs", str(spec),
+        "--check", str(fingerprint_env / "fp-inference.json"),
+    )
+    assert result.returncode != 0
+    assert "adapter_tree_sha256" in result.stdout + result.stderr
+
+
 def test_phase_mismatch_fails(fingerprint_env):
     _write_provisioning(fingerprint_env, fingerprint_env / "fp.json")
     spec = fingerprint_env / "inference.spec.json"
